@@ -34,7 +34,7 @@ def problem1 (7) {
         color : "black"
     }
 
-    object back = Background(offset_x : 0, offset_y : 0);
+    let back = Background(offset_x: 0, offset_y: 0);
 
     object Dot {
         shape : [(0,0)],
@@ -47,23 +47,23 @@ def problem1 (7) {
         color : "white"
     }
 
-    superobject so = Object(x : 1, y : 2);
+    let so = Object(x : 1, y : 2);
 
 
-    superobject so = two_dots(5, 5);
+    let so = two_dots(5, 5);
     
     superobject Object { 
         shape : [Background, Line, LShape],
     }
 
-    superobject so = Object(x : 1, y : 2);
+    let so = Object(x: 1, y: 2);
 
     object LShape {
         shape : [(0,0), (1,0), (1,1)]
         color : "blue"
     }
 
-    superobject o = Object();
+    let o = Object();
 
     o.change_color("red");
 
