@@ -6,4 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+expect-test = "1.5.1"
 logos = "0.15.0"
+num-derive = "0.4.2"
+num-traits = "0.2.19"
+rowan = "0.16.1"
