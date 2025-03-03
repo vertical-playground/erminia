@@ -1,0 +1,98 @@
+// Assume reference points for all object are on the upper left corner of their bounding box
+// Assume the last object drawn is on top of the previous objects
+
+
+// This is the standard library for our language
+def std () {
+
+    func draw(object o) -> void {
+        // draw the object (o) on the screen
+    }
+
+    func move(object o, string direction, int amount) -> void {
+        // move all coordinates of the object by the given amount towards the given direction
+    }
+
+    func rotate(object o, string direction, int amount) -> void {
+        // rotate the object by the given amount towards the given direction
+    }
+    
+    func reflect(object o, string axis) -> void {
+        // reflect the object over the given axis
+    }
+
+    func scale(object o, int factor) -> void {
+        // scale the object by the given factor
+    }
+
+}
+
+def problem1 (7) {
+
+    object Background {
+        shape : [(x,y) | x <- [1..10], y <- [1..10)],
+        color : "black"
+    }
+
+    object back = Background(offset_x : 0, offset_y : 0);
+
+    object Dot {
+        shape : [(0,0)],
+        color : "white"
+    }
+
+
+    superobject Object {
+        shape : [Background(0,0), Line(3,0), LShape(6,6)],
+        color : "white"
+    }
+
+    superobject so = Object(x : 1, y : 2);
+
+
+    superobject so = two_dots(5, 5);
+    
+    superobject Object { 
+        shape : [Background, Line, LShape],
+    }
+
+    superobject so = Object(x : 1, y : 2);
+
+    object LShape {
+        shape : [(0,0), (1,0), (1,1)]
+        color : "blue"
+    }
+
+    superobject o = Object();
+
+    o.change_color("red");
+
+    example ex1 {
+
+        (stmt)*
+
+        input i1 (2,1) compound_stmt
+
+        (stmt)*
+
+        output o1 (2,2) compound_stmt
+
+        (stmt)*
+
+    }
+
+    solution s1 {
+
+        input s1 (2,1) {
+
+
+        }
+
+        output s2 (2,1) {
+            // Please write the code that will draw the object o
+        }
+
+
+    }
+
+}
