@@ -1,4 +1,5 @@
 mod expr;
+mod ast;
 
 use crate::lexer::{Lexer, SyntaxKind};
 use crate::syntax::{ErminiaLanguage, SyntaxNode};
