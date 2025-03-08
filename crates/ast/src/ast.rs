@@ -1,14 +1,26 @@
+#![allow(unused)]
+
 use crate::expr;
 use crate::stmt;
 
-pub enum ASTNode {
-    Stmt(Stmt),
-    Expr(Expr)
+pub type ASTError = String;
+
+pub trait StmtTrait {
+    fn sem(&self /*, Semantic Table */) -> Result<bool, ASTError>;
+    fn run(&self) -> Result<u32, ASTError>;
+    fn get_scope(&self);
+    fn set_scope(&self);
+}
+
+pub trait ExprTrait {
+    fn sem(&self /*, Semantic Table */) -> Result<bool, ASTError>;
+    fn eval(&self) -> Result<u32, ASTError>;
+    fn get_scope(&self);
+    fn set_scope(&self);
 }
 
 pub enum Stmt { 
     ObjectDecl(stmt::ObjectDecl),
-    SuperObjectDecl(stmt::SuperObjectDecl),
     ProblemDef(stmt::ProblemDef),
     Assignment(stmt::Assignment),
     ExampleDecl(stmt::ExampleDecl),
@@ -22,6 +34,5 @@ pub enum Expr {
     Int(expr::Int),
     String(expr::String),
     ObjectCall(expr::ObjectCall),
-    SuperObjectCall(expr::SuperObjectCall),
     FuncCall(expr::FuncCall),
 }

@@ -1,58 +1,74 @@
+#![allow(unused)]
+
+use crate::types;
+use crate::ast;
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct Param {
 
 }
 
-impl Param {
-
+impl ast::ExprTrait for Param {
+    fn sem(&self /*, Semantic Table */) -> Result<bool, ast::ASTError> { todo!() }
+    fn eval(&self) -> Result<u32, ast::ASTError> { todo!() }
+    fn get_scope(&self) { todo!() }
+    fn set_scope(&self) { todo!() }
 }
+
 
 // ====================
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct Int {
 
 }
 
-impl Int {
-
+impl ast::ExprTrait for Int {
+    fn sem(&self /*, Semantic Table */) -> Result<bool, ast::ASTError> { todo!() }
+    fn eval(&self) -> Result<u32, ast::ASTError> { todo!() }
+    fn get_scope(&self) { todo!() }
+    fn set_scope(&self) { todo!() }
 }
 
 // ====================
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct String {
 
 }
 
-impl String {
-
+impl ast::ExprTrait for String {
+    fn sem(&self /*, Semantic Table */) -> Result<bool, ast::ASTError> { todo!() }
+    fn eval(&self) -> Result<u32, ast::ASTError> { todo!() }
+    fn get_scope(&self) { todo!() }
+    fn set_scope(&self) { todo!() }
 }
 
 // ====================
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct ObjectCall {
 
 }
 
-impl ObjectCall {
-
+impl ast::ExprTrait for ObjectCall {
+    fn sem(&self /*, Semantic Table */) -> Result<bool, ast::ASTError> { todo!() }
+    fn eval(&self) -> Result<u32, ast::ASTError> { todo!() }
+    fn get_scope(&self) { todo!() }
+    fn set_scope(&self) { todo!() }
 }
 
 // ====================
 
-pub struct SuperObjectCall {
-
-}
-
-impl SuperObjectCall {
-
-}
-
-// ====================
-
+#[derive(Debug, PartialEq, Eq)]
 pub struct FuncCall {
 
 }
 
-impl FuncCall {
-
+impl ast::ExprTrait for FuncCall {
+    fn sem(&self /*, Semantic Table */) -> Result<bool, ast::ASTError> { todo!() }
+    fn eval(&self) -> Result<u32, ast::ASTError> { todo!() }
+    fn get_scope(&self) { todo!() }
+    fn set_scope(&self) { todo!() }
 }
 
