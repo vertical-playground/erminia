@@ -6,19 +6,19 @@ use crate::obj_utils::obj_call::{
     ObjectCall,
 };
 use crate::obj_utils::error::{
-    Error,
     OUError,
-    ObjUtilsResult
+    OUResult
 };
 use crate::obj_utils::iter::{
     CoordPrior,
     Range,
+    CoordIterPrior,
     CoordIter
 };
 
 enum ObjectShape {
     Point(Point),
-    CoordIter(CoordIter),
+    CoordIter(CoordIterPrior),
     ObjectCall(ObjectCall),
 }
 
@@ -28,7 +28,7 @@ impl ObjectShape {
     }
 
     fn new_coord_iter_const(coord: u32) -> Self {
-        ObjectShape::CoordIter(CoordIter::new_cost(coord))
+        ObjectShape::CoordIter(CoordIterPrior::new_const(coord))
     }
 
     fn new_coord_iter(
@@ -38,7 +38,7 @@ impl ObjectShape {
         r_incl: bool,
         prior: CoordPrior
     ) -> Self {
-        ObjectShape::CoordIter(CoordIter::new_range(left, right, l_incl, r_incl, prior))
+        ObjectShape::CoordIter(CoordIterPrior::new_range(left, right, prior))
     } 
 
     fn new_object(
@@ -70,7 +70,7 @@ impl ObjectShapeVec {
 
     fn remove_obj_at(&mut self, at: usize) -> Result<ObjectShape, OUError> {
         if at > self.len()-1 {
-            return Err(Error("dwadw"))
+            return Err(OUError::Error1)
         }
 
         let o: ObjectShape = self.vector.remove(at);
@@ -83,7 +83,7 @@ impl ObjectShapeVec {
 
         return match o {
             Some(o) => Ok(o),
-            None => Err(Error("dwdawd"))
+            None => Err(OUError::Error1)
         };
     }
 }
