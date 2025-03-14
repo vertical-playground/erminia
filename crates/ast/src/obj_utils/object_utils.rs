@@ -18,7 +18,7 @@ use crate::obj_utils::iter::{
 
 enum ObjectShape {
     Point(Point),
-    CoordIter(CoordIterPrior),
+    CoordIter(CoordIter),
     ObjectCall(ObjectCall),
 }
 
@@ -27,18 +27,11 @@ impl ObjectShape {
         ObjectShape::Point(Point::new(x,y))
     }
 
-    fn new_coord_iter_const(coord: u32) -> Self {
-        ObjectShape::CoordIter(CoordIterPrior::new_const(coord))
-    }
-
     fn new_coord_iter(
-        left: u32,
-        right: u32,
-        l_incl: bool,
-        r_incl: bool,
-        prior: CoordPrior
+        left: CoordIterPrior,
+        right: CoordIterPrior
     ) -> Self {
-        ObjectShape::CoordIter(CoordIterPrior::new_range(left, right, prior))
+        ObjectShape::CoordIter(CoordIter::new(left, right))
     } 
 
     fn new_object(
@@ -109,5 +102,31 @@ mod tests {
     fn check_to_string() {
         let c = CoordPrior::X;
         assert_eq!("x".to_string(), c.to_string());
+    }
+
+    #[test]
+    fn check_vector_shapes() {
+        let mut v: Vec<ObjectShape> = vec![];
+
+        v.push(ObjectShape::new_point(1,2));
+        v.push(ObjectShape::new_coord_iter(CoordIterPrior::new_const(1), CoordIterPrior::new_range(1,2,CoordPrior::Y)));
+        v.push(ObjectShape::new_object("object".to_string(), Offset::new_none_offset()));
+
+        for val in v {
+            match val {
+                ObjectShape::Point(p) => {
+                    let p: Point = p;
+                    assert_eq!(*p.get_left(), 1);
+                },
+                ObjectShape::CoordIter(i) => {
+                    let i: CoordIter = i;
+                    assert_eq!(*i.get_left().get_const().unwrap().get_value(), 1);
+                },
+                ObjectShape::ObjectCall(o) => {
+                    let o: ObjectCall = o;
+                    assert_eq!(*o.get_id(), "object".to_string());
+                },
+            }
+        }
     }
 }

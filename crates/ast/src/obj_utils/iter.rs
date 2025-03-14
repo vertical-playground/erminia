@@ -5,10 +5,10 @@ use crate::obj_utils::error::{
     OUResult
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum CoordPrior {
     X,
-    Y
+    Y,
 }
 
 impl std::string::ToString for CoordPrior {
@@ -32,7 +32,7 @@ impl std::str::FromStr for CoordPrior {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Const {
     value: u32
 }
@@ -47,7 +47,7 @@ impl Const {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Range {
     left: u32,
     right: u32,
@@ -87,60 +87,77 @@ pub enum CoordIterPrior {
 }
 
 impl CoordIterPrior {
-    pub fn new_const(value: u32) -> Self {
+    pub fn new_const(value: u32) -> CoordIterPrior {
         CoordIterPrior::Const(Const::new(value))
+    }
+
+    pub fn is_const(&self) -> bool {
+        match self {
+            CoordIterPrior::Const(v) => true,
+            CoordIterPrior::Range(range) => false
+        }
+    }
+
+    pub fn get_const(&self) -> OUResult<&Const> {
+        if self.is_const() {
+            match self {
+                CoordIterPrior::Const(v) => Ok(v),
+                _ => unreachable!()
+            }
+        } else {
+            Err(OUError::Error1)
+        }
     }
 
     pub fn new_range(
         left: u32,
         right: u32,
         prior: CoordPrior
-    ) -> Self {
+    ) -> CoordIterPrior {
         CoordIterPrior::Range(Range::new(left, right, prior))
     }
 
-    pub fn get<T>(&self) -> OUResult<&T>
-    where
-        T: 'static,
-    {
+    pub fn is_range(&self) -> bool {
         match self {
-            CoordIterPrior::Const(v) if std::any::TypeId::of::<T>() == std::any::TypeId::of::<Const>() => {
-                Ok(unsafe { &*(v as *const Const as *const T) }) // Safe cast since we checked the type
-            }
-            CoordIterPrior::Range(range) if std::any::TypeId::of::<T>() == std::any::TypeId::of::<Range>() => {
-                Ok(unsafe { &*(range as *const Range as *const T) })
-            }
-            _ => Err(OUError::Error1.into()), // Return an error if the type does not match
-        }
-    }
-
-    pub fn get_value(&self) -> OUResult<&Const> {
-        match self {
-            CoordIterPrior::Const(v) => Ok(v),
-            CoordIterPrior::Range(range) => Err(OUError::Error1)
+            CoordIterPrior::Const(v) => false,
+            CoordIterPrior::Range(range) => true
         }
     }
 
     pub fn get_range(&self) -> OUResult<&Range> {
-        match self {
-            CoordIterPrior::Range(range) => Ok(range),
-            CoordIterPrior::Const(v) => Err(OUError::Error1)
+        if self.is_range() {
+            match self {
+                CoordIterPrior::Range(r) => Ok(r),
+                _ => unreachable!()
+            }
+        } else {
+            Err(OUError::Error1)
         }
     }
 }
 
+#[derive(Debug)]
 pub struct CoordIter {
     left: CoordIterPrior,
     right: CoordIterPrior,
 }
 
 impl CoordIter {
-    pub fn new(left: CoordIterPrior, right: CoordIterPrior) -> Self {
-        CoordIter {
-            left,
-            right
-        }
+    pub fn new(
+        left: CoordIterPrior,
+        right: CoordIterPrior
+    ) -> Self {
+        CoordIter { left, right }
     }
+
+    pub fn get_left(&self) -> &CoordIterPrior {
+        &self.left
+    }
+
+    pub fn get_right(&self) -> &CoordIterPrior {
+        &self.right
+    }
+
 }
 
 #[cfg(test)]
@@ -149,36 +166,38 @@ mod tests {
 
     #[test]
     fn check_get() -> OUResult<()> {
-        let val = CoordIterPrior::new_const(1);
+        let val = Const::new(1);
 
-        let con = val.get::<Const>()?;
+        let con = val.get_value();
 
-        assert_eq!(*con.get_value(), 1);
+        assert_eq!(*con, 1);
 
         Ok(())
     }
 
     #[test]
-    fn check_get2() -> OUResult<()> {
-        let val = CoordIterPrior::new_range(1, 2, CoordPrior::X);
+    fn check_get2() {
+        let val = Range::new(1,2,CoordPrior::X);
 
-        let con = val.get::<Range>()?;
+        let con = val.get_prior();
 
-        assert_eq!(*con.get_prior(), CoordPrior::X);
-
-        Ok(())
+        assert_eq!(*con, CoordPrior::X);
     }
 
     #[test]
     fn check_get_value() -> OUResult<()> {
-        let left = CoordIterPrior::new_const(1);
-        let right = CoordIterPrior::new_range(1,2,CoordPrior::X);
+        let iter = CoordIter::new(
+            CoordIterPrior::new_const(1),
+            CoordIterPrior::new_range(1,2,CoordPrior::X)
+        );
 
-        let coorditer = CoordIter::new(left, right);
+        let left = iter.get_left();
 
-        let value = coorditer.left.get_value()?;
+        if left.is_const() {
+            let left = left.get_const()?;
 
-        assert_eq!(*value.get_value(), 1);
+            assert_eq!(*left.get_value(), 1);
+        }
 
         Ok(())
     }
@@ -186,9 +205,11 @@ mod tests {
     #[test]
     fn check_get_range() -> OUResult<()> {
         let right = CoordIterPrior::new_range(1,2,CoordPrior::X);
-        let value = &right.get_range()?; 
 
-        assert_eq!(*value.get_prior(), CoordPrior::X);
+        if right.is_range() {
+            let value = right.get_range()?; 
+            assert_eq!(*value.get_prior(), CoordPrior::X);
+        }
 
         Ok(())
     }
