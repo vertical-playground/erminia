@@ -1,11 +1,32 @@
-use logos::Logos;
+use logos::{Logos, Skip};
 use num_derive::{FromPrimitive, ToPrimitive};
 
-#[derive(Debug, Copy, Clone, FromPrimitive, Eq, Ord, Hash, PartialEq, PartialOrd, Logos, ToPrimitive)]
+fn newline_callback(lex: &mut logos::Lexer<SyntaxKind>) -> Skip {
+    lex.extras.line += 1;
+    lex.extras.span_end = lex.span().end;
+    Skip
+}
+
+#[derive(Default, Clone)]
+pub struct TokenLocation {
+    line: usize,
+    span_end: usize,
+}
+
+#[derive(Default, Debug, Clone, PartialEq)]
+pub enum LexingError {
+    #[default]
+    NonAcceptableCharacter,
+}
+
+#[derive(
+    Debug, Copy, Clone, FromPrimitive, Eq, Ord, Hash, PartialEq, PartialOrd, Logos, ToPrimitive,
+)]
+#[logos(skip r" +")]
+#[logos(subpattern digit = r"[0-9]")]
+#[logos(extras = TokenLocation)]
+#[logos(error = LexingError)]
 pub(crate) enum SyntaxKind {
-    Root,
-    #[regex(" +")]
-    Whitespace,
     #[token("def")]
     ProblemDef,
     #[token("let")]
@@ -46,10 +67,20 @@ pub(crate) enum SyntaxKind {
     SemiColon,
     #[token("..")]
     Range,
-    #[regex("[A-Za-z][A-Za-z0-9]+")]
-    Ident,
-    #[regex("[0-9]+")]
+    #[token("(*")]
+    CommentStart,
+    #[token("*)")]
+    CommentEnd,
+    #[token("\n", newline_callback)]
+    NewLine,
+    #[token("\t")]
+    Tab,
+    #[regex("(?&digit)+")]
     Number,
+    #[regex(r"[+-]?(?&digit)*\.(?&digit)+")]
+    Float,
+    #[regex("[a-zA-Z0-9]*")]
+    Ident,
 }
 
 #[derive(Clone)]
@@ -59,7 +90,7 @@ pub(crate) struct Lexer<'a> {
 
 impl<'a> Lexer<'a> {
     pub(crate) fn new(input: &'a str) -> Self {
-        Self { 
+        Self {
             inner: SyntaxKind::lexer(input),
         }
     }
@@ -70,28 +101,58 @@ impl<'a> Iterator for Lexer<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let kind = self.inner.next()?;
-        let text = self.inner.slice();
+        let input = self.inner.slice();
 
-        Some((kind.expect(""), text))
+        Some((kind.expect(""), input))
     }
-
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn check(
-        input: &str,
-        kind: Result<SyntaxKind, ()>
-        ) {
+    fn check(input: &str, kind: Result<SyntaxKind, ()>) {
         let mut lexer = Lexer::new(input);
         assert_eq!(lexer.next(), Some((kind.expect(""), input)));
     }
 
     #[test]
-    fn lex_spaces() {
-        check("  ", Ok(SyntaxKind::Whitespace));
+    #[should_panic]
+    fn lex_invalid() {
+        let input = "ƒ";
+        let mut lexer = Lexer::new(input);
+
+        lexer.next();
+    }
+
+    #[test]
+    fn lex_multiples() {
+        let input = "def ident12 { let }";
+        let mut lexer = Lexer::new(input);
+
+        let expected = vec![
+            (SyntaxKind::ProblemDef, "def"),
+            (SyntaxKind::Ident, "ident12"),
+            (SyntaxKind::LeftBrace, "{"),
+            (SyntaxKind::LetKwd, "let"),
+            (SyntaxKind::RightBrace, "}"),
+        ];
+
+        for (kind, slice) in expected {
+            assert_eq!(lexer.next(), Some((kind, slice)));
+        }
+
+        assert_eq!(lexer.next(), None);
+    }
+
+    #[test]
+    fn lex_nl() {
+        check("\n", Ok(SyntaxKind::NewLine))
+    }
+
+    #[test]
+    fn lex_tab() {
+        check("\t", Ok(SyntaxKind::Tab))
     }
 
     #[test]
@@ -183,7 +244,7 @@ mod tests {
     fn lex_colon() {
         check(":", Ok(SyntaxKind::Colon));
     }
-    
+
     #[test]
     fn lex_semicolon() {
         check(";", Ok(SyntaxKind::SemiColon));
@@ -198,12 +259,19 @@ mod tests {
     fn lex_identifier() {
         check("hello", Ok(SyntaxKind::Ident))
     }
-    
+
     #[test]
     fn lex_number() {
         check("123", Ok(SyntaxKind::Number))
     }
 
+    #[test]
+    fn lex_float() {
+        check("123.2232", Ok(SyntaxKind::Float))
+    }
 
+    #[test]
+    fn lex_float_no_int() {
+        check(".2232", Ok(SyntaxKind::Float))
+    }
 }
-
