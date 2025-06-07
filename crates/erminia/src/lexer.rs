@@ -1,10 +1,8 @@
-use logos::{Logos, Skip};
-use num_derive::{FromPrimitive, ToPrimitive};
+use logos::Logos;
 
-fn newline_callback(lex: &mut logos::Lexer<SyntaxKind>) -> Skip {
+fn newline_callback(lex: &mut logos::Lexer<SyntaxKind>) {
     lex.extras.line += 1;
     lex.extras.span_end = lex.span().end;
-    Skip
 }
 
 #[derive(Default, Clone)]
@@ -19,9 +17,7 @@ pub enum LexingError {
     NonAcceptableCharacter,
 }
 
-#[derive(
-    Debug, Copy, Clone, FromPrimitive, Eq, Ord, Hash, PartialEq, PartialOrd, Logos, ToPrimitive,
-)]
+#[derive(Debug, Clone, PartialEq, Logos)]
 #[logos(skip r" +")]
 #[logos(subpattern digit = r"[0-9]")]
 #[logos(extras = TokenLocation)]
@@ -76,7 +72,7 @@ pub(crate) enum SyntaxKind {
     #[token("\t")]
     Tab,
     #[regex("(?&digit)+")]
-    Number,
+    Number(f64),
     #[regex(r"[+-]?(?&digit)*\.(?&digit)+")]
     Float,
     #[regex("[a-zA-Z0-9]*")]
@@ -107,6 +103,26 @@ impl<'a> Iterator for Lexer<'a> {
     }
 }
 
+fn lex(source: &str) -> Result<Vec<SyntaxKind>, LexingError> {
+    let lexer = Lexer::new(source);
+    let mut tokens: Vec<SyntaxKind> = vec![];
+
+    for (token, span) in lexer.inner.spanned() {
+        match token {
+            Ok(token) => { 
+                tokens.push(token);
+                println!("{:?}", tokens);
+            }
+            Err(e) => {
+                println!("Error lexing @{:?}: {:?}", span, e);
+                return Err(e);
+            }
+        }
+    }
+
+    Ok(tokens)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -123,6 +139,21 @@ mod tests {
         let mut lexer = Lexer::new(input);
 
         lexer.next();
+    }
+
+    #[test]
+    fn lex_tokens() {
+        let input = "def ident12 { let }";
+        let res = lex(input);
+        let expected = vec![
+                SyntaxKind::ProblemDef,
+                SyntaxKind::Ident,
+                SyntaxKind::LeftBrace,
+                SyntaxKind::LetKwd,
+                SyntaxKind::RightBrace,
+        ];
+
+        assert_eq!(res.unwrap(), expected);
     }
 
     #[test]
