@@ -1,16 +1,15 @@
 use derive_more::From;
-use serde::Serialize;
 
-#[derive(Debug, Serialize, From)]
-pub enum Error {
+#[derive(Debug, From)]
+pub enum LexerError {
     TokenError,
     #[from]
     SerdeJson(serde_json::Error)
 }
 
-pub type Result<T> = core::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, LexerError>;
 
-impl std::fmt::Display for Error {
+impl std::fmt::Display for LexerError {
     fn fmt(
         &self,
         f: &mut std::fmt::Formatter<'_>
@@ -20,4 +19,4 @@ impl std::fmt::Display for Error {
 
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for LexerError {}

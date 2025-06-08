@@ -80,10 +80,12 @@ pub(crate) enum SyntaxKind {
 }
 
 #[derive(Clone)]
+#[allow(dead_code)]
 pub(crate) struct Lexer<'a> {
     inner: logos::Lexer<'a, SyntaxKind>,
 }
 
+#[allow(dead_code)]
 impl<'a> Lexer<'a> {
     pub(crate) fn new(input: &'a str) -> Self {
         Self {
@@ -103,6 +105,7 @@ impl<'a> Iterator for Lexer<'a> {
     }
 }
 
+#[allow(dead_code)]
 fn lex(source: &str) -> Result<Vec<SyntaxKind>, LexingError> {
     let lexer = Lexer::new(source);
     let mut tokens: Vec<SyntaxKind> = vec![];

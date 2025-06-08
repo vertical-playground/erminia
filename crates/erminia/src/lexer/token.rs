@@ -1,4 +1,4 @@
-use super::*;
+use crate::error::lexer_error::LexerError;
 
 pub enum TokenKind {
     ProblemDef,
@@ -31,9 +31,9 @@ pub enum TokenKind {
 }
 
 impl std::str::FromStr for TokenKind {
-    type Err = error::Error;
+    type Err = LexerError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-
+        todo!("{}",s);
     }
 }
