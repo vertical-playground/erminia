@@ -4,19 +4,15 @@ use derive_more::From;
 pub enum LexerError {
     TokenError,
     #[from]
-    SerdeJson(serde_json::Error)
+    SerdeJson(serde_json::Error),
 }
 
 pub type Result<T> = core::result::Result<T, LexerError>;
 
 impl std::fmt::Display for LexerError {
-    fn fmt(
-        &self,
-        f: &mut std::fmt::Formatter<'_>
-    ) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")
     }
-
 }
 
 impl std::error::Error for LexerError {}
