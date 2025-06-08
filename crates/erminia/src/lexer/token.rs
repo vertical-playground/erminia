@@ -34,6 +34,6 @@ impl std::str::FromStr for TokenKind {
     type Err = LexerError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        todo!("{}",s);
+        todo!("{}", s);
     }
 }
