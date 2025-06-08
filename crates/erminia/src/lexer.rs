@@ -72,7 +72,7 @@ pub(crate) enum SyntaxKind {
     #[token("\t")]
     Tab,
     #[regex("(?&digit)+")]
-    Number(f64),
+    Number,
     #[regex(r"[+-]?(?&digit)*\.(?&digit)+")]
     Float,
     #[regex("[a-zA-Z0-9]*")]
