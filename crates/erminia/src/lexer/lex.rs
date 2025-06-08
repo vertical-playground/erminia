@@ -112,7 +112,7 @@ fn lex(source: &str) -> Result<Vec<SyntaxKind>, LexingError> {
 
     for (token, span) in lexer.inner.spanned() {
         match token {
-            Ok(token) => { 
+            Ok(token) => {
                 tokens.push(token);
                 println!("{:?}", tokens);
             }
@@ -149,11 +149,11 @@ mod tests {
         let input = "def ident12 { let }";
         let res = lex(input);
         let expected = vec![
-                SyntaxKind::ProblemDef,
-                SyntaxKind::Ident,
-                SyntaxKind::LeftBrace,
-                SyntaxKind::LetKwd,
-                SyntaxKind::RightBrace,
+            SyntaxKind::ProblemDef,
+            SyntaxKind::Ident,
+            SyntaxKind::LeftBrace,
+            SyntaxKind::LetKwd,
+            SyntaxKind::RightBrace,
         ];
 
         assert_eq!(res.unwrap(), expected);
