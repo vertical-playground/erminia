@@ -7,7 +7,7 @@ pub enum LexerError {
     SerdeJson(serde_json::Error),
 }
 
-pub type Result<T> = core::result::Result<T, LexerError>;
+pub type LexerResult<T> = core::result::Result<T, LexerError>;
 
 impl std::fmt::Display for LexerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
