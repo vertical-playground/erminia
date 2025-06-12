@@ -18,9 +18,9 @@ impl Identifier for &str {
                 }
 
                 false
-            },
+            }
 
-            None => false
+            None => false,
         }
     }
 }
@@ -29,7 +29,7 @@ impl Identifier for &str {
 //                            TokenKind Enum                                           //
 // ====================================================================================//
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenKind {
     Error,
     ProblemDef,
@@ -75,7 +75,7 @@ impl std::str::FromStr for TokenKind {
             "example" => TokenKind::ProblemExample,
             "input" => TokenKind::ProblemInput,
             "output" => TokenKind::ProblemOutput,
-            "==" => TokenKind::Equals,
+            "=" => TokenKind::Equals,
             "(" => TokenKind::LeftPar,
             ")" => TokenKind::RightPar,
             "[" => TokenKind::LeftBracket,
@@ -90,11 +90,16 @@ impl std::str::FromStr for TokenKind {
             "*)" => TokenKind::CommentEnd,
             "\n" => TokenKind::NewLine,
             "\t" => TokenKind::Tab,
-            _ => { 
-                if s.parse::<i64>().is_ok() { TokenKind::Int }
-                else if s.parse::<f64>().is_ok() { TokenKind::Float }
-                else if s.is_valid_indentifier() { TokenKind::Ident }
-                else { return Err(LexerError::TokenError) }
+            _ => {
+                if s.parse::<i64>().is_ok() {
+                    TokenKind::Int
+                } else if s.parse::<f64>().is_ok() {
+                    TokenKind::Float
+                } else if s.is_valid_indentifier() {
+                    TokenKind::Ident
+                } else {
+                    return Err(LexerError::TokenError);
+                }
             }
         };
 
@@ -106,9 +111,10 @@ impl std::str::FromStr for TokenKind {
 //                                  Position Struct                                    //
 // ====================================================================================//
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 struct Position {
-    x: usize, 
-    y: usize
+    x: usize,
+    y: usize,
 }
 
 impl Default for Position {
@@ -127,12 +133,14 @@ impl Position {
 //                                  Token Struct                                       //
 // ====================================================================================//
 
+#[warn(unused)]
+#[derive(Debug, PartialEq)]
 pub struct Token<'a> {
     kind: TokenKind,
     text: &'a str,
     size: usize,
     start: Position,
-    end: Position
+    end: Position,
 }
 
 impl Default for Token<'_> {
@@ -141,27 +149,61 @@ impl Default for Token<'_> {
             kind: TokenKind::Tab,
             text: "",
             size: 0,
-            start: Position::new(0,0),
-            end: Position::new(0,0)
+            start: Position::new(0, 0),
+            end: Position::new(0, 0),
         }
     }
 }
 
+#[warn(dead_code)]
 impl Token<'_> {
-    fn new<'a>(
+    fn new<'a>(kind: TokenKind, text: &'a str, row: usize, col: usize) -> Token<'a> {
+        let size = text.len();
+        let start = Position::new(col, row);
+        let end = Position::new(col + size, row);
+        Token {
+            kind: kind,
+            text: text,
+            size: size,
+            start: start,
+            end: end,
+        }
+    }
+
+    fn new_verbose<'a>(
         kind: TokenKind,
         text: &'a str,
         size: usize,
         start: Position,
-        end: Position
+        end: Position,
     ) -> Token<'a> {
         Token {
             kind: kind,
             text: text,
             size: size,
             start: start,
-            end: end
+            end: end,
         }
+    }
+
+    fn get_kind(&self) -> TokenKind {
+        self.kind
+    }
+
+    fn get_text(&self) -> &str {
+        self.text
+    }
+
+    fn get_size(&self) -> usize {
+        self.size
+    }
+
+    fn get_start(&self) -> Position {
+        self.start
+    }
+
+    fn get_end(&self) -> Position {
+        self.end
     }
 }
 
@@ -172,156 +214,345 @@ impl Token<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::str::FromStr;
     use crate::error::lexer_error::LexerResult;
-    
-    fn check_eq(input: &str, expected: LexerResult<TokenKind>) {
+    use std::str::FromStr;
+
+    // Token Kind Tests
+    fn check_tk_eq(input: &str, expected: LexerResult<TokenKind>) {
         let actual = TokenKind::from_str(input);
         assert_eq!(expected.expect(""), actual.expect(""));
     }
 
-    fn check_ne(input: &str, not_expected: LexerResult<TokenKind>) {
+    fn check_tk_ne(input: &str, not_expected: LexerResult<TokenKind>) {
         let actual = TokenKind::from_str(input);
         assert_ne!(not_expected.expect(""), actual.expect(""));
     }
 
     #[test]
-    fn test_ident() {
-        check_eq("dwad123", Ok(TokenKind::Ident))
+    fn test_tk_ident() {
+        check_tk_eq("dwad123", Ok(TokenKind::Ident))
     }
 
     #[test]
-    fn test_not_ident() {
-        check_ne("123", Ok(TokenKind::Ident))
+    fn test_tk_not_ident() {
+        check_tk_ne("123", Ok(TokenKind::Ident))
     }
 
     #[test]
-    fn test_int() {
-        check_eq("123", Ok(TokenKind::Int))
+    fn test_tk_int() {
+        check_tk_eq("123", Ok(TokenKind::Int))
     }
 
     #[test]
-    fn test_float() {
-        check_eq("123.123", Ok(TokenKind::Float))
+    fn test_tk_float() {
+        check_tk_eq("123.123", Ok(TokenKind::Float))
     }
 
     #[test]
-    fn test_def() {
-        check_eq("def", Ok(TokenKind::ProblemDef))
+    fn test_tk_def() {
+        check_tk_eq("def", Ok(TokenKind::ProblemDef))
     }
 
     #[test]
-    fn test_let() {
-        check_eq("let", Ok(TokenKind::LetKwd))
+    fn test_tk_let() {
+        check_tk_eq("let", Ok(TokenKind::LetKwd))
     }
 
     #[test]
-    fn test_object() {
-        check_eq("object", Ok(TokenKind::Object))
+    fn test_tk_object() {
+        check_tk_eq("object", Ok(TokenKind::Object))
     }
 
     #[test]
-    fn test_superobject() {
-        check_eq("superobject", Ok(TokenKind::SuperObject))
+    fn test_tk_superobject() {
+        check_tk_eq("superobject", Ok(TokenKind::SuperObject))
     }
 
     #[test]
-    fn test_shape() {
-        check_eq("shape", Ok(TokenKind::ObjectShape))
+    fn test_tk_shape() {
+        check_tk_eq("shape", Ok(TokenKind::ObjectShape))
     }
 
     #[test]
-    fn test_color() {
-        check_eq("color", Ok(TokenKind::ObjectColor))
+    fn test_tk_color() {
+        check_tk_eq("color", Ok(TokenKind::ObjectColor))
     }
 
     #[test]
-    fn test_example() {
-        check_eq("example", Ok(TokenKind::ProblemExample))
+    fn test_tk_example() {
+        check_tk_eq("example", Ok(TokenKind::ProblemExample))
     }
 
     #[test]
-    fn test_input() {
-        check_eq("input", Ok(TokenKind::ProblemInput))
+    fn test_tk_input() {
+        check_tk_eq("input", Ok(TokenKind::ProblemInput))
     }
 
     #[test]
-    fn test_output() {
-        check_eq("output", Ok(TokenKind::ProblemOutput))
+    fn test_tk_output() {
+        check_tk_eq("output", Ok(TokenKind::ProblemOutput))
     }
 
     #[test]
-    fn test_equals() {
-        check_eq("==", Ok(TokenKind::Equals))
+    fn test_tk_equals() {
+        check_tk_eq("=", Ok(TokenKind::Equals))
     }
 
     #[test]
-    fn test_leftpar() {
-        check_eq("(", Ok(TokenKind::LeftPar))
+    fn test_tk_leftpar() {
+        check_tk_eq("(", Ok(TokenKind::LeftPar))
     }
 
     #[test]
-    fn test_rightpar() {
-        check_eq(")", Ok(TokenKind::RightPar))
+    fn test_tk_rightpar() {
+        check_tk_eq(")", Ok(TokenKind::RightPar))
     }
 
     #[test]
-    fn test_leftbracket() {
-        check_eq("[", Ok(TokenKind::LeftBracket))
+    fn test_tk_leftbracket() {
+        check_tk_eq("[", Ok(TokenKind::LeftBracket))
     }
 
     #[test]
-    fn test_rightbracket() {
-        check_eq("]", Ok(TokenKind::RightBracket))
+    fn test_tk_rightbracket() {
+        check_tk_eq("]", Ok(TokenKind::RightBracket))
     }
 
     #[test]
-    fn test_leftbrace() {
-        check_eq("{", Ok(TokenKind::LeftBrace))
+    fn test_tk_leftbrace() {
+        check_tk_eq("{", Ok(TokenKind::LeftBrace))
     }
 
     #[test]
-    fn test_rightbrace() {
-        check_eq("}", Ok(TokenKind::RightBrace))
+    fn test_tk_rightbrace() {
+        check_tk_eq("}", Ok(TokenKind::RightBrace))
     }
 
     #[test]
-    fn test_comma() {
-        check_eq(",", Ok(TokenKind::Comma))
+    fn test_tk_comma() {
+        check_tk_eq(",", Ok(TokenKind::Comma))
     }
 
     #[test]
-    fn test_colon() {
-        check_eq(";", Ok(TokenKind::Colon))
+    fn test_tk_colon() {
+        check_tk_eq(";", Ok(TokenKind::Colon))
     }
 
     #[test]
-    fn test_semicolon() {
-        check_eq(":", Ok(TokenKind::SemiColon))
+    fn test_tk_semicolon() {
+        check_tk_eq(":", Ok(TokenKind::SemiColon))
     }
 
     #[test]
-    fn test_range() {
-        check_eq("..", Ok(TokenKind::Range))
+    fn test_tk_range() {
+        check_tk_eq("..", Ok(TokenKind::Range))
     }
 
     #[test]
-    fn test_commentstart() {
-        check_eq("(*", Ok(TokenKind::CommentStart))
+    fn test_tk_commentstart() {
+        check_tk_eq("(*", Ok(TokenKind::CommentStart))
     }
 
     #[test]
-    fn test_commentend() {
-        check_eq("*)", Ok(TokenKind::CommentEnd))
+    fn test_tk_commentend() {
+        check_tk_eq("*)", Ok(TokenKind::CommentEnd))
     }
 
     #[test]
-    fn test_newline() {
-        check_eq("\n", Ok(TokenKind::NewLine))
+    fn test_tk_newline() {
+        check_tk_eq("\n", Ok(TokenKind::NewLine))
     }
 
     #[test]
-    fn test_tab() {
-        check_eq("\t", Ok(TokenKind::Tab))
+    fn test_tk_tab() {
+        check_tk_eq("\t", Ok(TokenKind::Tab))
+    }
+
+    // Token Tests
+    fn check_t_eq(input: &str, expected: LexerResult<Token>) {
+        let kind = TokenKind::from_str(input).expect("");
+        let actual = Token::new(kind, input, 0, 0);
+
+        assert_eq!(actual, expected.expect(""));
+    }
+
+    #[test]
+    fn test_t_tab() {
+        check_t_eq(
+            "\t",
+            Ok(Token {
+                kind: TokenKind::Tab,
+                text: "\t",
+                size: "\t".len(),
+                start: Position::new(0, 0),
+                end: Position::new("\t".len(), 0),
+            }),
+        )
+    }
+
+    #[test]
+    fn test_t_def() {
+        check_t_eq(
+            "def",
+            Ok(Token {
+                kind: TokenKind::ProblemDef,
+                text: "def",
+                size: "def".len(),
+                start: Position::new(0, 0),
+                end: Position::new("def".len(), 0),
+            }),
+        );
+    }
+
+    #[test]
+    fn test_t_let() {
+        check_t_eq(
+            "let",
+            Ok(Token {
+                kind: TokenKind::LetKwd,
+                text: "let",
+                size: "let".len(),
+                start: Position::new(0, 0),
+                end: Position::new("let".len(), 0),
+            }),
+        );
+    }
+
+    #[test]
+    fn test_t_ident() {
+        check_t_eq(
+            "dwad123",
+            Ok(Token {
+                kind: TokenKind::Ident,
+                text: "dwad123",
+                size: "dwad123".len(),
+                start: Position::new(0, 0),
+                end: Position::new("dwad123".len(), 0),
+            }),
+        );
+    }
+
+    #[test]
+    fn test_t_int() {
+        check_t_eq(
+            "123",
+            Ok(Token {
+                kind: TokenKind::Int,
+                text: "123",
+                size: "123".len(),
+                start: Position::new(0, 0),
+                end: Position::new("123".len(), 0),
+            }),
+        );
+    }
+
+    #[test]
+    fn test_t_float() {
+        check_t_eq("123.123", Ok(TokenKind::Float))
+    }
+
+    #[test]
+    fn test_t_object() {
+        check_t_eq("object", Ok(TokenKind::Object))
+    }
+
+    #[test]
+    fn test_t_superobject() {
+        check_t_eq("superobject", Ok(TokenKind::SuperObject))
+    }
+
+    #[test]
+    fn test_t_shape() {
+        check_t_eq("shape", Ok(TokenKind::ObjectShape))
+    }
+
+    #[test]
+    fn test_t_color() {
+        check_t_eq("color", Ok(TokenKind::ObjectColor))
+    }
+
+    #[test]
+    fn test_t_example() {
+        check_t_eq("example", Ok(TokenKind::ProblemExample))
+    }
+
+    #[test]
+    fn test_t_input() {
+        check_t_eq("input", Ok(TokenKind::ProblemInput))
+    }
+
+    #[test]
+    fn test_t_output() {
+        check_t_eq("output", Ok(TokenKind::ProblemOutput))
+    }
+
+    #[test]
+    fn test_t_equals() {
+        check_t_eq("=", Ok(TokenKind::Equals))
+    }
+
+    #[test]
+    fn test_t_leftpar() {
+        check_t_eq("(", Ok(TokenKind::LeftPar))
+    }
+
+    #[test]
+    fn test_t_rightpar() {
+        check_t_eq(")", Ok(TokenKind::RightPar))
+    }
+
+    #[test]
+    fn test_t_leftbracket() {
+        check_t_eq("[", Ok(TokenKind::LeftBracket))
+    }
+
+    #[test]
+    fn test_t_rightbracket() {
+        check_t_eq("]", Ok(TokenKind::RightBracket))
+    }
+
+    #[test]
+    fn test_t_leftbrace() {
+        check_t_eq("{", Ok(TokenKind::LeftBrace))
+    }
+
+    #[test]
+    fn test_t_rightbrace() {
+        check_t_eq("}", Ok(TokenKind::RightBrace))
+    }
+
+    #[test]
+    fn test_t_comma() {
+        check_t_eq(",", Ok(TokenKind::Comma))
+    }
+
+    #[test]
+    fn test_t_colon() {
+        check_t_eq(";", Ok(TokenKind::Colon))
+    }
+
+    #[test]
+    fn test_t_semicolon() {
+        check_t_eq(":", Ok(TokenKind::SemiColon))
+    }
+
+    #[test]
+    fn test_t_range() {
+        check_t_eq("..", Ok(TokenKind::Range))
+    }
+
+    #[test]
+    fn test_t_commentstart() {
+        check_t_eq("(*", Ok(TokenKind::CommentStart))
+    }
+
+    #[test]
+    fn test_t_commentend() {
+        check_t_eq("*)", Ok(TokenKind::CommentEnd))
+    }
+
+    #[test]
+    fn test_t_newline() {
+        check_t_eq("\n", Ok(TokenKind::NewLine))
     }
 }

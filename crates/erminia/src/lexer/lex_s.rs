@@ -1,68 +1,91 @@
+use std::collections::HashSet;
+use std::str::Chars;
+
+use crate::error::lexer_error::LexerError;
+
+static KEYWORDS: [&str; 9] = [
+    "def",
+    "let",
+    "object",
+    "superobject",
+    "shape",
+    "color",
+    "example",
+    "input",
+    "output",
+];
+
+static OPERATORS: [&str; 13] = [
+    "=", "(", ")", "[", "]", "{", "}", ",", ";", ":", "..", "(*", "*)",
+];
+
+#[warn(dead_code)]
 pub struct Lexer<'a> {
-    content: &'a str,
+    content: Chars<'a>,
+    current: Option<char>,
     cursor: usize,
-    line: usize, 
+    line: usize,
+    keywords: HashSet<&'a str>,
+    operators: HashSet<&'a str>,
 }
 
 impl Default for Lexer<'_> {
     fn default() -> Self {
+        let keywords: HashSet<&str> = KEYWORDS.into_iter().collect::<HashSet<&str>>();
+
+        let operators: HashSet<&str> = OPERATORS.into_iter().collect::<HashSet<&str>>();
+
+        let chars = "".chars();
+
         Lexer {
-            content: "",
+            content: chars,
+            current: None,
             cursor: 0,
-            line: 0
+            line: 0,
+            keywords: keywords,
+            operators: operators,
         }
     }
 }
 
 impl<'a> Lexer<'a> {
+    fn new(content: &'a str) -> Lexer<'a> {
+        let keywords: HashSet<&str> = KEYWORDS.into_iter().collect::<HashSet<&str>>();
 
-    fn new(
-        content: &'a str,
-    ) -> Lexer<'a> {
+        let operators: HashSet<&str> = OPERATORS.into_iter().collect::<HashSet<&str>>();
+
+        let chars = content.chars();
+
         Lexer {
-            content: content, 
+            content: chars,
+            current: None,
             cursor: 0,
-            line: 0
+            line: 0,
+            keywords: keywords,
+            operators: operators,
+        }
+    }
+
+    fn advance(&mut self) -> Option<char> {
+        self.current = self.content.next();
+        self.current
+    }
+
+    fn consume_whitespace(&mut self) {
+        while let Some(c) = self.current {
+            if !c.is_whitespace() {
+                break;
+            }
+
+            self.advance();
         }
     }
 
     fn set_content(&mut self, content: &'a str) {
-        self.content = content;
+        self.content = content.chars();
     }
 
-    fn get_content(&self) -> &'a str {
-        self.content 
+    fn get_cursor(&self) -> usize {
+        self.cursor
     }
-
-    fn next_char(&mut self) -> Option<char> {
-        let next = self.content[self.get_cursor()..].chars().next();
-        match next {
-            Some(n) => {
-                self.cursor += 1;
-                Some(n)
-            },
-            None => None
-        }
-    }
-
-    fn isspace(&mut self, c: char) -> bool {
-        c == ' '
-    }
-
-    fn starts_with<'b>(&mut self, prefix: &'b str) -> bool {
-        let prefix_len: usize = prefix.len();
-
-        if prefix_len == 0 {
-            return false;
-        }
-
-        if self.get_cursor() + prefix_len - 1 >= self.get_content().len() {
-            return false;
-        }
-
-        false
-    }
-
-    fn get_cursor(&self) -> usize { self.cursor }
-
 }
