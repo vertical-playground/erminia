@@ -60,6 +60,7 @@ pub enum TokenKind {
     Int,
     Float,
     Ident,
+    String,
     EOF,
 }
 
@@ -94,6 +95,7 @@ impl fmt::Display for TokenKind {
             TokenKind::Int => "[INT]",
             TokenKind::Float => "[FLOAT]",
             TokenKind::Ident => "[IDENT]",
+            TokenKind::String => "[STRING]",
             TokenKind::EOF => "[EOF]"
         };
 
