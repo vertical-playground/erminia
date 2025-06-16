@@ -22,6 +22,10 @@ static OPERATORS: [&str; 26] = [
     "]", "{", "}", ",", ";", ":", "..", "(*", "*)",
 ];
 
+// ====================================================================================//
+//                            Positional Offset Struct                                 //
+// ====================================================================================//
+
 #[derive(Clone, Copy)]
 pub struct PositionalOffset {
     pos: usize, 
@@ -81,6 +85,10 @@ impl PositionalOffset {
     }
 }
 
+// ====================================================================================//
+//                                  Lexer Struct                                       //
+// ====================================================================================//
+
 #[warn(dead_code)]
 pub struct Lexer<'input> {
     content: &'input str,
@@ -136,9 +144,13 @@ impl<'input> Lexer<'input> {
 
         text = &text[pos.pos..];
 
-        let (token, pos) = get_next_token_kind(text, KEYWORDS.to_vec(), pos)?;
+        let (token, next_pos) = get_next_token_kind(text, KEYWORDS.to_vec(), pos)?;
 
-        Ok((token, pos))
+        let tok = &text[pos.pos..next_pos.pos - 1];
+
+        println!("{}", tok);
+
+        Ok((token, next_pos))
     }
 
     fn set_po(&mut self, pos: PositionalOffset) {
@@ -165,18 +177,18 @@ fn trim_starting_whitespace(
     while let Some(c) = chars.next() {
         match c {
             ' ' | '\t' => {
-                pos.pos += 1;
-                pos.cursor += 1;
+                pos.increment_pos(1);
+                pos.increment_cursor(1);
             } ,
             '\n' => {
-                pos.pos += 1;
-                pos.line += 1;
-                pos.cursor = 0;
+                pos.increment_pos(1);
+                pos.increment_line(1);
+                pos.reset_cursor();
             }
             '\r' if matches!(chars.next(), Some('\n')) => {
-                pos.pos += 2;
-                pos.line += 1;
-                pos.cursor = 0;
+                pos.increment_pos(2);
+                pos.increment_line(1);
+                pos.reset_cursor();
             }
             _ => break
         }
@@ -332,12 +344,13 @@ fn get_next_token_kind(
             pos.increment_pos(1);
             TokenKind::Colon
         },
-        Some('"') =>  { 
+        Some('\"') =>  { 
             let mut flag = false;
+            println!("it's a string");
 
             while let Some(ch) = chars.next() {
                 match ch {
-                    '"' => {
+                    '\"' => {
                         pos.increment_pos(1);
                         flag = true;
                         break
@@ -372,4 +385,15 @@ fn get_next_token_kind(
 mod test {
     use super::*;
 
+    #[test]
+    fn test_stuffs() -> LexerResult<()> {
+        let text = "      \"dawdawdwd\" ";
+        let mut lex = Lexer::new(text);
+
+        let res = lex.advance()?;
+
+        assert_eq!(TokenKind::String, res.0);
+
+        Ok(())
+    }
 }
