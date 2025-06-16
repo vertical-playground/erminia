@@ -33,6 +33,19 @@ impl Identifier for &str {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenKind {
     Error,
+    Plus,
+    Minus,
+    Multi,
+    Div,
+    FlatDiv,
+    Mod,
+    Greater,
+    Lesser,
+    ShiftLeft,
+    ShiftRight,
+    Member,
+    Not,
+    NotEquals,
     ProblemDef,
     LetKwd,
     Object,
@@ -77,6 +90,19 @@ impl fmt::Display for TokenKind {
             TokenKind::ProblemExample => "example",
             TokenKind::ProblemInput => "input",
             TokenKind::ProblemOutput => "output",
+            TokenKind::Plus => "+",
+            TokenKind::Minus => "-",
+            TokenKind::Multi => "*",
+            TokenKind::Div => "/",
+            TokenKind::FlatDiv => "//",
+            TokenKind::Mod => "%",
+            TokenKind::Greater => ">",
+            TokenKind::Lesser => "<",
+            TokenKind::ShiftLeft => "<<",
+            TokenKind::ShiftRight => ">>",
+            TokenKind::Member => ".",
+            TokenKind::Not => "!",
+            TokenKind::NotEquals => "!",
             TokenKind::Equals => "=",
             TokenKind::LeftPar => "(",
             TokenKind::RightPar => ")",
@@ -99,6 +125,7 @@ impl fmt::Display for TokenKind {
             TokenKind::EOF => "[EOF]"
         };
 
+
         fmt::Display::fmt(s, f)
     }
 
@@ -118,6 +145,19 @@ impl std::str::FromStr for TokenKind {
             "example" => TokenKind::ProblemExample,
             "input" => TokenKind::ProblemInput,
             "output" => TokenKind::ProblemOutput,
+            "+" => TokenKind::Plus,
+            "-" => TokenKind::Minus,
+            "*" => TokenKind::Multi,
+            "/" => TokenKind::Div,
+            "//" => TokenKind::FlatDiv,
+            "%" => TokenKind::Mod,
+            "<<" => TokenKind::ShiftRight,
+            ">>" => TokenKind::ShiftLeft,
+            ">" => TokenKind::Greater,
+            "<" => TokenKind::Lesser,
+            "." => TokenKind::Member,
+            "!" => TokenKind::Not,
+            "!=" => TokenKind::NotEquals,
             "=" => TokenKind::Equals,
             "(" => TokenKind::LeftPar,
             ")" => TokenKind::RightPar,

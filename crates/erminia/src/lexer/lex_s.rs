@@ -16,8 +16,10 @@ static KEYWORDS: [&str; 9] = [
     "output",
 ];
 
-static OPERATORS: [&str; 13] = [
-    "=", "(", ")", "[", "]", "{", "}", ",", ";", ":", "..", "(*", "*)",
+static OPERATORS: [&str; 26] = [
+    "+", "-", "*", "/", "//", "%", "<<", ">>",
+    "<", ">", ".", "!", "!=", "=", "(", ")", "[",
+    "]", "{", "}", ",", ";", ":", "..", "(*", "*)",
 ];
 
 #[derive(Clone, Copy)]
@@ -126,7 +128,7 @@ impl<'input> Lexer<'input> {
         }
     }
     
-    fn advance(&mut self) -> (TokenKind, PositionalOffset) {
+    fn advance(&mut self) -> LexerResult<(TokenKind, PositionalOffset)> {
         let mut text = self.content;
         let mut pos = PositionalOffset::new_from_po(self.get_po());
 
@@ -134,34 +136,12 @@ impl<'input> Lexer<'input> {
 
         text = &text[pos.pos..];
 
-        let (token, pos) = check_for_symbols(text, pos)
-            .unwrap_or((TokenKind::Error, pos));
+        let (token, pos) = get_next_token_kind(text, KEYWORDS.to_vec(), pos)?;
 
-        if !token.eq(&TokenKind::Error) {
-            self.set_positional_offset(pos);
-            return (token, pos);
-        }
-
-        let (token, pos) = check_for_kwds(text, KEYWORDS.to_vec(), pos)
-            .unwrap_or((TokenKind::Error, pos));
-
-        if !token.eq(&TokenKind::Error) {
-            self.set_positional_offset(pos);
-            return (token, pos);
-        }
-
-        let (token, pos) = check_for_string(text, pos)
-            .unwrap_or((TokenKind::Error, pos));
-
-        if !token.eq(&TokenKind::Error) {
-            self.set_positional_offset(pos);
-            return (token, pos);
-        }
-
-        (TokenKind::EOF, pos)
+        Ok((token, pos))
     }
 
-    fn set_positional_offset(&mut self, pos: PositionalOffset) {
+    fn set_po(&mut self, pos: PositionalOffset) {
         self.cursor = pos.cursor;
         self.position = pos.pos;
         self.line = pos.line;
@@ -205,50 +185,11 @@ fn trim_starting_whitespace(
     pos
 }
 
-fn check_for_string(
-    text: &str,
-    mut pos: PositionalOffset
-) -> Option<(TokenKind, PositionalOffset)> {
-    let mut chars = text.chars();
-
-    let token: TokenKind = match chars.next() {
-        Some('"') =>  { 
-            while let Some(ch) = chars.next() {
-                match ch {
-                    '"' => {
-                        pos.increment_pos(1);
-                        break
-                    }
-                    '\n' => {
-                        pos.increment_pos(1);
-                        pos.increment_cursor(1);
-                        pos.reset_cursor();
-                    }
-                    _ => {
-                        pos.increment_pos(1);
-                    }
-
-                }
-            };
-
-            TokenKind::String
-        },
-        _ => TokenKind::Error
-
-    };
-
-    if token.eq(&TokenKind::Error) {
-        return None
-    };
-
-    Some((TokenKind::String, pos))
-}
-
-fn check_for_kwds(
+fn get_next_token_kind(
     mut text: &str,
     keywords: Vec<&str>,
     mut pos: PositionalOffset
-) -> Option<(TokenKind, PositionalOffset)> {
+) -> LexerResult<(TokenKind, PositionalOffset)> {
 
     for &kwd in &keywords {
         if text.starts_with(kwd) {
@@ -258,28 +199,77 @@ fn check_for_kwds(
 
             if matches!(chars.next(), Some(' ')) {
                 pos.pos += 1;
-                return Some((TokenKind::from_str(kwd).expect(""), pos));
+                return Ok((TokenKind::from_str(kwd).expect(""), pos));
             }
         }
     }
 
-    None
-}
-
-fn check_for_symbols(
-    text: &str,
-    mut pos: PositionalOffset
-) -> Option<(TokenKind, PositionalOffset)> {
     let mut chars = text.chars();
 
     let token = match chars.next() {
+        Some('+') => {
+            pos.increment_pos(1);
+            TokenKind::Plus
+        },
+        Some('-') => {
+            pos.increment_pos(1);
+            TokenKind::Minus
+        },
+        Some('*') => {
+            let token = if matches!(chars.next(), Some(')')) {
+                pos.increment_pos(2);
+                TokenKind::CommentEnd
+            } else {
+                pos.increment_pos(1);
+                TokenKind::Multi
+            };
+
+            token
+        },
+        Some('/') => {
+            let token = if matches!(chars.next(), Some('/')) {
+                pos.increment_pos(2);
+                TokenKind::FlatDiv
+            } else {
+                pos.increment_pos(1);
+                TokenKind::Div
+            };
+
+            token
+        },
+        Some('%') => {
+            pos.increment_pos(1);
+            TokenKind::Mod
+        },
+        Some('<') => {
+            let token = if matches!(chars.next(), Some('<')) {
+                pos.increment_pos(2);
+                TokenKind::ShiftLeft
+            } else {
+                pos.increment_pos(1);
+                TokenKind::Lesser
+            };
+
+            token
+        },
+        Some('>') => {
+            let token = if matches!(chars.next(), Some('>')) {
+                pos.increment_pos(2);
+                TokenKind::ShiftRight
+            } else {
+                pos.increment_pos(1);
+                TokenKind::Greater
+            };
+
+            token
+        },
         Some('=') => {
             pos.increment_pos(1);
             TokenKind::Equals
         }
         Some('(') => {
             let token = if matches!(chars.next(), Some('*')) {
-                pos.increment_pos(1);
+                pos.increment_pos(2);
                 TokenKind::CommentStart
             } else {
                 pos.increment_pos(1);
@@ -294,7 +284,18 @@ fn check_for_symbols(
                 TokenKind::Range
             } else {
                 pos.increment_pos(1);
-                TokenKind::Error
+                TokenKind::Member
+            };
+
+            token
+        },
+        Some('!') => {
+            let token = if matches!(chars.next(), Some('=')) {
+                pos.increment_pos(2);
+                TokenKind::NotEquals
+            } else {
+                pos.increment_pos(1);
+                TokenKind::Not
             };
 
             token
@@ -330,30 +331,41 @@ fn check_for_symbols(
         Some(':') => {
             pos.increment_pos(1);
             TokenKind::Colon
-
         },
-        Some('*') => {
-            let token = if matches!(chars.next(), Some(')')) {
-                pos.increment_pos(1);
-                TokenKind::CommentEnd
-            } else {
-                pos.increment_pos(1);
-                TokenKind::Error
+        Some('"') =>  { 
+            let mut flag = false;
+
+            while let Some(ch) = chars.next() {
+                match ch {
+                    '"' => {
+                        pos.increment_pos(1);
+                        flag = true;
+                        break
+                    }
+                    '\n' => {
+                        pos.increment_pos(1);
+                        pos.increment_line(1);
+                        pos.reset_cursor();
+                    }
+                    _ => {
+                        pos.increment_pos(1);
+                    }
+                }
             };
 
-            token
-        }
+            if flag {
+                TokenKind::String
+            } else {
+                TokenKind::EOF
+            }
+
+        },
         _ => {
-            pos.increment_pos(1);
-            TokenKind::Error
+            return Err(LexerError::TokenError);
         } 
     };
 
-    if token.eq(&TokenKind::Error) {
-        return None;
-    }
-
-    Some((token, pos))
+    Ok((token, pos))
 }
 
 #[cfg(test)]
