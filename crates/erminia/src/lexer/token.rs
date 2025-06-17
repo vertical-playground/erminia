@@ -240,7 +240,7 @@ impl Default for Token<'_> {
 
 #[warn(dead_code)]
 impl Token<'_> {
-    fn new<'a>(kind: TokenKind, text: &'a str, row: usize, col: usize) -> Token<'a> {
+    pub fn new<'a>(kind: TokenKind, text: &'a str, row: usize, col: usize) -> Token<'a> {
         let size = text.len();
         let start = Position::new(col, row);
         let end = Position::new(col + size, row);

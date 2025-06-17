@@ -135,8 +135,25 @@ impl<'input> Lexer<'input> {
             operators: operators,
         }
     }
+
+    fn lex(&mut self) -> LexerResult<Vec<Token>> {
+        let tokens: Vec<Token> = vec![];
+
+        loop {
+            let (token, pos) = self.advance()?;
+
+            tokens.append(token);
+
+            if token.eq(&TokenKind::EOF) {
+                break
+            }
+
+        }
+
+        Ok(tokens)
+    }
     
-    fn advance(&mut self) -> LexerResult<(TokenKind, PositionalOffset)> {
+    fn advance(&mut self) -> LexerResult<(Token, PositionalOffset)> {
         let mut text = self.content;
         let mut pos = PositionalOffset::new_from_po(self.get_po());
 
@@ -144,11 +161,12 @@ impl<'input> Lexer<'input> {
 
         text = &text[pos.pos..];
 
-        let (token, next_pos) = get_next_token_kind(text, KEYWORDS.to_vec(), pos)?;
+        let (kind, next_pos) = get_next_token_kind(text, KEYWORDS.to_vec(), pos)?;
 
-        let tok = &text[pos.pos..next_pos.pos - 1];
+        let lexeme = &text[pos.pos..next_pos.pos - 1];
 
-        println!("{}", tok);
+        // This is incorrect, have to fix positioning
+        let token = Token::new(kind, lexeme, pos.pos, next_pos.pos - 1);
 
         Ok((token, next_pos))
     }
