@@ -217,7 +217,7 @@ impl Position {
 // ====================================================================================//
 
 #[warn(unused)]
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Token<'a> {
     kind: TokenKind,
     text: &'a str,
@@ -238,7 +238,6 @@ impl Default for Token<'_> {
     }
 }
 
-#[warn(dead_code)]
 impl Token<'_> {
     pub fn new<'a>(kind: TokenKind, text: &'a str, row: usize, col: usize) -> Token<'a> {
         let size = text.len();
@@ -269,23 +268,23 @@ impl Token<'_> {
         }
     }
 
-    fn get_kind(&self) -> TokenKind {
+    pub fn get_kind(&self) -> TokenKind {
         self.kind
     }
 
-    fn get_text(&self) -> &str {
+    pub fn get_text(&self) -> &str {
         self.text
     }
 
-    fn get_size(&self) -> usize {
+    pub fn get_size(&self) -> usize {
         self.size
     }
 
-    fn get_start(&self) -> Position {
+    pub fn get_start(&self) -> Position {
         self.start
     }
 
-    fn get_end(&self) -> Position {
+    pub fn get_end(&self) -> Position {
         self.end
     }
 }

@@ -2,6 +2,7 @@ use derive_more::From;
 
 #[derive(Debug, From)]
 pub enum LexerError {
+    NoTokenFoundError,
     TokenError,
     #[from]
     SerdeJson(serde_json::Error),
