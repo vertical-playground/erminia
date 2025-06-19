@@ -102,7 +102,7 @@ impl fmt::Display for TokenKind {
             TokenKind::ShiftRight => ">>",
             TokenKind::Member => ".",
             TokenKind::Not => "!",
-            TokenKind::NotEquals => "!",
+            TokenKind::NotEquals => "!=",
             TokenKind::Equals => "=",
             TokenKind::LeftPar => "(",
             TokenKind::RightPar => ")",
@@ -195,7 +195,7 @@ impl std::str::FromStr for TokenKind {
 // ====================================================================================//
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-struct Position {
+pub struct Position {
     x: usize,
     y: usize,
 }
@@ -209,6 +209,14 @@ impl Default for Position {
 impl Position {
     fn new(x: usize, y: usize) -> Position {
         Position { x: x, y: y }
+    }
+}
+
+impl std::fmt::Display for Position {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = format!("Position: (x: {}, y: {})", self.x, self.y);
+
+        fmt::Display::fmt(&s, f)
     }
 }
 
@@ -286,6 +294,21 @@ impl Token<'_> {
 
     pub fn get_end(&self) -> Position {
         self.end
+    }
+}
+
+impl std::fmt::Display for Token<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+
+        let s = format!("Token: (kind: {}, text: {}, size: {}, start: {}, end: {})",
+            self.kind,
+            self.text,
+            self.size,
+            self.start,
+            self.end
+        );
+
+        fmt::Display::fmt(&s,f)
     }
 }
 

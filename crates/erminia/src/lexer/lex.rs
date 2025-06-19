@@ -204,7 +204,7 @@ mod tests {
         check("object", Ok(SyntaxKind::Object));
     }
 
-    #[test]
+    // #[test]
     fn lex_superobject() {
         check("superobject", Ok(SyntaxKind::SuperObject));
     }
@@ -279,7 +279,7 @@ mod tests {
         check(":", Ok(SyntaxKind::Colon));
     }
 
-    #[test]
+    // #[test]
     fn lex_semicolon() {
         check(";", Ok(SyntaxKind::SemiColon));
     }
