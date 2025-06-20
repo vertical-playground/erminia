@@ -122,13 +122,11 @@ impl fmt::Display for TokenKind {
             TokenKind::Float => "[FLOAT]",
             TokenKind::Ident => "[IDENT]",
             TokenKind::String => "[STRING]",
-            TokenKind::EOF => "[EOF]"
+            TokenKind::EOF => "[EOF]",
         };
-
 
         fmt::Display::fmt(s, f)
     }
-
 }
 
 impl std::str::FromStr for TokenKind {
@@ -207,7 +205,7 @@ impl Default for Position {
 }
 
 impl Position {
-    fn new(x: usize, y: usize) -> Position {
+    pub fn new(x: usize, y: usize) -> Position {
         Position { x: x, y: y }
     }
 }
@@ -299,16 +297,12 @@ impl Token<'_> {
 
 impl std::fmt::Display for Token<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-
-        let s = format!("Token: (kind: {}, text: {}, size: {}, start: {}, end: {})",
-            self.kind,
-            self.text,
-            self.size,
-            self.start,
-            self.end
+        let s = format!(
+            "Token: (kind: {}, text: {}, size: {}, start: {}, end: {})",
+            self.kind, self.text, self.size, self.start, self.end
         );
 
-        fmt::Display::fmt(&s,f)
+        fmt::Display::fmt(&s, f)
     }
 }
 
@@ -553,263 +547,329 @@ mod tests {
 
     #[test]
     fn test_t_float() {
-        check_t_eq("123.123", Ok(Token {
-            kind: TokenKind::Float,
-            text: "123.123",
-            size: "123.123".len(),
-            start: Position::new(0, 0),
-            end: Position::new("123.123".len(), 0),
-        }));
+        check_t_eq(
+            "123.123",
+            Ok(Token {
+                kind: TokenKind::Float,
+                text: "123.123",
+                size: "123.123".len(),
+                start: Position::new(0, 0),
+                end: Position::new("123.123".len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_object() {
-        check_t_eq("object", Ok(Token {
-            kind: TokenKind::Object,
-            text: "object",
-            size: "object".len(),
-            start: Position::new(0, 0),
-            end: Position::new("object".len(), 0),
-        }));
+        check_t_eq(
+            "object",
+            Ok(Token {
+                kind: TokenKind::Object,
+                text: "object",
+                size: "object".len(),
+                start: Position::new(0, 0),
+                end: Position::new("object".len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_superobject() {
         let kwd = "superobject";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::SuperObject,
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::SuperObject,
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_shape() {
         let kwd = "shape";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_color() {
         let kwd = "color";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_example() {
         let kwd = "example";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_input() {
         let kwd = "input";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_output() {
         let kwd = "output";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_equals() {
         let kwd = "=";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
-   }
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
+    }
 
     #[test]
     fn test_t_leftpar() {
         let kwd = "(";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_rightpar() {
         let kwd = ")";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_leftbracket() {
         let kwd = "[";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_rightbracket() {
         let kwd = "]";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_leftbrace() {
         let kwd = "{";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_rightbrace() {
         let kwd = "}";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_comma() {
         let kwd = ",";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_colon() {
         let kwd = ";";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_semicolon() {
         let kwd = ";";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_range() {
         let kwd = "..";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_commentstart() {
         let kwd = "(*";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_commentend() {
         let kwd = "*)";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 
     #[test]
     fn test_t_newline() {
         let kwd = "\n";
-        check_t_eq(kwd, Ok(Token {
-            kind: TokenKind::from_str(kwd).expect(""),
-            text: kwd,
-            size: kwd.len(),
-            start: Position::new(0, 0),
-            end: Position::new(kwd.len(), 0),
-        }));
+        check_t_eq(
+            kwd,
+            Ok(Token {
+                kind: TokenKind::from_str(kwd).expect(""),
+                text: kwd,
+                size: kwd.len(),
+                start: Position::new(0, 0),
+                end: Position::new(kwd.len(), 0),
+            }),
+        );
     }
 }
