@@ -162,36 +162,23 @@ impl<'input> Lexer<'input> {
 fn advance(text: &str, po: PositionalOffset) -> LexerResult<(Token, PositionalOffset)> {
     let pos = trim_starting_whitespace(text, po);
 
-    println!("[ADVANCE] started here: {}", pos);
-
     let (kind, next_pos) = get_next_token_kind(text, KEYWORDS.to_vec(), pos).expect("oopsie");
-
-    println!("[ADVANCE] ended here: {}", next_pos);
 
     let lexeme = &text[pos.pos..next_pos.pos];
 
-    println!("[ADVANCE] lexeme: |{}|", lexeme);
-    // This is incorrect, have to fix positioning
-    // let token = Token::new(kind, lexeme, pos.pos, next_pos.pos - 1);
     let token = Token::new(kind, lexeme, pos.get_line(), pos.get_cursor());
-
-    println!("[NEW TOKEN] result: {} {}", token, next_pos);
 
     Ok((token, next_pos))
 }
 
 fn trim_starting_whitespace(text: &str, mut pos: PositionalOffset) -> PositionalOffset {
-
     let starting_text = &text[pos.pos..];
-
-    println!("[WHITESPACE TRIM] before trim: {}", text);
 
     let mut chars = starting_text.chars();
 
     while let Some(c) = chars.next() {
         match c {
             ' ' | '\t' => {
-                println!("Should be here");
                 pos.increment_pos(1);
                 pos.increment_cursor(1);
             }
@@ -208,8 +195,6 @@ fn trim_starting_whitespace(text: &str, mut pos: PositionalOffset) -> Positional
             _ => break,
         }
     }
-
-    println!("[WHITESPACE TRIM] after trim: {}", &text[pos.pos..]);
 
     pos
 }
@@ -232,20 +217,15 @@ fn get_next_token_kind(
     // It's a keywords
     for &kwd in &keywords {
         if starting_text.starts_with(kwd) {
-            println!("[NEXT TOKEN] matched a keyword '{}'", kwd);
             pos.increment_pos(kwd.len());
-            println!("[NEXT TOKEN] position after kwd match: {}", pos.get_position());
-            println!("[NEXT TOKEN] kwd len: '{}'", kwd.len());
             let next_text = match slice_from_position(text, pos) {
                 Ok(text) => text,
                 Err(_) => {
                     return Ok((TokenKind::from_str(kwd).expect(""), pos));
                 }
             };
-            println!("[NEXT TOKEN] second print: {}", next_text);
             let mut chars = next_text.chars();
             let c = chars.next();
-            println!("[NEXT TOKEN] The next character is:\"{:?}\"", c);
             if matches!(c, Some(' ')) {
                 return Ok((TokenKind::from_str(kwd).expect(""), pos));
             } else if matches!(c, None) {
@@ -257,20 +237,31 @@ fn get_next_token_kind(
     // TODO: It's an ident
     // TODO: It's numerical
 
-
     // It's a symbol
     let mut chars = starting_text.chars();
 
-    println!("[NEXT TOKEN] third print: {:?}", chars);
-
     let token = match chars.next() {
         Some('+') => {
-            pos.increment_pos(1);
-            TokenKind::Plus
+            let token = if matches!(chars.next(), Some('+')) {
+                pos.increment_pos(2);
+                TokenKind::Increment
+            } else {
+                pos.increment_pos(1);
+                TokenKind::Plus
+            };
+
+            token
         }
         Some('-') => {
-            pos.increment_pos(1);
-            TokenKind::Minus
+            let token = if matches!(chars.next(), Some('-')) {
+                pos.increment_pos(2);
+                TokenKind::Decrement
+            } else {
+                pos.increment_pos(1);
+                TokenKind::Minus
+            };
+
+            token
         }
         Some('*') => {
             let token = if matches!(chars.next(), Some(')')) {
@@ -391,7 +382,6 @@ fn get_next_token_kind(
         }
         Some('\"') => {
             let mut flag = false;
-            println!("it's a string");
 
             while let Some(ch) = chars.next() {
                 match ch {
@@ -434,102 +424,47 @@ mod test {
         assert_eq!(expected, actual);
     }
 
-    fn check_advance(text: &str, expected: Token) {
-        let lexer = Lexer::new(text);
-
-        let (token, _) = advance(text, lexer.get_po()).expect("Something went wrong with advance");
-
-        assert_eq!(token, expected);
-    }
-
-    // #[test]
-    fn test_advance_def_leftpar_comment_start() {
-        let text = "def ((*";
-        let lexer = Lexer::new(text);
-        let (token, next_pos) =
-            advance(text, lexer.get_po()).expect("Something went wrong with advance");
-
-        println!("{}", token);
-
-        assert_eq!(token, Token::new(TokenKind::ProblemDef, "def", 0, 0));
-
-        let (token, next_pos) = advance(text, next_pos).expect("Something went wrong with advance");
-
-        assert_eq!(token, Token::new(TokenKind::LeftPar, "(", 0, 0));
-
-        let (token, _) = advance(text, next_pos).expect("Something went wrong with advance");
-
-        assert_eq!(token, Token::new(TokenKind::CommentStart, "(*", 0, 0));
-    }
-
-    // #[test]
-    fn test_advance_leftpar() {
-        let text = "   (";
-        check_advance(text, Token::new(TokenKind::LeftPar, "(", 0, 0));
-    }
-
-    // #[test]
-    fn test_advance_def() {
-        let text = "   def";
-
-        check_advance(text, Token::new(TokenKind::ProblemDef, "def", 0, 0))
-    }
-
-    // #[test]
-    fn test_advance_comment_start() {
-        let text = "   (*";
-
-        check_advance(text, Token::new(TokenKind::CommentStart, "(*", 0, 0))
-    }
-
-    // #[test]
-    fn test_lex_def_def() {
-        let text = "def def";
+    #[test]
+    fn test_lex_def_leftpar_comment_start() {
+        let text = "   def ((*!!=";
 
         let expected: Vec<Token> = vec![
-            Token::new(TokenKind::ProblemDef, "def", 0, 0),
-            Token::new(TokenKind::ProblemDef, "def", 0, 0),
-            Token::new(TokenKind::EOF, "", 0, 0),
-        ];
-
-        let _ = check_lex(text, expected);
-    }
-
-    // #[test]
-    fn test_stuffs_2() {
-        let text = " def    (*)";
-
-        let expected: Vec<Token> = vec![
-            Token::new(TokenKind::ProblemDef, "def", 0, 0),
-            Token::new(TokenKind::CommentStart, "(*", 0, 0),
-            Token::new(TokenKind::RightPar, ")", 0, 0),
-            Token::new(TokenKind::EOF, "", 0, 0),
+            Token::new(TokenKind::ProblemDef, "def", 1, 3),
+            Token::new(TokenKind::LeftPar, "(", 1, 7),
+            Token::new(TokenKind::CommentStart, "(*", 1, 8),
+            Token::new(TokenKind::Not, "!", 1, 10),
+            Token::new(TokenKind::NotEquals, "!=", 1, 11),
+            Token::new(TokenKind::EOF, "", 1, 13),
         ];
 
         let _ = check_lex(text, expected);
     }
 
     #[test]
-    fn test_lex_def_leftpar_comment_start() {
-        let text = "   def ((*!!=";
-
-        println!("[TEST] text: {}", text);
+    fn test_lex_multiple_pluses() {
+        let text = "++++ ++ ++ +";
 
         let expected: Vec<Token> = vec![
-            Token::new(TokenKind::ProblemDef, "def", 0, 1),
-            Token::new(TokenKind::LeftPar, "(", 0, 1),
-            Token::new(TokenKind::CommentStart, "(*", 0, 1),
-            Token::new(TokenKind::Not, "!", 0, 1),
-            Token::new(TokenKind::NotEquals, "!=", 0, 1),
-            Token::new(TokenKind::EOF, "", 0, 1),
+            Token::new(TokenKind::Increment, "++", 1, 0),
+            Token::new(TokenKind::Increment, "++", 1, 2),
+            Token::new(TokenKind::Increment, "++", 1, 5),
+            Token::new(TokenKind::Increment, "++", 1, 8),
+            Token::new(TokenKind::Plus, "+", 1, 11),
+            Token::new(TokenKind::EOF, "", 1, 12),
         ];
 
         let _ = check_lex(text, expected);
     }
 
+    #[test]
+    fn test_lex_string() {
+        let text = " \"poustiiiii hliaaaa \" ";
 
+        let expected: Vec<Token> = vec![
+            Token::new(TokenKind::String, "\"poustiiiii hliaaaa \"", 1, 1),
+            Token::new(TokenKind::EOF, "", 1, 22),
+        ];
 
-
-
-
+        let _ = check_lex(text, expected);
+    }
 }
