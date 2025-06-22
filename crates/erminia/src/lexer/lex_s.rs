@@ -162,7 +162,7 @@ impl<'input> Lexer<'input> {
 fn advance(text: &str, po: PositionalOffset) -> LexerResult<(Token, PositionalOffset)> {
     let pos = trim_starting_whitespace(text, po);
 
-    let (kind, next_pos) = get_next_token_kind(text, KEYWORDS.to_vec(), pos).expect("oopsie");
+    let (kind, next_pos) = get_next_token_kind(text, pos)?;
 
     let lexeme = &text[pos.pos..next_pos.pos];
 
@@ -207,37 +207,42 @@ fn slice_from_position(text: &str, pos: PositionalOffset) -> LexerResult<&str> {
     }
 }
 
-fn get_next_token_kind(
+fn get_next_keyword(
     text: &str,
     keywords: Vec<&str>,
     mut pos: PositionalOffset,
-) -> LexerResult<(TokenKind, PositionalOffset)> {
+) -> Option<(TokenKind, PositionalOffset)> {
     let starting_text = &text[pos.pos..];
 
-    // It's a keywords
     for &kwd in &keywords {
         if starting_text.starts_with(kwd) {
             pos.increment_pos(kwd.len());
             let next_text = match slice_from_position(text, pos) {
                 Ok(text) => text,
                 Err(_) => {
-                    return Ok((TokenKind::from_str(kwd).expect(""), pos));
+                    return Some((TokenKind::from_str(kwd).expect(""), pos));
                 }
             };
             let mut chars = next_text.chars();
             let c = chars.next();
             if matches!(c, Some(' ')) {
-                return Ok((TokenKind::from_str(kwd).expect(""), pos));
+                return Some((TokenKind::from_str(kwd).expect(""), pos));
             } else if matches!(c, None) {
-                return Ok((TokenKind::from_str(kwd).expect(""), pos));
+                return Some((TokenKind::from_str(kwd).expect(""), pos));
             }
         }
+
     }
 
-    // TODO: It's an ident
-    // TODO: It's numerical
+    None
+}
 
-    // It's a symbol
+fn get_next_symbol(
+    text: &str,
+    mut pos: PositionalOffset
+) -> LexerResult<Option<(TokenKind, PositionalOffset)>> {
+    let starting_text = &text[pos.pos..];
+
     let mut chars = starting_text.chars();
 
     let token = match chars.next() {
@@ -380,12 +385,13 @@ fn get_next_token_kind(
             pos.increment_pos(1);
             TokenKind::Colon
         }
-        Some('\"') => {
+        Some('"') => {
+            pos.increment_pos(1);
             let mut flag = false;
 
             while let Some(ch) = chars.next() {
                 match ch {
-                    '\"' => {
+                    '"' => {
                         pos.increment_pos(1);
                         flag = true;
                         break;
@@ -404,13 +410,56 @@ fn get_next_token_kind(
             if flag {
                 TokenKind::String
             } else {
-                TokenKind::EOF
+                return Err(LexerError::UnfinishedStringError);
             }
         }
         _ => TokenKind::EOF,
     };
 
-    Ok((token, pos))
+    Ok(Some((token, pos)))
+}
+
+fn get_next_ident(
+    text: &str, 
+    mut pos: PositionalOffset
+) -> Option<(TokenKind, PositionalOffset)> {
+    Some((TokenKind::EOF, pos))
+}
+
+fn get_next_numeric(
+    text: &str, 
+    mut pos: PositionalOffset
+) -> Option<(TokenKind, PositionalOffset)> {
+    Some((TokenKind::EOF, pos))
+}
+
+fn get_next_token_kind(
+    text: &str,
+    pos: PositionalOffset,
+) -> LexerResult<(TokenKind, PositionalOffset)> {
+
+    
+    // it's a keywords
+    if let Some((token, pos)) = get_next_keyword(text, KEYWORDS.to_vec(), pos) {
+        return Ok((token, pos));
+    }
+
+    // it's a symbol
+    if let Some((token, pos)) = get_next_symbol(text, pos)? {
+        return Ok((token, pos))
+    }
+    
+    // it's a ident
+    // if let Some((token, pos)) = get_next_ident(text, pos) {
+    //     return Ok((token, pos));
+    // }
+
+    // it's a numeric 
+    // if let Some((token, pos)) = get_next_numeric(text, pos) {
+    //     return Ok((token, pos));
+    // }
+
+    return Ok((TokenKind::EOF, pos))
 }
 
 #[cfg(test)]
@@ -457,12 +506,25 @@ mod test {
     }
 
     #[test]
-    fn test_lex_string() {
-        let text = " \"poustiiiii hliaaaa \" ";
+    #[should_panic]
+    fn test_lex_unfinished_string() {
+        let text = "\"hello";
 
         let expected: Vec<Token> = vec![
-            Token::new(TokenKind::String, "\"poustiiiii hliaaaa \"", 1, 1),
-            Token::new(TokenKind::EOF, "", 1, 22),
+            Token::new(TokenKind::String, "\"poustiiiii hliaaaa\"", 1, 0),
+            Token::new(TokenKind::EOF, "", 1, 20),
+        ];
+
+        let _ = check_lex(text, expected);
+    }
+
+    #[test]
+    fn test_lex_string() {
+        let text = "\"poustiiiii hliaaaa\"";
+
+        let expected: Vec<Token> = vec![
+            Token::new(TokenKind::String, "\"poustiiiii hliaaaa\"", 1, 0),
+            Token::new(TokenKind::EOF, "", 1, 20),
         ];
 
         let _ = check_lex(text, expected);
