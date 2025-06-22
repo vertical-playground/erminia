@@ -18,7 +18,7 @@ fn main() -> io::Result<()> {
         let tokens = lexer.lex();
 
         println!("{:?}", tokens);
-        
+
         // parse to AST Tree
         // check semantics
         // generate json

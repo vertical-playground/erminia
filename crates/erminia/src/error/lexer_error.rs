@@ -23,7 +23,7 @@ impl std::error::Error for LexerError {}
 impl From<std::io::Error> for LexerError {
     fn from(value: std::io::Error) -> Self {
         match value {
-            _ => LexerError::OpenFileFailureToken
+            _ => LexerError::OpenFileFailureToken,
         }
     }
 }
