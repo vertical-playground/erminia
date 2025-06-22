@@ -124,7 +124,7 @@ impl<'input> Lexer<'input> {
         }
     }
 
-    fn lex(&mut self) -> LexerResult<Vec<Token>> {
+    pub fn lex(&mut self) -> LexerResult<Vec<Token>> {
         let mut tokens: Vec<Token> = Vec::new();
 
         loop {
@@ -384,13 +384,13 @@ fn get_next_symbol(
         }
         Some('"') => {
             pos.increment_pos(1);
-            let mut flag = false;
+            let mut string_flag = false;
 
             while let Some(ch) = chars.next() {
                 match ch {
                     '"' => {
                         pos.increment_pos(1);
-                        flag = true;
+                        string_flag = true;
                         break;
                     }
                     '\n' => {
@@ -399,12 +399,16 @@ fn get_next_symbol(
                         pos.reset_cursor();
                     }
                     _ => {
-                        pos.increment_pos(1);
+                        if ch == '"' && string_flag {
+                            break
+                        } else {
+                            pos.increment_pos(1);
+                        }
                     }
                 }
             }
 
-            if flag {
+            if string_flag {
                 TokenKind::String
             } else {
                 return Err(LexerError::UnfinishedStringError);
@@ -607,7 +611,6 @@ mod test {
         ];
 
         let _ = check_lex(text, expected);
-
     }
 
     #[test]
