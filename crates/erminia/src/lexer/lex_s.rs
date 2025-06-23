@@ -16,10 +16,10 @@ static KEYWORDS: [&str; 9] = [
     "output",
 ];
 
-static OPERATORS: [&str; 26] = [
-    "+", "-", "*", "/", "//", "%", "<<", ">>", "<", ">", ".", "!", "!=", "=", "(", ")", "[", "]",
-    "{", "}", ",", ";", ":", "..", "(*", "*)",
-];
+// static OPERATORS: [&str; 26] = [
+//     "+", "-", "*", "/", "//", "%", "<<", ">>", "<", ">", ".", "!", "!=", "=", "(", ")", "[", "]",
+//     "{", "}", ",", ";", ":", "..", "(*", "*)",
+// ];
 
 // ====================================================================================//
 //                            Positional Offset Struct                                 //
@@ -177,12 +177,12 @@ fn trim_starting_whitespace(text: &str, mut pos: PositionalOffset) -> Positional
             ' ' | '\t' => {
                 pos.increment_pos(1);
                 pos.increment_cursor(1);
-            },
+            }
             '\n' => {
                 pos.increment_pos(1);
                 pos.increment_line(1);
                 pos.reset_cursor();
-            },
+            }
             '\r' if matches!(chars.next(), Some('\n')) => {
                 pos.increment_pos(2);
                 pos.increment_line(1);
@@ -208,7 +208,6 @@ fn get_next_keyword(
     keywords: Vec<&str>,
     mut pos: PositionalOffset,
 ) -> Option<(TokenKind, PositionalOffset)> {
-
     let starting_text = &text[pos.pos..];
 
     for &kwd in &keywords {
@@ -228,7 +227,6 @@ fn get_next_keyword(
                 return Some((TokenKind::from_str(kwd).expect(""), pos));
             }
         }
-
     }
 
     None
@@ -236,7 +234,7 @@ fn get_next_keyword(
 
 fn get_next_symbol(
     text: &str,
-    mut pos: PositionalOffset
+    mut pos: PositionalOffset,
 ) -> LexerResult<Option<(TokenKind, PositionalOffset)>> {
     let starting_text = &text[pos.pos..];
 
@@ -400,7 +398,7 @@ fn get_next_symbol(
                     }
                     _ => {
                         if ch == '"' && string_flag {
-                            break
+                            break;
                         } else {
                             pos.increment_pos(1);
                         }
@@ -420,11 +418,7 @@ fn get_next_symbol(
     Ok(Some((token, pos)))
 }
 
-fn get_next_ident(
-    text: &str, 
-    mut pos: PositionalOffset
-) -> Option<(TokenKind, PositionalOffset)> {
-
+fn get_next_ident(text: &str, mut pos: PositionalOffset) -> Option<(TokenKind, PositionalOffset)> {
     let starting_text = &text[pos.pos..];
 
     let mut chars = starting_text.chars();
@@ -433,7 +427,6 @@ fn get_next_ident(
 
     match first_char {
         Some(c) => {
-
             if !c.is_alphabetic() {
                 return None;
             }
@@ -444,20 +437,20 @@ fn get_next_ident(
                 if c.is_alphanumeric() | (c == '_') {
                     pos.increment_pos(1);
                 } else {
-                    break
+                    break;
                 }
             }
 
             Some((TokenKind::Ident, pos))
         }
 
-        None => return None
+        None => return None,
     }
 }
 
 fn get_next_numeric(
-    text: &str, 
-    mut pos: PositionalOffset
+    text: &str,
+    mut pos: PositionalOffset,
 ) -> Option<(TokenKind, PositionalOffset)> {
     let starting_text = &text[pos.pos..];
     let starting_pos = pos.pos;
@@ -469,7 +462,6 @@ fn get_next_numeric(
 
     match first_char {
         Some(c) => {
-
             if !c.is_numeric() {
                 return None;
             }
@@ -485,20 +477,20 @@ fn get_next_numeric(
                     float_flag = true;
                     pos.increment_pos(1);
                 } else if c == '.' && float_flag == true {
-                    break
+                    break;
                 } else {
-                    break
+                    break;
                 }
             }
 
             if !float_flag {
-                return Some((TokenKind::Int, pos))
+                return Some((TokenKind::Int, pos));
             }
 
             Some((TokenKind::Float, pos))
         }
 
-        None => return None
+        None => return None,
     }
 }
 
@@ -506,28 +498,27 @@ fn get_next_token_kind(
     text: &str,
     pos: PositionalOffset,
 ) -> LexerResult<(TokenKind, PositionalOffset)> {
-    
     // it's a keywords
     if let Some((token, pos)) = get_next_keyword(text, KEYWORDS.to_vec(), pos) {
         return Ok((token, pos));
     }
-    
+
     // it's a ident
     if let Some((token, pos)) = get_next_ident(text, pos) {
         return Ok((token, pos));
     }
 
-    // it's a numeric 
+    // it's a numeric
     if let Some((token, pos)) = get_next_numeric(text, pos) {
         return Ok((token, pos));
     }
 
     // it's a symbol
     if let Some((token, pos)) = get_next_symbol(text, pos)? {
-        return Ok((token, pos))
+        return Ok((token, pos));
     }
 
-    return Ok((TokenKind::EOF, pos))
+    return Ok((TokenKind::EOF, pos));
 }
 
 #[cfg(test)]
@@ -602,7 +593,6 @@ mod test {
     fn test_float_member_int() {
         let text = "123.123.123";
 
-
         let expected: Vec<Token> = vec![
             Token::new(TokenKind::Float, "123.123", 1, 0),
             Token::new(TokenKind::Member, ".", 1, 7),
@@ -616,7 +606,6 @@ mod test {
     #[test]
     fn test_int_floats() {
         let text = "123.123 123";
-
 
         let expected: Vec<Token> = vec![
             Token::new(TokenKind::Float, "123.123", 1, 0),
@@ -656,5 +645,4 @@ mod test {
 
         let _ = check_lex(text, expected);
     }
-
 }
