@@ -77,11 +77,13 @@ pub enum TokenKind {
     Ident,
     String,
     EOF,
+    START,
 }
 
 impl fmt::Display for TokenKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match *self {
+            TokenKind::START => "[START]",
             TokenKind::Error => "[ERROR]",
             TokenKind::ProblemDef => "def",
             TokenKind::LetKwd => "let",
@@ -138,6 +140,7 @@ impl std::str::FromStr for TokenKind {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let token = match s {
+            "[START]" => TokenKind::START,
             "def" => TokenKind::ProblemDef,
             "let" => TokenKind::LetKwd,
             "object" => TokenKind::Object,
@@ -241,7 +244,7 @@ pub struct Token<'a> {
 impl Default for Token<'_> {
     fn default() -> Self {
         Token {
-            kind: TokenKind::Tab,
+            kind: TokenKind::START,
             text: "",
             size: 0,
             start: Position::new(0, 0),
@@ -264,21 +267,21 @@ impl Token<'_> {
         }
     }
 
-    fn new_verbose<'a>(
-        kind: TokenKind,
-        text: &'a str,
-        size: usize,
-        start: Position,
-        end: Position,
-    ) -> Token<'a> {
-        Token {
-            kind: kind,
-            text: text,
-            size: size,
-            start: start,
-            end: end,
-        }
-    }
+    // fn new_verbose<'a>(
+    //     kind: TokenKind,
+    //     text: &'a str,
+    //     size: usize,
+    //     start: Position,
+    //     end: Position,
+    // ) -> Token<'a> {
+    //     Token {
+    //         kind: kind,
+    //         text: text,
+    //         size: size,
+    //         start: start,
+    //         end: end,
+    //     }
+    // }
 
     pub fn get_kind(&self) -> TokenKind {
         self.kind

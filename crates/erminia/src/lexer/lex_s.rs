@@ -43,13 +43,13 @@ impl Default for PositionalOffset {
 }
 
 impl PositionalOffset {
-    fn new(pos: usize, cursor: usize, line: usize) -> PositionalOffset {
-        PositionalOffset {
-            pos: pos,
-            cursor: cursor,
-            line: line,
-        }
-    }
+    // fn new(pos: usize, cursor: usize, line: usize) -> PositionalOffset {
+    //     PositionalOffset {
+    //         pos: pos,
+    //         cursor: cursor,
+    //         line: line,
+    //     }
+    // }
 
     fn increment_pos(&mut self, val: usize) {
         self.pos += val;
@@ -63,25 +63,25 @@ impl PositionalOffset {
         self.line += val;
     }
 
-    fn reset_pos(&mut self) {
-        self.pos = 0;
-    }
+    // fn reset_pos(&mut self) {
+    //     self.pos = 0;
+    // }
 
     fn reset_cursor(&mut self) {
         self.cursor = 1;
     }
 
-    fn reset_line(&mut self) {
-        self.line = 1;
-    }
+    // fn reset_line(&mut self) {
+    //     self.line = 1;
+    // }
 
     fn get_cursor(&self) -> usize {
         self.pos
     }
 
-    fn get_position(&self) -> usize {
-        self.pos
-    }
+    // fn get_position(&self) -> usize {
+    //     self.pos
+    // }
 
     fn get_line(&self) -> usize {
         self.line
@@ -104,14 +104,16 @@ impl fmt::Display for PositionalOffset {
 
 pub struct Lexer<'input> {
     content: &'input str,
-    position: PositionalOffset,
+    start: PositionalOffset,
+    token: Token<'input>,
 }
 
 impl Default for Lexer<'_> {
     fn default() -> Self {
         Lexer {
             content: "",
-            position: PositionalOffset::default(),
+            start: PositionalOffset::default(),
+            token: Token::default(),
         }
     }
 }
@@ -120,17 +122,60 @@ impl<'input> Lexer<'input> {
     pub fn new(content: &'input str) -> Lexer<'input> {
         Lexer {
             content: content,
-            position: PositionalOffset::default(),
+            start: PositionalOffset::default(),
+            token: Token::default(),
         }
     }
 
-    pub fn lex(&mut self) -> LexerResult<Vec<Token>> {
+    pub fn peek(&self) -> Token {
+        self.token
+    }
+
+    pub fn advance(&mut self) -> LexerResult<()> {
+        let start_pos = trim_starting_whitespace(self.content, self.start);
+
+        let (kind, end_pos) = get_next_token_kind(self.content, start_pos)?;
+
+        let lexeme = &self.content[start_pos.pos..end_pos.pos];
+
+        let token = Token::new(kind, lexeme, start_pos.get_line(), start_pos.get_cursor());
+
+        self.start = end_pos;
+
+        self.token = token;
+
+        Ok(())
+    }
+
+    pub fn lookahead(&self) -> LexerResult<(TokenKind, PositionalOffset)> {
+        let start_pos = trim_starting_whitespace(self.content, self.start);
+
+        let (kind, end_pos) = get_next_token_kind(self.content, start_pos)?;
+
+        Ok((kind, end_pos))
+    }
+
+    pub fn lookahead2(
+        &self,
+    ) -> LexerResult<(TokenKind, TokenKind, PositionalOffset, PositionalOffset)> {
+        let first_start_pos = trim_starting_whitespace(self.content, self.start);
+
+        let (first, first_end_pos) = get_next_token_kind(self.content, first_start_pos)?;
+
+        let start_pos = trim_starting_whitespace(self.content, first_end_pos);
+
+        let (second, second_end_pos) = get_next_token_kind(self.content, start_pos)?;
+
+        Ok((first, second, first_end_pos, second_end_pos))
+    }
+
+    pub fn lex_with_separate_pass(&mut self) -> LexerResult<Vec<Token>> {
         let mut tokens: Vec<Token> = Vec::new();
 
         loop {
-            let (token, pos) = &advance(self.content, self.position)?;
+            let (token, pos) = &_advance(self.content, self.start)?;
 
-            self.set_po(*pos);
+            self.set_start(*pos);
 
             tokens.push(*token);
 
@@ -142,20 +187,12 @@ impl<'input> Lexer<'input> {
         Ok(tokens)
     }
 
-    fn set_po(&mut self, pos: PositionalOffset) {
-        self.position = pos
-    }
-
-    fn get_content(&self) -> &str {
-        self.content
-    }
-
-    fn get_po(&self) -> PositionalOffset {
-        self.position
+    fn set_start(&mut self, pos: PositionalOffset) {
+        self.start = pos
     }
 }
 
-fn advance(text: &str, po: PositionalOffset) -> LexerResult<(Token, PositionalOffset)> {
+fn _advance(text: &str, po: PositionalOffset) -> LexerResult<(Token, PositionalOffset)> {
     let start_pos = trim_starting_whitespace(text, po);
 
     let (kind, end_pos) = get_next_token_kind(text, start_pos)?;
@@ -527,7 +564,7 @@ mod test {
 
     fn check_lex(text: &str, expected: Vec<Token>) {
         let mut lexer = Lexer::new(text);
-        let actual = lexer.lex().expect("");
+        let actual = lexer.lex_with_separate_pass().expect("");
 
         assert_eq!(expected, actual);
     }
