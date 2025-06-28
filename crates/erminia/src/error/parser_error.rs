@@ -1,5 +1,5 @@
-use derive_more::From;
 use crate::error::lexer_error::LexerError;
+use derive_more::From;
 
 #[derive(Debug, From)]
 pub enum ParserError {
@@ -19,7 +19,7 @@ impl std::error::Error for ParserError {}
 impl From<LexerError> for ParserError {
     fn from(value: LexerError) -> Self {
         match value {
-            _ => ParserError::ParserError
+            _ => ParserError::ParserError,
         }
     }
 }
