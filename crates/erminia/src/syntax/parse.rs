@@ -1,51 +1,21 @@
 use crate::error::parser_error::{ParserError, ParserResult};
-use crate::error::ast_error::{ASTError, ASTResult};
+use crate::syntax::ast::{Program, ObjectDecl, Stmt};
 use crate::lexer::lex_s::Lexer;
 use crate::lexer::token::TokenKind;
 
 // ====================================================================================//
-//                                      AST                                            //
-// ====================================================================================//
-
-#[derive(Debug, PartialEq)]
-pub struct ObjectDecl {
-
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Program {
-    id: String,
-    int_const: i32,
-    stmts: Vec<Stmt>
-}
-
-impl Program {
-    fn new(id: String, int_const: i32, stmts: Vec<Stmt>) -> Program {
-        Program {
-            id: id,
-            int_const: int_const,
-            stmts: stmts
-        }
-    }
-}
-
-pub trait StmtTrait {
-    fn sem(&self /*, Semantic Table */) -> ASTResult<()>;
-    // fn run(&self) -> Result<u32, ASTError>;
-    // fn get_scope(&self);
-    // fn set_scope(&self);
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Stmt {
-    ObjectDecl(ObjectDecl),
-    Program(Program)
-}
-
-
-// ====================================================================================//
 //                                Consumers                                            //
 // ====================================================================================//
+
+fn consume_data_type(tokens: &mut Lexer) -> ParserResult<()> {
+    match tokens.peek().get_kind() {
+        TokenKind::Object => {
+            tokens.advance()?;
+            Ok(())
+        },
+        _ => Err(ParserError::ParserError)
+    }
+}
 
 fn consume_int_const<'a>(tokens: &mut Lexer<'a>) -> ParserResult<&'a str> {
     let int_const = tokens.token;
@@ -90,26 +60,75 @@ fn parse_object_prior_decl(_tokens: &mut Lexer) -> ParserResult<()> {
 }
 
 // <shapes_list> ::= "[" <shape_desc> ("," <shape_desc>)* "]"
-// fn parse_list_of_shapes<T>(tokens: &mut Lexer) -> ParserResult<Vec<T>> {
-//     let mut shape_descs = vec![];
-//     consume_keyword(tokens, TokenKind::LeftBracket)?;
-//     loop {
-//         let desc = parse_object_shape_desc(tokens)?;
-//         shape_descs.push(desc);
-//         let (kind, _offset) = tokens.lookahead()?;
-//         if kind != TokenKind::Comma {
-//             break
-//         }
-//         consume_keyword(tokens, TokenKind::Comma)?;
-//     }
-//     consume_keyword(tokens, TokenKind::RightBracket)?;
-//     Ok(shape_descs)
-// }
+fn parse_list_of_shapes<T>(tokens: &mut Lexer) -> ParserResult<Vec<T>> {
+    let mut shape_descs = vec![];
+    consume_keyword(tokens, TokenKind::LeftBracket)?;
+    loop {
+        let desc = parse_object_shape_desc(tokens)?;
+        shape_descs.push(desc);
+        let (kind, _offset) = tokens.lookahead()?;
+        if kind != TokenKind::Comma {
+            break
+        }
+        consume_keyword(tokens, TokenKind::Comma)?;
+    }
+    consume_keyword(tokens, TokenKind::RightBracket)?;
+    Ok(shape_descs)
+}
+
+// TODO
+// <inner_compound_stmt> ::= <var_def>
+fn parse_inner_compound_stmt(_tokens: &mut Lexer) -> ParserResult<Stmt> {
+    Ok(Stmt::ObjectDecl(ObjectDecl::new()))
+}
+
+// TODO:
+fn parse_object_call(_tokens: &mut Lexer) -> ParserResult<Stmt> {
+    Ok(Stmt::ObjectDecl(ObjectDecl::new()))
+}
+
+// TODO
+// <stmt> ::= <object_def> | <example_def> | <var_def>
+fn parse_stmt(tokens: &mut Lexer) -> ParserResult<Stmt> {
+    match tokens.peek().get_kind() {
+        TokenKind::Object => {
+            consume_keyword(tokens, TokenKind::Object)?;
+            let id = consume_identifier(tokens)?;
+            let desc = parse_object_desc(tokens)?;
+            Ok(Stmt::ObjectDecl(ObjectDecl::new()))
+        },
+        TokenKind::ProblemExample => {
+            consume_keyword(tokens, TokenKind::ProblemExample)?;
+            let id = consume_identifier(tokens)?;
+            let desc = parse_inner_compound_stmt(tokens)?;
+            // Ok(Stmt::ProblemExample(ProblemExample::new(id, desc)))
+            Ok(Stmt::ObjectDecl(ObjectDecl::new()))
+
+        },
+        TokenKind::LetKwd => {
+            let _ = consume_data_type(tokens)?;
+            let id = consume_identifier(tokens)?;
+            consume_keyword(tokens, TokenKind::Equals)?;
+            let expr = parse_object_call(tokens)?;
+            // Ok(Stmt::VarDef(VarDef::new(type, id, expr)))
+            Ok(Stmt::ObjectDecl(ObjectDecl::new()))
+        },
+        _ => Err(ParserError::ExpectedKeyWordError)
+    }
+}
 
 // <stmts_list> ::= <stmt> ("," <stmt>)*
-fn parse_list_of_stmts(_tokens: &mut Lexer) -> ParserResult<Vec<Stmt>> {
-    let stmts_list: Vec<Stmt> = vec![];
-    Ok(stmts_list)
+fn parse_list_of_stmts(tokens: &mut Lexer) -> ParserResult<Vec<Stmt>> {
+    let mut stmts: Vec<Stmt> = vec![];
+    loop {
+        let stmt = parse_stmt(tokens)?;
+        stmts.push(stmt);
+        let (kind, _offset) = tokens.lookahead()?;
+        if kind != TokenKind::Comma {
+            break
+        }
+    }
+    Ok(stmts)
 }
 
 // <object_desc> ::= "{" <object_prior_decl> "}"
