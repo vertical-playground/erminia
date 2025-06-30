@@ -1,8 +1,8 @@
 use erminia::lexer::lex_s::Lexer;
+use erminia::syntax::parse::Parser;
 use std::io::{self, Write};
 
 fn main() -> io::Result<()> {
-    let mut inputs: Vec<String> = vec![];
     let stdin = io::stdin();
 
     let mut stdout = io::stdout();
@@ -18,9 +18,12 @@ fn main() -> io::Result<()> {
         let mut lexer = Lexer::new(&input);
         let tokens = lexer.lex_with_separate_pass();
 
-        inputs.push(input.clone());
+        let mut parser = Parser::new(&input);
 
-        println!("{:?}", tokens);
+        let program = parser.parse();
+
+        println!("TOKENS: {:?}", tokens);
+        println!("PROGRAM: {:?}", program.unwrap());
 
         // parse to AST Tree
         // check semantics

@@ -60,21 +60,21 @@ fn parse_object_prior_decl(_tokens: &mut Lexer) -> ParserResult<()> {
 }
 
 // <shapes_list> ::= "[" <shape_desc> ("," <shape_desc>)* "]"
-fn parse_list_of_shapes<T>(tokens: &mut Lexer) -> ParserResult<Vec<T>> {
-    let mut shape_descs = vec![];
-    consume_keyword(tokens, TokenKind::LeftBracket)?;
-    loop {
-        let desc = parse_object_shape_desc(tokens)?;
-        shape_descs.push(desc);
-        let (kind, _offset) = tokens.lookahead()?;
-        if kind != TokenKind::Comma {
-            break
-        }
-        consume_keyword(tokens, TokenKind::Comma)?;
-    }
-    consume_keyword(tokens, TokenKind::RightBracket)?;
-    Ok(shape_descs)
-}
+// fn parse_list_of_shapes<T>(tokens: &mut Lexer) -> ParserResult<Vec<T>> {
+//     let mut shape_descs = vec![];
+//     consume_keyword(tokens, TokenKind::LeftBracket)?;
+//     loop {
+//         let desc = parse_object_shape_desc(tokens)?;
+//         shape_descs.push(desc);
+//         let (kind, _offset) = tokens.lookahead()?;
+//         if kind != TokenKind::Comma {
+//             break
+//         }
+//         consume_keyword(tokens, TokenKind::Comma)?;
+//     }
+//     consume_keyword(tokens, TokenKind::RightBracket)?;
+//     Ok(shape_descs)
+// }
 
 // TODO
 // <inner_compound_stmt> ::= <var_def>
@@ -169,11 +169,26 @@ fn parse_problem_decl(tokens: &mut Lexer) -> ParserResult<Program> {
 }
 
 // <program> ::= <problem_declaration>
-fn parse_program(tokens: &mut Lexer) -> ParserResult<Program> {
+pub fn parse_program(tokens: &mut Lexer) -> ParserResult<Program> {
     // [START] Token is first
     tokens.advance()?;
     let program = parse_problem_decl(tokens)?;
     Ok(program)
+}
+
+pub struct Parser<'a> {
+    lexer: Lexer<'a>
+}
+
+impl<'a> Parser<'a> {
+    pub fn new<'input>(input: &'input str) -> Parser<'input> {
+        let lexer = Lexer::new(input);
+        Parser { lexer: lexer }
+    }
+
+    pub fn parse(&mut self) -> ParserResult<Program> {
+        parse_program(&mut self.lexer)
+    }
 }
 
 #[cfg(test)]
