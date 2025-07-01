@@ -235,7 +235,7 @@ impl std::fmt::Display for Position {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Token<'a> {
     kind: TokenKind,
-    text: &'a str,
+    pub text: &'a str,
     size: usize,
     start: Position,
     end: Position,

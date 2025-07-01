@@ -1,20 +1,9 @@
 #![allow(unused)]
 
+use crate::obj_utils::error::{OUError, OUResult};
+use crate::obj_utils::iter::{CoordIter, CoordIterPrior, CoordPrior, Range};
+use crate::obj_utils::obj_call::{ObjectCall, Offset};
 use crate::obj_utils::point::Point;
-use crate::obj_utils::obj_call::{
-    Offset,
-    ObjectCall,
-};
-use crate::obj_utils::error::{
-    OUError,
-    OUResult
-};
-use crate::obj_utils::iter::{
-    CoordPrior,
-    Range,
-    CoordIterPrior,
-    CoordIter
-};
 
 enum ObjectShape {
     Point(Point),
@@ -24,35 +13,29 @@ enum ObjectShape {
 
 impl ObjectShape {
     fn new_point(x: u32, y: u32) -> Self {
-        ObjectShape::Point(Point::new(x,y))
+        ObjectShape::Point(Point::new(x, y))
     }
 
-    fn new_coord_iter(
-        left: CoordIterPrior,
-        right: CoordIterPrior
-    ) -> Self {
+    fn new_coord_iter(left: CoordIterPrior, right: CoordIterPrior) -> Self {
         ObjectShape::CoordIter(CoordIter::new(left, right))
-    } 
+    }
 
-    fn new_object(
-        id: String,
-        offset: Offset
-    ) -> Self {
+    fn new_object(id: String, offset: Offset) -> Self {
         ObjectShape::ObjectCall(ObjectCall::new(id, offset))
     }
 }
 
 struct ObjectShapeVec {
-    vector: Vec<ObjectShape>
+    vector: Vec<ObjectShape>,
 }
 
 impl ObjectShapeVec {
     fn new() -> Self {
         ObjectShapeVec {
-            vector: Vec::<ObjectShape>::new()
+            vector: Vec::<ObjectShape>::new(),
         }
     }
-    
+
     fn add_obj(object: ObjectShape) {
         todo!()
     }
@@ -62,8 +45,8 @@ impl ObjectShapeVec {
     }
 
     fn remove_obj_at(&mut self, at: usize) -> Result<ObjectShape, OUError> {
-        if at > self.len()-1 {
-            return Err(OUError::Error1)
+        if at > self.len() - 1 {
+            return Err(OUError::Error1);
         }
 
         let o: ObjectShape = self.vector.remove(at);
@@ -71,12 +54,11 @@ impl ObjectShapeVec {
     }
 
     fn remove_obj_last(&mut self) -> Result<ObjectShape, OUError> {
-
         let o = self.vector.pop();
 
         return match o {
             Some(o) => Ok(o),
-            None => Err(OUError::Error1)
+            None => Err(OUError::Error1),
         };
     }
 }
@@ -108,24 +90,30 @@ mod tests {
     fn check_vector_shapes() {
         let mut v: Vec<ObjectShape> = vec![];
 
-        v.push(ObjectShape::new_point(1,2));
-        v.push(ObjectShape::new_coord_iter(CoordIterPrior::new_const(1), CoordIterPrior::new_range(1,2,CoordPrior::Y)));
-        v.push(ObjectShape::new_object("object".to_string(), Offset::new_none_offset()));
+        v.push(ObjectShape::new_point(1, 2));
+        v.push(ObjectShape::new_coord_iter(
+            CoordIterPrior::new_const(1),
+            CoordIterPrior::new_range(1, 2, CoordPrior::Y),
+        ));
+        v.push(ObjectShape::new_object(
+            "object".to_string(),
+            Offset::new_none_offset(),
+        ));
 
         for val in v {
             match val {
                 ObjectShape::Point(p) => {
                     let p: Point = p;
                     assert_eq!(*p.get_left(), 1);
-                },
+                }
                 ObjectShape::CoordIter(i) => {
                     let i: CoordIter = i;
                     assert_eq!(*i.get_left().get_const().unwrap().get_value(), 1);
-                },
+                }
                 ObjectShape::ObjectCall(o) => {
                     let o: ObjectCall = o;
                     assert_eq!(*o.get_id(), "object".to_string());
-                },
+                }
             }
         }
     }

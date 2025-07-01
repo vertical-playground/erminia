@@ -1,7 +1,7 @@
 use crate::error::parser_error::{ParserError, ParserResult};
-use crate::syntax::ast::{Program, ObjectDecl, Stmt};
 use crate::lexer::lex_s::Lexer;
 use crate::lexer::token::TokenKind;
+use crate::syntax::ast::{ObjectDecl, Program, Stmt};
 
 // ====================================================================================//
 //                                Consumers                                            //
@@ -12,8 +12,8 @@ fn consume_data_type(tokens: &mut Lexer) -> ParserResult<()> {
         TokenKind::Object => {
             tokens.advance()?;
             Ok(())
-        },
-        _ => Err(ParserError::ParserError)
+        }
+        _ => Err(ParserError::ParserError),
     }
 }
 
@@ -96,15 +96,14 @@ fn parse_stmt(tokens: &mut Lexer) -> ParserResult<Stmt> {
             let id = consume_identifier(tokens)?;
             let desc = parse_object_desc(tokens)?;
             Ok(Stmt::ObjectDecl(ObjectDecl::new()))
-        },
+        }
         TokenKind::ProblemExample => {
             consume_keyword(tokens, TokenKind::ProblemExample)?;
             let id = consume_identifier(tokens)?;
             let desc = parse_inner_compound_stmt(tokens)?;
             // Ok(Stmt::ProblemExample(ProblemExample::new(id, desc)))
             Ok(Stmt::ObjectDecl(ObjectDecl::new()))
-
-        },
+        }
         TokenKind::LetKwd => {
             let _ = consume_data_type(tokens)?;
             let id = consume_identifier(tokens)?;
@@ -112,8 +111,8 @@ fn parse_stmt(tokens: &mut Lexer) -> ParserResult<Stmt> {
             let expr = parse_object_call(tokens)?;
             // Ok(Stmt::VarDef(VarDef::new(type, id, expr)))
             Ok(Stmt::ObjectDecl(ObjectDecl::new()))
-        },
-        _ => Err(ParserError::ExpectedKeyWordError)
+        }
+        _ => Err(ParserError::ExpectedKeyWordError),
     }
 }
 
@@ -125,7 +124,7 @@ fn parse_list_of_stmts(tokens: &mut Lexer) -> ParserResult<Vec<Stmt>> {
         stmts.push(stmt);
         let (kind, _offset) = tokens.lookahead()?;
         if kind != TokenKind::Comma {
-            break
+            break;
         }
     }
     Ok(stmts)
@@ -164,7 +163,7 @@ fn parse_problem_decl(tokens: &mut Lexer) -> ParserResult<Program> {
     let int_const = consume_int_const(tokens)?;
     consume_keyword(tokens, TokenKind::RightPar)?;
     let stmts: Vec<Stmt> = parse_compound_stmt(tokens)?;
-    let program = Program::new(id.to_string(), int_const.parse::<i32>().unwrap(), stmts); 
+    let program = Program::new(id.to_string(), int_const.parse::<i32>().unwrap(), stmts);
     Ok(program)
 }
 
@@ -177,7 +176,7 @@ pub fn parse_program(tokens: &mut Lexer) -> ParserResult<Program> {
 }
 
 pub struct Parser<'a> {
-    lexer: Lexer<'a>
+    lexer: Lexer<'a>,
 }
 
 impl<'a> Parser<'a> {
@@ -210,6 +209,9 @@ mod test {
 
         let program = parse_program(&mut lexer);
 
-        assert_eq!(Program::new("hello".to_string(), 20, vec![]), program.expect(""));
+        assert_eq!(
+            Program::new("hello".to_string(), 20, vec![]),
+            program.expect("")
+        );
     }
 }

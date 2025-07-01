@@ -1,7 +1,5 @@
-#![allow(unused)]
-
-use crate::expr;
-use crate::stmt;
+use crate::ast::expr;
+use crate::ast::stmt;
 
 pub type ASTError = String;
 
@@ -19,20 +17,20 @@ pub trait ExprTrait {
     fn set_scope(&self);
 }
 
-pub enum Stmt { 
-    ObjectDecl(stmt::ObjectDecl),
-    ProblemDef(stmt::ProblemDef),
-    Assignment(stmt::Assignment),
-    ExampleDecl(stmt::ExampleDecl),
-    InputDecl(stmt::InputDecl),
-    OutputDecl(stmt::OutputDecl),
-    SolutionDecl(stmt::SolutionDecl)
+pub enum Stmt {
+    ObjectDecl(ObjectDecl),
+    ProblemDef(ProblemDef),
+    Assignment(Assignment),
+    ExampleDecl(ExampleDecl),
+    InputDecl(InputDecl),
+    OutputDecl(OutputDecl),
+    SolutionDecl(SolutionDecl),
 }
 
 pub enum Expr {
-    Param(expr::Param), 
-    Int(expr::Int),
-    String(expr::String),
-    ObjectCall(expr::ObjectCall),
-    FuncCall(expr::FuncCall),
+    Param(Param),
+    Int(Int),
+    String(String),
+    ObjectCall(ObjectCall),
+    FuncCall(FuncCall),
 }

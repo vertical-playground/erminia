@@ -105,7 +105,7 @@ impl fmt::Display for PositionalOffset {
 pub struct Lexer<'input> {
     content: &'input str,
     start: PositionalOffset,
-    token: Token<'input>,
+    pub token: Token<'input>,
 }
 
 impl Default for Lexer<'_> {
@@ -127,7 +127,7 @@ impl<'input> Lexer<'input> {
         }
     }
 
-    pub fn peek(&self) -> Token {
+    pub fn peek(&mut self) -> Token {
         self.token
     }
 

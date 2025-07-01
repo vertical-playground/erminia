@@ -6,7 +6,7 @@ pub enum ASTError {
     ASTError,
     ExpectedKeyWordError,
     ExpectedIdentifierError,
-    ExpectedIntegerConstError
+    ExpectedIntegerConstError,
 }
 
 pub type ASTResult<T> = core::result::Result<T, ASTError>;

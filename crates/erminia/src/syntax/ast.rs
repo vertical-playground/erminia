@@ -4,9 +4,7 @@ use crate::error::ast_error::ASTResult;
 // ====================================================================================//
 
 #[derive(Debug, PartialEq)]
-pub struct ObjectDecl {
-
-}
+pub struct ObjectDecl {}
 
 impl ObjectDecl {
     pub fn new() -> ObjectDecl {
@@ -18,7 +16,7 @@ impl ObjectDecl {
 pub struct Program {
     id: String,
     int_const: i32,
-    stmts: Vec<Stmt>
+    stmts: Vec<Stmt>,
 }
 
 impl Program {
@@ -26,7 +24,7 @@ impl Program {
         Program {
             id: id,
             int_const: int_const,
-            stmts: stmts
+            stmts: stmts,
         }
     }
 }
@@ -41,6 +39,5 @@ pub trait StmtTrait {
 #[derive(Debug, PartialEq)]
 pub enum Stmt {
     ObjectDecl(ObjectDecl),
-    Program(Program)
+    Program(Program),
 }
-

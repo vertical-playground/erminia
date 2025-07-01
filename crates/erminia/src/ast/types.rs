@@ -6,7 +6,7 @@ type TypeError = String;
 pub enum Type {
     IntType,
     ObjectType,
-    SuperObjectType
+    SuperObjectType,
 }
 
 impl std::fmt::Display for Type {
@@ -19,11 +19,11 @@ impl std::fmt::Display for Type {
     }
 }
 
-fn type_equality(t1: & Type, t2: & Type) -> bool {
+fn type_equality(t1: &Type, t2: &Type) -> bool {
     if t1.eq(t2) {
         return true;
     }
-    
+
     false
 }
 
@@ -36,7 +36,7 @@ mod tests {
         let t1: Type = Type::IntType;
         let t2: Type = Type::IntType;
 
-        assert_eq!(true, type_equality(&t1,&t2));
+        assert_eq!(true, type_equality(&t1, &t2));
     }
 
     #[test]
@@ -44,7 +44,6 @@ mod tests {
         let t1: Type = Type::ObjectType;
         let t2: Type = Type::SuperObjectType;
 
-        assert_ne!(true, type_equality(&t1,&t2));
+        assert_ne!(true, type_equality(&t1, &t2));
     }
 }
-

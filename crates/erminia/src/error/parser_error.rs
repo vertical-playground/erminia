@@ -6,7 +6,7 @@ pub enum ParserError {
     ParserError,
     ExpectedKeyWordError,
     ExpectedIdentifierError,
-    ExpectedIntegerConstError
+    ExpectedIntegerConstError,
 }
 
 pub type ParserResult<T> = core::result::Result<T, ParserError>;

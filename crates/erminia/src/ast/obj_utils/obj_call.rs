@@ -5,7 +5,7 @@ use crate::obj_utils::point::Point;
 #[derive(Debug)]
 pub enum Offset {
     Offset(Point),
-    None
+    None,
 }
 
 impl Offset {
@@ -21,14 +21,11 @@ impl Offset {
 #[derive(Debug)]
 pub struct ObjectCall {
     id: String,
-    offset: Offset
+    offset: Offset,
 }
 
 impl ObjectCall {
-    pub fn new(
-        id: String,
-        offset: Offset
-    ) -> Self {
+    pub fn new(id: String, offset: Offset) -> Self {
         ObjectCall { id, offset }
     }
 
