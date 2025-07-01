@@ -3,9 +3,9 @@ use crate::lexer::lex_s::Lexer;
 use crate::lexer::token::TokenKind;
 use crate::syntax::ast::{ObjectDecl, Program, Stmt};
 
-// ====================================================================================//
-//                                Consumers                                            //
-// ====================================================================================//
+// ==================================================================================== //
+//  Consumers                                                                           //
+// ==================================================================================== //
 
 fn consume_data_type(tokens: &mut Lexer) -> ParserResult<()> {
     match tokens.peek().get_kind() {
@@ -47,9 +47,9 @@ fn consume_keyword(tokens: &mut Lexer, kind: TokenKind) -> ParserResult<()> {
     }
 }
 
-// ====================================================================================//
-//                                Parsers                                              //
-// ====================================================================================//
+// ==================================================================================== //
+// Parsers                                                                              //
+// ==================================================================================== //
 
 fn parse_object_shape_desc(_tokens: &mut Lexer) -> ParserResult<()> {
     Ok(())
@@ -175,6 +175,10 @@ pub fn parse_program(tokens: &mut Lexer) -> ParserResult<Program> {
     Ok(program)
 }
 
+// ==================================================================================== //
+// Parser Object                                                                        //
+// ==================================================================================== //
+
 pub struct Parser<'a> {
     lexer: Lexer<'a>,
 }
@@ -189,6 +193,10 @@ impl<'a> Parser<'a> {
         parse_program(&mut self.lexer)
     }
 }
+
+// ==================================================================================== //
+// Parser Test Suite                                                                    //
+// ==================================================================================== //
 
 #[cfg(test)]
 mod test {
@@ -205,9 +213,9 @@ mod test {
 
         }";
 
-        let mut lexer = Lexer::new(text);
+        let mut parser = Parser::new(&text);
 
-        let program = parse_program(&mut lexer);
+        let program = parser.parse();
 
         assert_eq!(
             Program::new("hello".to_string(), 20, vec![]),
