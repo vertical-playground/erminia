@@ -1,2 +1,2 @@
-pub mod lex_s;
+pub mod lex;
 pub mod token;

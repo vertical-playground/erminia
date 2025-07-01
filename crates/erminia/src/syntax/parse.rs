@@ -1,5 +1,5 @@
 use crate::error::parser_error::{ParserError, ParserResult};
-use crate::lexer::lex_s::Lexer;
+use crate::lexer::lex::Lexer;
 use crate::lexer::token::TokenKind;
 use crate::syntax::ast::{ObjectDecl, Program, Stmt};
 
