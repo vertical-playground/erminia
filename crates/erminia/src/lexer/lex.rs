@@ -2,6 +2,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use crate::error::lexer_error::{LexerError, LexerResult};
+use crate::diagnostics::diagnostics::Location;
 use crate::lexer::token::*;
 
 static KEYWORDS: [&str; 9] = [
@@ -238,7 +239,7 @@ fn trim_starting_whitespace(text: &str, mut pos: PositionalOffset) -> Positional
 
 fn slice_from_position(text: &str, pos: PositionalOffset) -> LexerResult<&str> {
     if pos.pos > text.len() {
-        Err(LexerError::TokenError)
+        Err(LexerError::TokenError(Location::new(Position::default())))
     } else {
         Ok(&text[pos.pos..])
     }
@@ -254,6 +255,7 @@ fn get_next_keyword(
     for &kwd in &keywords {
         if starting_text.starts_with(kwd) {
             pos.increment_pos(kwd.len());
+            pos.increment_cursor(kwd.len());
             let next_text = match slice_from_position(text, pos) {
                 Ok(text) => text,
                 Err(_) => {
@@ -285,9 +287,11 @@ fn get_next_symbol(
         Some('+') => {
             let token = if matches!(chars.next(), Some('+')) {
                 pos.increment_pos(2);
+                pos.increment_cursor(2);
                 TokenKind::Increment
             } else {
                 pos.increment_pos(1);
+                pos.increment_cursor(1);
                 TokenKind::Plus
             };
 
@@ -296,9 +300,11 @@ fn get_next_symbol(
         Some('-') => {
             let token = if matches!(chars.next(), Some('-')) {
                 pos.increment_pos(2);
+                pos.increment_cursor(2);
                 TokenKind::Decrement
             } else {
                 pos.increment_pos(1);
+                pos.increment_cursor(1);
                 TokenKind::Minus
             };
 
@@ -307,9 +313,11 @@ fn get_next_symbol(
         Some('*') => {
             let token = if matches!(chars.next(), Some(')')) {
                 pos.increment_pos(2);
+                pos.increment_cursor(2);
                 TokenKind::CommentEnd
             } else {
                 pos.increment_pos(1);
+                pos.increment_cursor(1);
                 TokenKind::Multi
             };
 
@@ -318,9 +326,11 @@ fn get_next_symbol(
         Some('/') => {
             let token = if matches!(chars.next(), Some('/')) {
                 pos.increment_pos(2);
+                pos.increment_cursor(1);
                 TokenKind::FlatDiv
             } else {
                 pos.increment_pos(1);
+                pos.increment_cursor(1);
                 TokenKind::Div
             };
 
@@ -328,17 +338,21 @@ fn get_next_symbol(
         }
         Some('%') => {
             pos.increment_pos(1);
+            pos.increment_cursor(1);
             TokenKind::Mod
         }
         Some('<') => {
             let token = if matches!(chars.next(), Some('<')) {
                 pos.increment_pos(2);
+                pos.increment_cursor(2);
                 TokenKind::ShiftLeft
             } else if matches!(chars.next(), Some('-')) {
                 pos.increment_pos(2);
+                pos.increment_cursor(2);
                 TokenKind::LeftArrow
             } else {
                 pos.increment_pos(1);
+                pos.increment_cursor(1);
                 TokenKind::Lesser
             };
 
@@ -347,9 +361,11 @@ fn get_next_symbol(
         Some('>') => {
             let token = if matches!(chars.next(), Some('>')) {
                 pos.increment_pos(2);
+                pos.increment_cursor(2);
                 TokenKind::ShiftRight
             } else {
                 pos.increment_pos(1);
+                pos.increment_cursor(1);
                 TokenKind::Greater
             };
 
@@ -357,14 +373,17 @@ fn get_next_symbol(
         }
         Some('=') => {
             pos.increment_pos(1);
+            pos.increment_cursor(1);
             TokenKind::Equals
         }
         Some('(') => {
             let token = if matches!(chars.next(), Some('*')) {
                 pos.increment_pos(2);
+                pos.increment_cursor(2);
                 TokenKind::CommentStart
             } else {
                 pos.increment_pos(1);
+                pos.increment_cursor(1);
                 TokenKind::LeftPar
             };
 
@@ -373,9 +392,11 @@ fn get_next_symbol(
         Some('.') => {
             let token = if matches!(chars.next(), Some('.')) {
                 pos.increment_pos(2);
+                pos.increment_cursor(2);
                 TokenKind::Range
             } else {
                 pos.increment_pos(1);
+                pos.increment_cursor(1);
                 TokenKind::Member
             };
 
@@ -384,9 +405,11 @@ fn get_next_symbol(
         Some('!') => {
             let token = if matches!(chars.next(), Some('=')) {
                 pos.increment_pos(2);
+                pos.increment_cursor(2);
                 TokenKind::NotEquals
             } else {
                 pos.increment_pos(1);
+                pos.increment_cursor(1);
                 TokenKind::Not
             };
 
@@ -394,48 +417,59 @@ fn get_next_symbol(
         }
         Some(')') => {
             pos.increment_pos(1);
+            pos.increment_cursor(1);
             TokenKind::RightPar
         }
         Some('[') => {
             pos.increment_pos(1);
+            pos.increment_cursor(1);
             TokenKind::LeftBracket
         }
         Some(']') => {
             pos.increment_pos(1);
+            pos.increment_cursor(1);
             TokenKind::RightBracket
         }
         Some('{') => {
             pos.increment_pos(1);
+            pos.increment_cursor(1);
             TokenKind::LeftBrace
         }
         Some('}') => {
             pos.increment_pos(1);
+            pos.increment_cursor(1);
             TokenKind::RightBrace
         }
         Some(',') => {
             pos.increment_pos(1);
+            pos.increment_cursor(1);
             TokenKind::Comma
         }
         Some(';') => {
             pos.increment_pos(1);
+            pos.increment_cursor(1);
             TokenKind::SemiColon
         }
         Some(':') => {
             pos.increment_pos(1);
+            pos.increment_cursor(1);
             TokenKind::Colon
         }
         Some('|') => {
             pos.increment_pos(1);
+            pos.increment_cursor(1);
             TokenKind::Pipe
         }
         Some('"') => {
             pos.increment_pos(1);
+            pos.increment_cursor(1);
             let mut string_flag = false;
 
             while let Some(ch) = chars.next() {
                 match ch {
                     '"' => {
                         pos.increment_pos(1);
+                        pos.increment_cursor(1);
                         string_flag = true;
                         break;
                     }
@@ -449,6 +483,7 @@ fn get_next_symbol(
                             break;
                         } else {
                             pos.increment_pos(1);
+                            pos.increment_cursor(1);
                         }
                     }
                 }
@@ -457,7 +492,7 @@ fn get_next_symbol(
             if string_flag {
                 TokenKind::String
             } else {
-                return Err(LexerError::UnfinishedStringError);
+                return Err(LexerError::UnfinishedStringError(Location::new(Position::default())));
             }
         }
         _ => TokenKind::EOF,
@@ -480,10 +515,12 @@ fn get_next_ident(text: &str, mut pos: PositionalOffset) -> Option<(TokenKind, P
             }
 
             pos.increment_pos(1);
+            pos.increment_cursor(1);
 
             while let Some(c) = chars.next() {
                 if c.is_alphanumeric() | (c == '_') {
                     pos.increment_pos(1);
+                    pos.increment_cursor(1);
                 } else {
                     break;
                 }
@@ -515,15 +552,19 @@ fn get_next_numeric(
             }
 
             pos.increment_pos(1);
+            pos.increment_cursor(1);
 
             while let Some(c) = chars.next() {
                 if c.is_numeric() || (c == '_') && (pos.pos - starting_pos % 3 == 0) {
                     pos.increment_pos(1);
+                    pos.increment_cursor(1);
                 } else if (c == '_') && ((pos.pos - starting_pos) % 3 == 0) {
                     pos.increment_pos(1);
+                    pos.increment_cursor(1);
                 } else if float_flag == false && c == '.' {
                     float_flag = true;
                     pos.increment_pos(1);
+                    pos.increment_cursor(1);
                 } else if c == '.' && float_flag == true {
                     break;
                 } else {

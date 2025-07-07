@@ -1,3 +1,4 @@
+use crate::diagnostics::diagnostics::Location;
 use crate::error::lexer_error::LexerError;
 use std::fmt;
 
@@ -194,7 +195,7 @@ impl std::str::FromStr for TokenKind {
                 } else if s.is_valid_indentifier() {
                     TokenKind::Ident
                 } else {
-                    return Err(LexerError::TokenError);
+                    return Err(LexerError::TokenError(Location::new(Position::default())));
                 }
             }
         };

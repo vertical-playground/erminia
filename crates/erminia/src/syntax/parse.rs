@@ -1,4 +1,5 @@
 use crate::error::parser_error::{ParserError, ParserResult};
+use crate::diagnostics::diagnostics::Location;
 use crate::lexer::lex::Lexer;
 use crate::lexer::token::TokenKind;
 use crate::syntax::ast::{ObjectDecl, Program, Stmt};
@@ -11,7 +12,10 @@ fn is_next_right_inclusive(tokens: &mut Lexer) -> ParserResult<bool> {
     match tokens.peek().get_kind() {
         TokenKind::RightPar => Ok(false),
         TokenKind::RightBracket => Ok(true),
-        _ => Err(ParserError::ExpectedRightInclusivity)
+        _ => Err(ParserError::ExpectedRightInclusivity(
+            Location::new(tokens.peek().get_start()),
+            TokenKind::Object
+        ))
     }
 }
 
@@ -19,7 +23,10 @@ fn is_next_left_inclusive(tokens: &mut Lexer) -> ParserResult<bool> {
     match tokens.peek().get_kind() {
         TokenKind::LeftPar => Ok(false),
         TokenKind::LeftBracket => Ok(true),
-        _ => Err(ParserError::ExpectedLeftInclusivity)
+        _ => Err(ParserError::ExpectedLeftInclusivity(
+            Location::new(tokens.peek().get_start()),
+            TokenKind::LeftBracket
+        ))
     }
 }
 
@@ -47,7 +54,10 @@ fn consume_data_type(tokens: &mut Lexer) -> ParserResult<()> {
             tokens.advance()?;
             Ok(())
         }
-        _ => Err(ParserError::ParserError),
+        _ => Err(ParserError::ParserError(
+            Location::new(tokens.peek().get_start()),
+            TokenKind::Object
+        )),
     }
 }
 
@@ -57,7 +67,7 @@ fn consume_int_const<'a>(tokens: &mut Lexer<'a>) -> ParserResult<&'a str> {
         tokens.advance()?;
         Ok(int_const.text)
     } else {
-        Err(ParserError::ExpectedIntegerConstError)
+        Err(ParserError::ExpectedIntegerConstError(Location::new(tokens.peek().get_start()), TokenKind::Int))
     }
 }
 
@@ -68,7 +78,7 @@ fn consume_identifier<'a>(tokens: &mut Lexer<'a>) -> ParserResult<&'a str> {
             tokens.advance()?;
             Ok(id.text)
         }
-        _ => Err(ParserError::ExpectedIdentifierError),
+        _ => Err(ParserError::ExpectedIdentifierError(Location::new(tokens.peek().get_start()), TokenKind::Ident)),
     }
 }
 
@@ -77,7 +87,7 @@ fn consume_keyword(tokens: &mut Lexer, kind: TokenKind) -> ParserResult<()> {
         tokens.advance()?;
         Ok(())
     } else {
-        Err(ParserError::ExpectedKeyWordError)
+        Err(ParserError::ExpectedKeyWordError(Location::new(tokens.peek().get_start()), kind))
     }
 }
 
@@ -95,6 +105,7 @@ fn parse_range(tokens: &mut Lexer) -> ParserResult<()> {
     // return Range object
     Ok(())
 }
+
 // <shape_tuple_iter> ::= <coord> "<-" <range>
 fn parse_shape_tuple_iter(tokens: &mut Lexer) -> ParserResult<()> {
     let _coord = consume_identifier(tokens)?;
@@ -158,7 +169,7 @@ fn parse_shape(tokens: &mut Lexer) -> ParserResult<Stmt> {
             Ok(Stmt::ObjectDecl(ObjectDecl::new()))
             // Ok(Expr::Shape(Shape::new()))
         }
-        _ => Err(ParserError::ParserError)
+        _ => Err(ParserError::ParserError(Location::new(tokens.peek().get_start()), TokenKind::LeftPar))
     }
 }
 
@@ -173,17 +184,18 @@ fn parse_object_color<'a>(tokens: &mut Lexer<'a>) -> ParserResult<&'a str> {
 // <list_of_shapes> ::= "[" <shape> ("," <shape>)* "]"
 fn parse_list_of_shapes(tokens: &mut Lexer) -> ParserResult<()> {
     let mut _shapes: Vec<Stmt> = vec![];
-    consume_keyword(tokens, TokenKind::LeftBrace)?;
+    consume_keyword(tokens, TokenKind::LeftBracket)?;
     let shape = parse_shape(tokens);
     match shape {
         Ok(sh) => _shapes.push(sh),
         _ => () 
     }
     while next_is_comma(tokens)? {
+        consume_keyword(tokens, TokenKind::Comma)?;
         let shape = parse_shape(tokens)?;
         _shapes.push(shape);
     }
-    consume_keyword(tokens, TokenKind::RightBrace)?;
+    consume_keyword(tokens, TokenKind::RightBracket)?;
     Ok(())
 }
 
@@ -193,9 +205,7 @@ fn parse_list_of_shapes(tokens: &mut Lexer) -> ParserResult<()> {
 fn parse_object_shape(tokens: &mut Lexer) -> ParserResult<()> {
     consume_keyword(tokens, TokenKind::ObjectShape)?;
     consume_keyword(tokens, TokenKind::Colon)?;
-    consume_keyword(tokens, TokenKind::LeftPar)?;
     let _shapes = parse_list_of_shapes(tokens)?;
-    consume_keyword(tokens, TokenKind::RightPar)?;
     Ok(())
 }
 
@@ -204,18 +214,20 @@ fn parse_object_shape(tokens: &mut Lexer) -> ParserResult<()> {
 fn parse_object_desc(tokens: &mut Lexer) -> ParserResult<()> {
     match tokens.peek().get_kind() {
         TokenKind::ObjectShape => {
-            let _shape = parse_object_shape(tokens);
-            let _color = parse_object_color(tokens);
+            let _shape = parse_object_shape(tokens)?;
+            consume_keyword(tokens, TokenKind::Comma)?;
+            let _color = parse_object_color(tokens)?;
             // Ok(Stmt::ObjectDesc(ObjectDesc::new(shape, color)))
             Ok(())
         }
         TokenKind::ObjectColor => {
-            let _color = parse_object_color(tokens);
-            let _shape = parse_object_shape(tokens);
+            let _color = parse_object_color(tokens)?;
+            consume_keyword(tokens, TokenKind::Comma)?;
+            let _shape = parse_object_shape(tokens)?;
             // Ok(Stmt::ObjectDesc(ObjectDesc::new(shape, color)))
             Ok(())
         }
-        _ => Err(ParserError::ParserError),
+        _ => Err(ParserError::ParserError(Location::new(tokens.peek().get_start()), TokenKind::ObjectShape)),
     }
 }
 
@@ -252,11 +264,11 @@ fn parse_stmt(tokens: &mut Lexer) -> ParserResult<Stmt> {
             // Ok(Stmt::VarDef(VarDef::new(type, id, expr)))
             Ok(Stmt::ObjectDecl(ObjectDecl::new()))
         }
-        _ => Err(ParserError::ExpectedKeyWordError),
+        _ => Err(ParserError::ExpectedKeyWordError(Location::new(tokens.peek().get_start()), TokenKind::Object)),
     }
 }
 
-// <stmts_list> ::= <stmt> (<stmt>)*
+// <stmts_list> ::= (<stmt>)*
 fn parse_list_of_stmts(tokens: &mut Lexer) -> ParserResult<Vec<Stmt>> {
     let mut stmts: Vec<Stmt> = vec![];
     while next_is_stmt(tokens)? {
@@ -269,16 +281,15 @@ fn parse_list_of_stmts(tokens: &mut Lexer) -> ParserResult<Vec<Stmt>> {
 // <object_compound_desc> ::= "{" <object_desc> "}"
 fn parse_object_compound_desc(tokens: &mut Lexer) -> ParserResult<()> {
     consume_keyword(tokens, TokenKind::LeftBrace)?;
-    let object_desc = parse_object_desc(tokens)?;
+    let _object_desc = parse_object_desc(tokens)?;
     consume_keyword(tokens, TokenKind::RightBrace)?;
-    Ok(object_desc)
+    Ok(())
 }
 
 // <object_def> ::= "object" <id> <object_compound_desc> ";"
 fn parse_object_decl(tokens: &mut Lexer) -> ParserResult<()> {
     consume_keyword(tokens, TokenKind::Object)?;
-    let _id = tokens.peek().get_text();
-    consume_identifier(tokens)?;
+    let _id = consume_identifier(tokens)?;
     let _object_desc = parse_object_compound_desc(tokens)?;
     consume_keyword(tokens, TokenKind::SemiColon)?;
     Ok(())
@@ -339,30 +350,19 @@ impl<'a> Parser<'a> {
 mod test {
     use super::*;
 
-    struct Range {
-        left_inclusivity: bool, 
-        left: i32,
-        right_inclusivity: bool, 
-        right: i32
-    }
-
-    struct TupleCompr {
-        first: Range, 
-        second: Range
-    }
-
-
     #[test]
     fn test_range() {
-        let text = "
-        object Shape {
-            shape : [(x,y) | x <- [1..10], y <- [1..10), (0,1)],
-            color : 1
-        }";
+        let text = "object Shape { shape : [(0,1), (1,1)], color: 1 };";
 
         let mut lexer = Lexer::new(&text);
 
-        let _ = parse_object_decl(&mut lexer);
+        let _ = lexer.advance();
+
+        let res = parse_object_decl(&mut lexer);
+
+        println!("{:?}", res);
+
+        assert!(!res.is_err())
     }
 
     #[test]
