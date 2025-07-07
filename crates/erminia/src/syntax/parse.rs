@@ -4,8 +4,24 @@ use crate::lexer::token::TokenKind;
 use crate::syntax::ast::{ObjectDecl, Program, Stmt};
 
 // ==================================================================================== //
-//  Consumers                                                                           //
+//  Utilities                                                                           //
 // ==================================================================================== //
+
+fn is_next_right_inclusive(tokens: &mut Lexer) -> ParserResult<bool> {
+    match tokens.peek().get_kind() {
+        TokenKind::RightPar => Ok(false),
+        TokenKind::RightBracket => Ok(true),
+        _ => Err(ParserError::ExpectedRightInclusivity)
+    }
+}
+
+fn is_next_left_inclusive(tokens: &mut Lexer) -> ParserResult<bool> {
+    match tokens.peek().get_kind() {
+        TokenKind::LeftPar => Ok(false),
+        TokenKind::LeftBracket => Ok(true),
+        _ => Err(ParserError::ExpectedLeftInclusivity)
+    }
+}
 
 fn next_is_comma(tokens: &mut Lexer) -> ParserResult<bool> {
     match tokens.peek().get_kind() {
@@ -69,7 +85,43 @@ fn consume_keyword(tokens: &mut Lexer, kind: TokenKind) -> ParserResult<()> {
 // Parsers                                                                              //
 // ==================================================================================== //
 
-// <object_call> ::= <id> ( <tuple> | ε ) 
+// <range> ::= ("[" | "(") <int_const> ".." <int_const> ("]" | ")")
+fn parse_range(tokens: &mut Lexer) -> ParserResult<()> {
+    let _is_left_inclusive = is_next_left_inclusive(tokens)?;
+    let _left = consume_int_const(tokens)?;
+    consume_keyword(tokens, TokenKind::Range)?;
+    let _right = consume_int_const(tokens)?;
+    let _is_right_inclusive = is_next_right_inclusive(tokens)?;
+    // return Range object
+    Ok(())
+}
+// <shape_tuple_iter> ::= <coord> "<-" <range>
+fn parse_shape_tuple_iter(tokens: &mut Lexer) -> ParserResult<()> {
+    let _coord = consume_identifier(tokens)?;
+    consume_keyword(tokens, TokenKind::LeftArrow)?;
+    let _range = parse_range(tokens)?;
+    Ok(())
+}
+
+// <shape_tuple_iter_pair> ::= <shape_tuple_iter> ("," <shape_tuple_iter>)
+fn parse_shape_tuple_iter_pair(tokens: &mut Lexer) -> ParserResult<()> {
+    let _first_tuple_iter = parse_shape_tuple_iter(tokens)?;
+    if next_is_comma(tokens)? {
+        let _second_tuple_iter = parse_shape_tuple_iter(tokens)?;
+    }
+    Ok(())
+}
+
+// <shape_tuple_compr> ::= <shape_tuple> "|" <shape_tuple_iter_pair>
+fn parse_shape_tuple_compr(tokens: &mut Lexer) -> ParserResult<()> {
+    let _tuple = parse_shape_tuple(tokens)?;
+    consume_keyword(tokens, TokenKind::Pipe)?;
+    // we may need to include _tuple here to assign coordinates correctly
+    let _tuple_iter_pair = parse_shape_tuple_iter_pair(tokens)?;
+    Ok(())
+}
+
+// <object_call> ::= <id> ( <shape_tuple> | ε ) 
 fn parse_object_call(tokens: &mut Lexer) -> ParserResult<()> {
     let _id = consume_identifier(tokens)?;
     match tokens.peek().get_kind() {
@@ -93,7 +145,7 @@ fn parse_shape_tuple(tokens: &mut Lexer) -> ParserResult<()> {
     Ok(())
 }
 
-// <shape> ::= <tuple> | <object_call> | <id> 
+// <shape> ::= <shape_tuple> | <shape_tuple_compr> | <object_call> | <id> 
 fn parse_shape(tokens: &mut Lexer) -> ParserResult<Stmt> {
     match tokens.peek().get_kind() {
         TokenKind::LeftPar => {
@@ -222,7 +274,7 @@ fn parse_object_compound_desc(tokens: &mut Lexer) -> ParserResult<()> {
     Ok(object_desc)
 }
 
-// <object_def> ::= "object" <id> <object_desc> ";"
+// <object_def> ::= "object" <id> <object_compound_desc> ";"
 fn parse_object_decl(tokens: &mut Lexer) -> ParserResult<()> {
     consume_keyword(tokens, TokenKind::Object)?;
     let _id = tokens.peek().get_text();
@@ -286,6 +338,32 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    struct Range {
+        left_inclusivity: bool, 
+        left: i32,
+        right_inclusivity: bool, 
+        right: i32
+    }
+
+    struct TupleCompr {
+        first: Range, 
+        second: Range
+    }
+
+
+    #[test]
+    fn test_range() {
+        let text = "
+        object Shape {
+            shape : [(x,y) | x <- [1..10], y <- [1..10), (0,1)],
+            color : 1
+        }";
+
+        let mut lexer = Lexer::new(&text);
+
+        let _ = parse_object_decl(&mut lexer);
+    }
 
     #[test]
     fn test_start() {
