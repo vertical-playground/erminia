@@ -334,6 +334,9 @@ fn get_next_symbol(
             let token = if matches!(chars.next(), Some('<')) {
                 pos.increment_pos(2);
                 TokenKind::ShiftLeft
+            } else if matches!(chars.next(), Some('-')) {
+                pos.increment_pos(2);
+                TokenKind::LeftArrow
             } else {
                 pos.increment_pos(1);
                 TokenKind::Lesser
@@ -420,6 +423,10 @@ fn get_next_symbol(
         Some(':') => {
             pos.increment_pos(1);
             TokenKind::Colon
+        }
+        Some('|') => {
+            pos.increment_pos(1);
+            TokenKind::Pipe
         }
         Some('"') => {
             pos.increment_pos(1);
