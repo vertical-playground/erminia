@@ -3,6 +3,8 @@ use derive_more::From;
 
 #[derive(Debug, From)]
 pub enum ParserError {
+    ExpectedLeftInclusivity,
+    ExpectedRightInclusivity,
     ParserError,
     ExpectedKeyWordError,
     ExpectedIdentifierError,
