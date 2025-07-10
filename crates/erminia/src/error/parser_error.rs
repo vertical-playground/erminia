@@ -1,9 +1,9 @@
+use crate::diagnostics::diagnostics::Location;
 use crate::error::lexer_error::LexerError;
 use crate::lexer::token::{Position, TokenKind};
-use crate::diagnostics::diagnostics::Location;
 // use derive_more::From;
 
-#[derive(Debug/*, From*/)]
+#[derive(Debug /*, From*/)]
 pub enum ParserError {
     ExpectedLeftInclusivity(Location, TokenKind),
     ExpectedRightInclusivity(Location, TokenKind),
@@ -12,7 +12,7 @@ pub enum ParserError {
     ExpectedIdentifierError(Location, TokenKind),
     ExpectedIntegerConstError(Location, TokenKind),
 
-    IoError(std::io::Error, Location, TokenKind)
+    IoError(std::io::Error, Location, TokenKind),
 }
 
 pub type ParserResult<T> = core::result::Result<T, ParserError>;

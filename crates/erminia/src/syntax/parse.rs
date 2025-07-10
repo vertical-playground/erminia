@@ -1,5 +1,5 @@
-use crate::error::parser_error::{ParserError, ParserResult};
 use crate::diagnostics::diagnostics::Location;
+use crate::error::parser_error::{ParserError, ParserResult};
 use crate::lexer::lex::Lexer;
 use crate::lexer::token::TokenKind;
 use crate::syntax::ast::{ObjectDecl, Program, Stmt};
@@ -14,8 +14,8 @@ fn is_next_right_inclusive(tokens: &mut Lexer) -> ParserResult<bool> {
         TokenKind::RightBracket => Ok(true),
         _ => Err(ParserError::ExpectedRightInclusivity(
             Location::new(tokens.peek().get_start()),
-            TokenKind::Object
-        ))
+            TokenKind::Object,
+        )),
     }
 }
 
@@ -25,8 +25,8 @@ fn is_next_left_inclusive(tokens: &mut Lexer) -> ParserResult<bool> {
         TokenKind::LeftBracket => Ok(true),
         _ => Err(ParserError::ExpectedLeftInclusivity(
             Location::new(tokens.peek().get_start()),
-            TokenKind::LeftBracket
-        ))
+            TokenKind::LeftBracket,
+        )),
     }
 }
 
@@ -56,7 +56,7 @@ fn consume_data_type(tokens: &mut Lexer) -> ParserResult<()> {
         }
         _ => Err(ParserError::ParserError(
             Location::new(tokens.peek().get_start()),
-            TokenKind::Object
+            TokenKind::Object,
         )),
     }
 }
@@ -67,7 +67,10 @@ fn consume_int_const<'a>(tokens: &mut Lexer<'a>) -> ParserResult<&'a str> {
         tokens.advance()?;
         Ok(int_const.text)
     } else {
-        Err(ParserError::ExpectedIntegerConstError(Location::new(tokens.peek().get_start()), TokenKind::Int))
+        Err(ParserError::ExpectedIntegerConstError(
+            Location::new(tokens.peek().get_start()),
+            TokenKind::Int,
+        ))
     }
 }
 
@@ -78,7 +81,10 @@ fn consume_identifier<'a>(tokens: &mut Lexer<'a>) -> ParserResult<&'a str> {
             tokens.advance()?;
             Ok(id.text)
         }
-        _ => Err(ParserError::ExpectedIdentifierError(Location::new(tokens.peek().get_start()), TokenKind::Ident)),
+        _ => Err(ParserError::ExpectedIdentifierError(
+            Location::new(tokens.peek().get_start()),
+            TokenKind::Ident,
+        )),
     }
 }
 
@@ -87,7 +93,10 @@ fn consume_keyword(tokens: &mut Lexer, kind: TokenKind) -> ParserResult<()> {
         tokens.advance()?;
         Ok(())
     } else {
-        Err(ParserError::ExpectedKeyWordError(Location::new(tokens.peek().get_start()), kind))
+        Err(ParserError::ExpectedKeyWordError(
+            Location::new(tokens.peek().get_start()),
+            kind,
+        ))
     }
 }
 
@@ -132,14 +141,14 @@ fn parse_shape_tuple_compr(tokens: &mut Lexer) -> ParserResult<()> {
     Ok(())
 }
 
-// <object_call> ::= <id> ( <shape_tuple> | ε ) 
+// <object_call> ::= <id> ( <shape_tuple> | ε )
 fn parse_object_call(tokens: &mut Lexer) -> ParserResult<()> {
     let _id = consume_identifier(tokens)?;
     match tokens.peek().get_kind() {
         TokenKind::LeftPar => {
             let _tuple = parse_shape_tuple(tokens)?;
         }
-        _ => ()
+        _ => (),
     }
     // Ok(Stmt::ObjectCall(ObjectCall::default(id)))
     // Ok(Stmt::ObjectCall(ObjectCall::new(id, tuple)))
@@ -156,20 +165,23 @@ fn parse_shape_tuple(tokens: &mut Lexer) -> ParserResult<()> {
     Ok(())
 }
 
-// <shape> ::= <shape_tuple> | <shape_tuple_compr> | <object_call> | <id> 
+// <shape> ::= <shape_tuple> | <shape_tuple_compr> | <object_call> | <id>
 fn parse_shape(tokens: &mut Lexer) -> ParserResult<Stmt> {
     match tokens.peek().get_kind() {
         TokenKind::LeftPar => {
             let _shape = parse_shape_tuple(tokens)?;
             Ok(Stmt::ObjectDecl(ObjectDecl::new()))
             // Ok(Expr::Shape(Shape::new()))
-        },
+        }
         TokenKind::Ident => {
             let _shape = parse_object_call(tokens)?;
             Ok(Stmt::ObjectDecl(ObjectDecl::new()))
             // Ok(Expr::Shape(Shape::new()))
         }
-        _ => Err(ParserError::ParserError(Location::new(tokens.peek().get_start()), TokenKind::LeftPar))
+        _ => Err(ParserError::ParserError(
+            Location::new(tokens.peek().get_start()),
+            TokenKind::LeftPar,
+        )),
     }
 }
 
@@ -188,7 +200,7 @@ fn parse_list_of_shapes(tokens: &mut Lexer) -> ParserResult<()> {
     let shape = parse_shape(tokens);
     match shape {
         Ok(sh) => _shapes.push(sh),
-        _ => () 
+        _ => (),
     }
     while next_is_comma(tokens)? {
         consume_keyword(tokens, TokenKind::Comma)?;
@@ -198,7 +210,6 @@ fn parse_list_of_shapes(tokens: &mut Lexer) -> ParserResult<()> {
     consume_keyword(tokens, TokenKind::RightBracket)?;
     Ok(())
 }
-
 
 // TODO
 // <object_shape> ::= "shape" ":" <list_of_shapes>
@@ -227,7 +238,10 @@ fn parse_object_desc(tokens: &mut Lexer) -> ParserResult<()> {
             // Ok(Stmt::ObjectDesc(ObjectDesc::new(shape, color)))
             Ok(())
         }
-        _ => Err(ParserError::ParserError(Location::new(tokens.peek().get_start()), TokenKind::ObjectShape)),
+        _ => Err(ParserError::ParserError(
+            Location::new(tokens.peek().get_start()),
+            TokenKind::ObjectShape,
+        )),
     }
 }
 
@@ -264,7 +278,10 @@ fn parse_stmt(tokens: &mut Lexer) -> ParserResult<Stmt> {
             // Ok(Stmt::VarDef(VarDef::new(type, id, expr)))
             Ok(Stmt::ObjectDecl(ObjectDecl::new()))
         }
-        _ => Err(ParserError::ExpectedKeyWordError(Location::new(tokens.peek().get_start()), TokenKind::Object)),
+        _ => Err(ParserError::ExpectedKeyWordError(
+            Location::new(tokens.peek().get_start()),
+            TokenKind::Object,
+        )),
     }
 }
 

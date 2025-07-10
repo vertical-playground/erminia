@@ -6,7 +6,7 @@ use crate::lexer::token::Position;
 
 #[derive(Debug)]
 pub struct Location {
-    position: Position
+    position: Position,
 }
 
 impl Location {
@@ -14,4 +14,3 @@ impl Location {
         Location { position: position }
     }
 }
-

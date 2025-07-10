@@ -1,8 +1,8 @@
 use std::fmt;
 use std::str::FromStr;
 
-use crate::error::lexer_error::{LexerError, LexerResult};
 use crate::diagnostics::diagnostics::Location;
+use crate::error::lexer_error::{LexerError, LexerResult};
 use crate::lexer::token::*;
 
 static KEYWORDS: [&str; 9] = [
@@ -492,7 +492,9 @@ fn get_next_symbol(
             if string_flag {
                 TokenKind::String
             } else {
-                return Err(LexerError::UnfinishedStringError(Location::new(Position::default())));
+                return Err(LexerError::UnfinishedStringError(Location::new(
+                    Position::default(),
+                )));
             }
         }
         _ => TokenKind::EOF,
