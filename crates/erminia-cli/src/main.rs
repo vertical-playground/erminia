@@ -1,4 +1,4 @@
-use erminia::lexer::lex_s::Lexer;
+use erminia::lexer::lex::Lexer;
 use erminia::syntax::parse::Parser;
 use std::io::{self, Write};
 
