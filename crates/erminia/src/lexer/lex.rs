@@ -5,7 +5,7 @@ use crate::diagnostics::diagnostics::Location;
 use crate::error::lexer_error::{LexerError, LexerResult};
 use crate::lexer::token::*;
 
-static KEYWORDS: [&str; 9] = [
+static KEYWORDS: [&'static str; 9] = [
     "def",
     "let",
     "object",
@@ -247,12 +247,12 @@ fn slice_from_position(text: &str, pos: PositionalOffset) -> LexerResult<&str> {
 
 fn get_next_keyword(
     text: &str,
-    keywords: Vec<&str>,
+    keywords: &[&str],
     mut pos: PositionalOffset,
 ) -> Option<(TokenKind, PositionalOffset)> {
     let starting_text = &text[pos.pos..];
 
-    for &kwd in &keywords {
+    for &kwd in keywords {
         if starting_text.starts_with(kwd) {
             pos.increment_pos(kwd.len());
             pos.increment_cursor(kwd.len());
@@ -599,7 +599,7 @@ fn get_next_token_kind(
     pos: PositionalOffset,
 ) -> LexerResult<(TokenKind, PositionalOffset)> {
     // it's a keywords
-    if let Some((token, pos)) = get_next_keyword(text, KEYWORDS.to_vec(), pos) {
+    if let Some((token, pos)) = get_next_keyword(text, &KEYWORDS, pos) {
         return Ok((token, pos));
     }
 
