@@ -264,10 +264,19 @@ fn get_next_keyword(
             };
             let mut chars = next_text.chars();
             let c = chars.next();
-            if matches!(c, Some(' ')) {
-                return Some((TokenKind::from_str(kwd).expect(""), pos));
-            } else if matches!(c, None) {
-                return Some((TokenKind::from_str(kwd).expect(""), pos));
+
+            match c {
+                Some(c) => {
+                    if c.is_alphanumeric() {
+                        return None;
+                    }
+
+                    return Some((TokenKind::from_str(kwd).expect(""), pos));
+                }
+
+                None => {
+                    return Some((TokenKind::from_str(kwd).expect(""), pos));
+                }
             }
         }
     }
@@ -739,5 +748,12 @@ mod test {
         ];
 
         let _ = check_lex(text, expected);
+    }
+
+    #[test]
+    fn test_start_with_for_keyword_with_symbol_after() {
+        let text = "color,";
+
+        assert!(text.starts_with("color"))
     }
 }
