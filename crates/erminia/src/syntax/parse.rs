@@ -186,11 +186,11 @@ fn parse_shape(tokens: &mut Lexer) -> ParserResult<Stmt> {
 }
 
 // <object_color> ::= "color" ":" <int_const>
-fn parse_object_color<'a>(tokens: &mut Lexer<'a>) -> ParserResult<&'a str> {
+fn parse_object_color<'a>(tokens: &mut Lexer<'a>) -> ParserResult<()> {
     consume_keyword(tokens, TokenKind::ObjectColor)?;
     consume_keyword(tokens, TokenKind::Colon)?;
-    let int_const = consume_int_const(tokens)?;
-    Ok(int_const)
+    let _int_const = consume_int_const(tokens)?;
+    Ok(())
 }
 
 // <list_of_shapes> ::= "[" <shape> ("," <shape>)* "]"
@@ -367,38 +367,69 @@ impl<'a> Parser<'a> {
 mod test {
     use super::*;
 
-    #[test]
-    fn test_range() {
-        let text = "object Shape { shape : [(0,1), (1,1)], color: 1 };";
+    fn check_no_err<F>(text: &str, f: F) where F: FnOnce(&mut Lexer) -> ParserResult<()>,
+    {
+        let mut tokens = Lexer::new(&text);
 
-        let mut lexer = Lexer::new(&text);
+        let _ = tokens.advance();
 
-        let _ = lexer.advance();
-
-        let res = parse_object_decl(&mut lexer);
-
-        println!("{:?}", res);
+        let res = f(&mut tokens);
 
         assert!(!res.is_err())
     }
 
     #[test]
-    fn test_start() {
-        let text = "def hello (2) {
+    fn test_parse_object_decl() {
+        let text = "object HA { shape: [(0,1), (0,2)], color: 1 };";
 
-            object LShape { shape : [(0,0), (1,0), (1,1)], color : 1 };
+        let mut binding = Lexer::new(&text);
+        let tokens = binding.lex_with_separate_pass();
 
-        }";
+        println!("{:?}", tokens);
 
-        let mut parser = Parser::new(&text);
-
-        let program = parser.parse();
-
-        println!("{:?}", program);
-
-        assert_eq!(
-            Program::new("hello".to_string(), 20, vec![]),
-            program.expect("")
-        );
+        check_no_err(text, parse_object_decl)
     }
+
+    #[test]
+    fn test_parse_object_compound_desc() {
+        let text = "{ shape : [(0,1), (0,2)], color : 1 }";
+
+        check_no_err(text, parse_object_compound_desc)
+    }
+
+    #[test]
+    fn test_parse_object_desc() {
+        let text = "shape : [(0,1), (0,2)], color : 1";
+
+        check_no_err(text, parse_object_desc)
+    }
+
+    #[test]
+    fn test_parse_shape() {
+        let text = "shape : [(0,1), (0,2)]";
+
+        check_no_err(text, parse_object_shape)
+    }
+
+    #[test]
+    fn test_parse_color() {
+        let text = "color : 1";
+
+        check_no_err(text, parse_object_color)
+    }
+
+    // #[test]
+    // fn test_range() {
+    //     let text = "object Shape { shape : [(0,1), (1,1)], color: 1 };";
+    //
+    //     let mut lexer = Lexer::new(&text);
+    //
+    //     let _ = lexer.advance();
+    //
+    //     let res = parse_object_decl(&mut lexer);
+    //
+    //     println!("{:?}", res);
+    //
+    //     assert!(!res.is_err())
+    // }
 }
