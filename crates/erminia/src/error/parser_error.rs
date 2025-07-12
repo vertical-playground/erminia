@@ -7,7 +7,7 @@ use crate::lexer::token::{Position, TokenKind};
 pub struct ParserErrorInfo {
     loc: Location,
     expected: TokenKind,
-    actual: TokenKind
+    actual: TokenKind,
 }
 
 impl Default for ParserErrorInfo {
@@ -15,18 +15,18 @@ impl Default for ParserErrorInfo {
         ParserErrorInfo {
             loc: Location::new(Position::default()),
             expected: TokenKind::START,
-            actual: TokenKind::EOF
+            actual: TokenKind::EOF,
         }
     }
 }
 
 impl ParserErrorInfo {
-    pub fn new(
-        loc: Location,
-        expected: TokenKind,
-        actual: TokenKind
-    ) -> Self {
-        ParserErrorInfo { loc, expected, actual }
+    pub fn new(loc: Location, expected: TokenKind, actual: TokenKind) -> Self {
+        ParserErrorInfo {
+            loc,
+            expected,
+            actual,
+        }
     }
 }
 
@@ -38,14 +38,15 @@ pub enum ParserError {
     ExpectedKeyWordError(ParserErrorInfo),
     ExpectedIdentifierError(ParserErrorInfo),
     ExpectedIntegerConstError(ParserErrorInfo),
-    IoError(std::io::Error, ParserErrorInfo)
+    IoError(std::io::Error, ParserErrorInfo),
 }
 
 pub type ParserResult<T> = core::result::Result<T, ParserError>;
 
 impl Default for ParserError {
-    fn default() -> Self { ParserError::ParserError(ParserErrorInfo::default()) }
-
+    fn default() -> Self {
+        ParserError::ParserError(ParserErrorInfo::default())
+    }
 }
 
 impl std::fmt::Display for ParserError {
@@ -59,13 +60,15 @@ impl std::error::Error for ParserError {}
 impl From<LexerError> for ParserError {
     fn from(value: LexerError) -> Self {
         match value {
-            _ => ParserError::default()
+            _ => ParserError::default(),
         }
     }
 }
 
 impl From<std::io::Error> for ParserError {
     fn from(value: std::io::Error) -> Self {
-        match value { _ => ParserError::default() }
+        match value {
+            _ => ParserError::default(),
+        }
     }
 }

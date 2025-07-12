@@ -1,5 +1,5 @@
 use crate::diagnostics::diagnostics::Location;
-use crate::error::parser_error::{ParserErrorInfo, ParserError, ParserResult};
+use crate::error::parser_error::{ParserError, ParserErrorInfo, ParserResult};
 use crate::lexer::lex::Lexer;
 use crate::lexer::token::TokenKind;
 use crate::syntax::ast::{ObjectDecl, Program, Stmt};
@@ -17,13 +17,11 @@ fn is_next_right_inclusive(tokens: &mut Lexer) -> ParserResult<bool> {
         _ => {
             let position = tokens.peek().get_start();
 
-            Err(ParserError::ExpectedRightInclusivity(
-                ParserErrorInfo::new(
-                    Location::new(position),
-                    TokenKind::LeftPar,
-                    kind
-                )
-            ))
+            Err(ParserError::ExpectedRightInclusivity(ParserErrorInfo::new(
+                Location::new(position),
+                TokenKind::LeftPar,
+                kind,
+            )))
         }
     }
 }
@@ -37,13 +35,11 @@ fn is_next_left_inclusive(tokens: &mut Lexer) -> ParserResult<bool> {
         _ => {
             let position = tokens.peek().get_start();
 
-            Err(ParserError::ExpectedLeftInclusivity(
-                ParserErrorInfo::new(
-                    Location::new(position),
-                    TokenKind::LeftBracket,
-                    kind
-                )
-            ))
+            Err(ParserError::ExpectedLeftInclusivity(ParserErrorInfo::new(
+                Location::new(position),
+                TokenKind::LeftBracket,
+                kind,
+            )))
         }
     }
 }
@@ -77,12 +73,11 @@ fn consume_data_type(tokens: &mut Lexer) -> ParserResult<()> {
         _ => {
             let position = tokens.peek().get_start();
 
-            Err(
-                ParserError::ParserError(
-                    ParserErrorInfo::new( Location::new(position), TokenKind::Object, kind)
-                )
-            )
-
+            Err(ParserError::ParserError(ParserErrorInfo::new(
+                Location::new(position),
+                TokenKind::Object,
+                kind,
+            )))
         }
     }
 }
@@ -94,11 +89,11 @@ fn consume_int_const<'a>(tokens: &mut Lexer<'a>) -> ParserResult<&'a str> {
         Ok(int_const.text)
     } else {
         Err(ParserError::ExpectedIntegerConstError(
-                ParserErrorInfo::new(
-                    Location::new(tokens.peek().get_start()),
-                    TokenKind::Int,
-                    int_const.get_kind()
-                )
+            ParserErrorInfo::new(
+                Location::new(tokens.peek().get_start()),
+                TokenKind::Int,
+                int_const.get_kind(),
+            ),
         ))
     }
 }
@@ -113,14 +108,12 @@ fn consume_identifier<'a>(tokens: &mut Lexer<'a>) -> ParserResult<&'a str> {
         _ => {
             let position = id.get_start();
 
-            Err(ParserError::ExpectedIdentifierError(
-                    ParserErrorInfo::new(
-                        Location::new(position),
-                        TokenKind::Ident,
-                        id.get_kind()
-                    )
-        ))
-            }
+            Err(ParserError::ExpectedIdentifierError(ParserErrorInfo::new(
+                Location::new(position),
+                TokenKind::Ident,
+                id.get_kind(),
+            )))
+        }
     }
 }
 
@@ -132,13 +125,11 @@ fn consume_keyword(tokens: &mut Lexer, expected: TokenKind) -> ParserResult<()> 
     } else {
         let position = tokens.peek().get_start();
 
-        Err(ParserError::ExpectedKeyWordError(
-                ParserErrorInfo::new(
-                    Location::new(position),
-                    expected,
-                    actual,
-                )
-        ))
+        Err(ParserError::ExpectedKeyWordError(ParserErrorInfo::new(
+            Location::new(position),
+            expected,
+            actual,
+        )))
     }
 }
 
@@ -210,7 +201,7 @@ fn parse_shape_tuple(tokens: &mut Lexer) -> ParserResult<()> {
 // <shape> ::= <shape_tuple> | <shape_tuple_compr> | <object_call> | <id>
 fn parse_shape(tokens: &mut Lexer) -> ParserResult<Stmt> {
     let kind = tokens.peek().get_kind();
-    
+
     match kind {
         TokenKind::LeftPar => {
             let _shape = parse_shape_tuple(tokens)?;
@@ -225,13 +216,11 @@ fn parse_shape(tokens: &mut Lexer) -> ParserResult<Stmt> {
         _ => {
             let position = tokens.peek().get_start();
 
-            Err(ParserError::ParserError(
-                    ParserErrorInfo::new(
-                        Location::new(position),
-                        TokenKind::LeftPar,
-                        kind
-                    )
-            ))
+            Err(ParserError::ParserError(ParserErrorInfo::new(
+                Location::new(position),
+                TokenKind::LeftPar,
+                kind,
+            )))
         }
     }
 }
@@ -293,14 +282,12 @@ fn parse_object_desc(tokens: &mut Lexer) -> ParserResult<()> {
         }
         _ => {
             let position = tokens.peek().get_start();
-            
-            Err(ParserError::ParserError(
-                    ParserErrorInfo::new(
-                    Location::new(position),
-                    TokenKind::ObjectShape,
-                    kind
-                    )
-            ))
+
+            Err(ParserError::ParserError(ParserErrorInfo::new(
+                Location::new(position),
+                TokenKind::ObjectShape,
+                kind,
+            )))
         }
     }
 }
@@ -315,7 +302,7 @@ fn parse_inner_compound_stmt(_tokens: &mut Lexer) -> ParserResult<()> {
 // <stmt> ::= <object_def> | <example_def> | <var_def>
 fn parse_stmt(tokens: &mut Lexer) -> ParserResult<Stmt> {
     let kind = tokens.peek().get_kind();
-    
+
     match kind {
         TokenKind::Object => {
             consume_keyword(tokens, TokenKind::Object)?;
@@ -342,14 +329,12 @@ fn parse_stmt(tokens: &mut Lexer) -> ParserResult<Stmt> {
         }
         _ => {
             let position = tokens.peek().get_start();
-            
-            Err(ParserError::ExpectedKeyWordError(
-                    ParserErrorInfo::new(
-                        Location::new(position),
-                        TokenKind::Object,
-                        kind
-                    )
-            ))
+
+            Err(ParserError::ExpectedKeyWordError(ParserErrorInfo::new(
+                Location::new(position),
+                TokenKind::Object,
+                kind,
+            )))
         }
     }
 }
@@ -436,7 +421,9 @@ impl<'a> Parser<'a> {
 mod test {
     use super::*;
 
-    fn check_no_err<F>(text: &str, f: F) where F: FnOnce(&mut Lexer) -> ParserResult<()>,
+    fn check_no_err<F>(text: &str, f: F)
+    where
+        F: FnOnce(&mut Lexer) -> ParserResult<()>,
     {
         let mut tokens = Lexer::new(&text);
 
