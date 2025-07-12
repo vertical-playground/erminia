@@ -58,6 +58,10 @@ fn next_is_stmt(tokens: &mut Lexer) -> ParserResult<bool> {
     }
 }
 
+fn match_next(tokens: &mut Lexer, matched: TokenKind) -> ParserResult<bool> {
+    Ok(tokens.peek().get_kind() == matched)
+}
+
 // ==================================================================================== //
 //  Consumers                                                                           //
 // ==================================================================================== //
@@ -88,9 +92,11 @@ fn consume_int_const<'a>(tokens: &mut Lexer<'a>) -> ParserResult<&'a str> {
         tokens.advance()?;
         Ok(int_const.text)
     } else {
+        let position = tokens.peek().get_start();
+
         Err(ParserError::ExpectedIntegerConstError(
             ParserErrorInfo::new(
-                Location::new(tokens.peek().get_start()),
+                Location::new(position),
                 TokenKind::Int,
                 int_const.get_kind(),
             ),
@@ -139,16 +145,29 @@ fn consume_keyword(tokens: &mut Lexer, expected: TokenKind) -> ParserResult<()> 
 
 // <range> ::= ("[" | "(") <int_const> ".." <int_const> ("]" | ")")
 fn parse_range(tokens: &mut Lexer) -> ParserResult<()> {
-    let _is_left_inclusive = is_next_left_inclusive(tokens)?;
+    let is_left_inclusive = is_next_left_inclusive(tokens)?;
+
+    if is_left_inclusive {
+        consume_keyword(tokens, TokenKind::LeftBrace)?;
+    } else {
+        consume_keyword(tokens, TokenKind::LeftPar)?;
+    }
+
     let _left = consume_int_const(tokens)?;
     consume_keyword(tokens, TokenKind::Range)?;
     let _right = consume_int_const(tokens)?;
-    let _is_right_inclusive = is_next_right_inclusive(tokens)?;
+    let is_right_inclusive = is_next_right_inclusive(tokens)?;
+
+    if is_right_inclusive {
+        consume_keyword(tokens, TokenKind::RightBrace)?;
+    } else {
+        consume_keyword(tokens, TokenKind::RightPar)?;
+    }
     // return Range object
     Ok(())
 }
 
-// <shape_tuple_iter> ::= <coord> "<-" <range>
+// <shape_tuple_iter> ::= <id> "<-" <range>
 fn parse_shape_tuple_iter(tokens: &mut Lexer) -> ParserResult<()> {
     let _coord = consume_identifier(tokens)?;
     consume_keyword(tokens, TokenKind::LeftArrow)?;
@@ -188,12 +207,24 @@ fn parse_object_call(tokens: &mut Lexer) -> ParserResult<()> {
     Ok(())
 }
 
-// <shape_tuple> ::= "(" <int_const> "," <int_const> ")"
+// <shape_tuple> ::= "(" (<int_const> | <id>) "," (<int_const> | <id>) ")"
 fn parse_shape_tuple(tokens: &mut Lexer) -> ParserResult<()> {
     consume_keyword(tokens, TokenKind::LeftPar)?;
-    let _left = consume_int_const(tokens)?;
+
+    if match_next(tokens, TokenKind::Int)? {
+        let _left = consume_int_const(tokens)?;
+    } else if match_next(tokens, TokenKind::Ident)? {
+        let _left = consume_identifier(tokens)?;
+    }
+
     consume_keyword(tokens, TokenKind::Comma)?;
-    let _right = consume_int_const(tokens)?;
+
+    if match_next(tokens, TokenKind::Int)? {
+        let _right = consume_int_const(tokens)?;
+    } else if match_next(tokens, TokenKind::Ident)? {
+        let _right = consume_identifier(tokens)?;
+    }
+
     consume_keyword(tokens, TokenKind::RightPar)?;
     Ok(())
 }
@@ -431,17 +462,22 @@ mod test {
 
         let res = f(&mut tokens);
 
+        if res.is_err() {
+            let mut lexer = Lexer::new(&text);
+
+            let tokens = lexer.lex_with_separate_pass();
+
+            println!("{}", text);
+            println!("{:?}", tokens);
+            println!("{:?}", res);
+        }
+
         assert!(!res.is_err())
     }
 
     #[test]
     fn test_parse_object_decl() {
         let text = "object HA { shape: [(0,1), (0,2)], color: 1 };";
-
-        let mut binding = Lexer::new(&text);
-        let tokens = binding.lex_with_separate_pass();
-
-        println!("{:?}", tokens);
 
         check_no_err(text, parse_object_decl)
     }
@@ -472,6 +508,13 @@ mod test {
         let text = "color : 1";
 
         check_no_err(text, parse_object_color)
+    }
+
+    #[test]
+    fn test_parse_shape_tuple_compr() {
+        let text = "(x,y) | x <- [0..1], y <- [0..1]";
+
+        check_no_err(text, parse_shape_tuple_compr)
     }
 
     // #[test]
