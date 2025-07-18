@@ -351,15 +351,18 @@ fn get_next_symbol(
             TokenKind::Mod
         }
         Some('<') => {
-            let token = if matches!(chars.next(), Some('<')) {
+            let next = chars.next();
+
+            let token = if matches!(next, Some('<')) {
                 pos.increment_pos(2);
                 pos.increment_cursor(2);
                 TokenKind::ShiftLeft
-            } else if matches!(chars.next(), Some('-')) {
+            } else if matches!(next, Some('-')) {
                 pos.increment_pos(2);
                 pos.increment_cursor(2);
                 TokenKind::LeftArrow
             } else {
+                println!("{:?}", next);
                 pos.increment_pos(1);
                 pos.increment_cursor(1);
                 TokenKind::Lesser
@@ -730,6 +733,18 @@ mod test {
         ];
 
         let _ = check_lex(text, expected);
+    }
+
+    #[test]
+    fn test_lex_leftarrow() {
+        let text = "<-";
+
+        let expected: Vec<Token> = vec![
+            Token::new(TokenKind::LeftArrow, "<-", 1, 0),
+            Token::new(TokenKind::EOF, "", 1, 2)
+        ];
+
+        check_lex(text, expected)
     }
 
     #[test]

@@ -450,12 +450,12 @@ mod tests {
 
     #[test]
     fn test_tk_colon() {
-        check_tk_eq(";", Ok(TokenKind::Colon))
+        check_tk_eq(";", Ok(TokenKind::SemiColon))
     }
 
     #[test]
     fn test_tk_semicolon() {
-        check_tk_eq(":", Ok(TokenKind::SemiColon))
+        check_tk_eq(":", Ok(TokenKind::Colon))
     }
 
     #[test]
