@@ -160,6 +160,21 @@ impl<'input> Lexer<'input> {
         Ok(())
     }
 
+    pub fn lookahead_by(&self, val: i8) -> LexerResult<TokenKind> {
+
+        let mut next_start = trim_starting_whitespace(self.content, self.start);
+        let mut kind;
+        (kind, next_start) = get_next_token_kind(self.content, next_start)?;
+
+        for _ in 0..val {
+            next_start = trim_starting_whitespace(self.content, next_start);
+
+            (kind, next_start) = get_next_token_kind(self.content, next_start)?;
+        }
+
+        Ok(kind)
+    }
+
     pub fn lookahead(&self) -> LexerResult<(TokenKind, PositionalOffset)> {
         let start_pos = trim_starting_whitespace(self.content, self.start);
 
@@ -175,9 +190,9 @@ impl<'input> Lexer<'input> {
 
         let (first, first_end_pos) = get_next_token_kind(self.content, first_start_pos)?;
 
-        let start_pos = trim_starting_whitespace(self.content, first_end_pos);
+        let second_start_pos = trim_starting_whitespace(self.content, first_end_pos);
 
-        let (second, second_end_pos) = get_next_token_kind(self.content, start_pos)?;
+        let (second, second_end_pos) = get_next_token_kind(self.content, second_start_pos)?;
 
         Ok((first, second, first_end_pos, second_end_pos))
     }

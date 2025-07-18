@@ -228,7 +228,7 @@ impl Position {
 
 impl std::fmt::Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = format!("Position: (x: {}, y: {})", self.x, self.y);
+        let s = format!("({}, {})", self.x, self.y);
 
         fmt::Display::fmt(&s, f)
     }
@@ -314,7 +314,7 @@ impl Token<'_> {
 impl std::fmt::Display for Token<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = format!(
-            "Token: (kind: {}, text: {}, size: {}, start: {}, end: {})",
+            "Token({}, {}, {}, {}, {})",
             self.kind, self.text, self.size, self.start, self.end
         );
 
