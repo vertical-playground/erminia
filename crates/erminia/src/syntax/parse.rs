@@ -19,7 +19,7 @@ fn is_next_right_inclusive(tokens: &mut Lexer) -> ParserResult<bool> {
 
             Err(ParserError::ExpectedRightInclusivity(ParserErrorInfo::new(
                 Location::new(position),
-                TokenKind::LeftPar,
+                TokenKind::RightBracket,
                 kind,
             )))
         }
@@ -44,22 +44,22 @@ fn is_next_left_inclusive(tokens: &mut Lexer) -> ParserResult<bool> {
     }
 }
 
-fn next_is_comma(tokens: &mut Lexer) -> ParserResult<bool> {
+fn next_is_comma(tokens: &mut Lexer) -> bool {
     match tokens.peek().get_kind() {
-        TokenKind::Comma => Ok(true),
-        _ => Ok(false),
+        TokenKind::Comma => true,
+        _ => false,
     }
 }
 
-fn next_is_stmt(tokens: &mut Lexer) -> ParserResult<bool> {
+fn next_is_stmt(tokens: &mut Lexer) -> bool {
     match tokens.peek().get_kind() {
-        TokenKind::Object | TokenKind::LetKwd | TokenKind::ProblemExample => Ok(true),
-        _ => Ok(false),
+        TokenKind::Object | TokenKind::LetKwd | TokenKind::ProblemExample => true,
+        _ => false,
     }
 }
 
-fn match_next(tokens: &mut Lexer, matched: TokenKind) -> ParserResult<bool> {
-    Ok(tokens.peek().get_kind() == matched)
+fn match_next(tokens: &mut Lexer, matched: TokenKind) -> bool {
+    tokens.peek().get_kind() == matched
 }
 
 // ==================================================================================== //
@@ -148,7 +148,7 @@ fn parse_range(tokens: &mut Lexer) -> ParserResult<()> {
     let is_left_inclusive = is_next_left_inclusive(tokens)?;
 
     if is_left_inclusive {
-        consume_keyword(tokens, TokenKind::LeftBrace)?;
+        consume_keyword(tokens, TokenKind::LeftBracket)?;
     } else {
         consume_keyword(tokens, TokenKind::LeftPar)?;
     }
@@ -159,7 +159,7 @@ fn parse_range(tokens: &mut Lexer) -> ParserResult<()> {
     let is_right_inclusive = is_next_right_inclusive(tokens)?;
 
     if is_right_inclusive {
-        consume_keyword(tokens, TokenKind::RightBrace)?;
+        consume_keyword(tokens, TokenKind::RightBracket)?;
     } else {
         consume_keyword(tokens, TokenKind::RightPar)?;
     }
@@ -178,7 +178,8 @@ fn parse_shape_tuple_iter(tokens: &mut Lexer) -> ParserResult<()> {
 // <shape_tuple_iter_pair> ::= <shape_tuple_iter> ("," <shape_tuple_iter>)
 fn parse_shape_tuple_iter_pair(tokens: &mut Lexer) -> ParserResult<()> {
     let _first_tuple_iter = parse_shape_tuple_iter(tokens)?;
-    if next_is_comma(tokens)? {
+    if next_is_comma(tokens) {
+        consume_keyword(tokens, TokenKind::Comma)?;
         let _second_tuple_iter = parse_shape_tuple_iter(tokens)?;
     }
     Ok(())
@@ -186,7 +187,7 @@ fn parse_shape_tuple_iter_pair(tokens: &mut Lexer) -> ParserResult<()> {
 
 // <shape_tuple_compr> ::= <shape_tuple> "|" <shape_tuple_iter_pair>
 fn parse_shape_tuple_compr(tokens: &mut Lexer) -> ParserResult<()> {
-    let _tuple = parse_shape_tuple(tokens)?;
+    let _tuple = parse_shape_tuple_generic(tokens)?;
     consume_keyword(tokens, TokenKind::Pipe)?;
     // we may need to include _tuple here to assign coordinates correctly
     let _tuple_iter_pair = parse_shape_tuple_iter_pair(tokens)?;
@@ -207,23 +208,38 @@ fn parse_object_call(tokens: &mut Lexer) -> ParserResult<()> {
     Ok(())
 }
 
-// <shape_tuple> ::= "(" (<int_const> | <id>) "," (<int_const> | <id>) ")"
-fn parse_shape_tuple(tokens: &mut Lexer) -> ParserResult<()> {
+// <shape_tuple_generic> ::= "(" (<int_const> | <id>) "," (<int_const> | <id>) ")"
+fn parse_shape_tuple_generic(tokens: &mut Lexer) -> ParserResult<()> {
     consume_keyword(tokens, TokenKind::LeftPar)?;
 
-    if match_next(tokens, TokenKind::Int)? {
+    if match_next(tokens, TokenKind::Int) {
         let _left = consume_int_const(tokens)?;
-    } else if match_next(tokens, TokenKind::Ident)? {
+    } else if match_next(tokens, TokenKind::Ident) {
         let _left = consume_identifier(tokens)?;
     }
 
     consume_keyword(tokens, TokenKind::Comma)?;
 
-    if match_next(tokens, TokenKind::Int)? {
+    if match_next(tokens, TokenKind::Int) {
         let _right = consume_int_const(tokens)?;
-    } else if match_next(tokens, TokenKind::Ident)? {
+    } else if match_next(tokens, TokenKind::Ident) {
         let _right = consume_identifier(tokens)?;
     }
+
+    consume_keyword(tokens, TokenKind::RightPar)?;
+
+    Ok(())
+}
+
+// <shape_tuple> ::= "(" <int_const> "," <int_const> ")"
+fn parse_shape_tuple(tokens: &mut Lexer) -> ParserResult<()> {
+    consume_keyword(tokens, TokenKind::LeftPar)?;
+
+    let _left = consume_int_const(tokens)?;
+
+    consume_keyword(tokens, TokenKind::Comma)?;
+
+    let _right = consume_int_const(tokens)?;
 
     consume_keyword(tokens, TokenKind::RightPar)?;
     Ok(())
@@ -235,8 +251,15 @@ fn parse_shape(tokens: &mut Lexer) -> ParserResult<Stmt> {
 
     match kind {
         TokenKind::LeftPar => {
+            let lookahead = tokens.lookahead_by(4)?;
+
+            if matches!(lookahead, TokenKind::Pipe) {
+                let _shape = parse_shape_tuple_compr(tokens)?;
+                return Ok(Stmt::ObjectDecl(ObjectDecl::new()));
+            }
+
             let _shape = parse_shape_tuple(tokens)?;
-            Ok(Stmt::ObjectDecl(ObjectDecl::new()))
+            return Ok(Stmt::ObjectDecl(ObjectDecl::new()));
             // Ok(Expr::Shape(Shape::new()))
         }
         TokenKind::Ident => {
@@ -273,7 +296,7 @@ fn parse_list_of_shapes(tokens: &mut Lexer) -> ParserResult<()> {
         Ok(sh) => _shapes.push(sh),
         _ => (),
     }
-    while next_is_comma(tokens)? {
+    while next_is_comma(tokens) {
         consume_keyword(tokens, TokenKind::Comma)?;
         let shape = parse_shape(tokens)?;
         _shapes.push(shape);
@@ -373,7 +396,7 @@ fn parse_stmt(tokens: &mut Lexer) -> ParserResult<Stmt> {
 // <stmts_list> ::= (<stmt>)*
 fn parse_list_of_stmts(tokens: &mut Lexer) -> ParserResult<Vec<Stmt>> {
     let mut stmts: Vec<Stmt> = vec![];
-    while next_is_stmt(tokens)? {
+    while next_is_stmt(tokens) {
         let stmt = parse_stmt(tokens)?;
         stmts.push(stmt);
     }
@@ -468,7 +491,7 @@ mod test {
             let tokens = lexer.lex_with_separate_pass();
 
             println!("{}", text);
-            println!("{:?}", tokens);
+            println!("{:#?}", tokens);
             println!("{:?}", res);
         }
 
@@ -478,6 +501,20 @@ mod test {
     #[test]
     fn test_parse_object_decl() {
         let text = "object HA { shape: [(0,1), (0,2)], color: 1 };";
+
+        check_no_err(text, parse_object_decl)
+    }
+
+    #[test]
+    fn test_parse_list_of_shapes() {
+        let text = "[(0,1), (0,2), obj, obj(1,1), (x,y) | x <- [0..1], y <- [0..2]]";
+
+        check_no_err(text, parse_list_of_shapes)
+    }
+
+    #[test]
+    fn test_parse_object_decl2() {
+        let text = "object HA { shape: [(0,1), (0,2), (x,y) | x <- [0..1], y <- [0..2]], color: 1 };";
 
         check_no_err(text, parse_object_decl)
     }
