@@ -64,6 +64,18 @@ impl PositionalOffset {
         self.line += val;
     }
 
+    fn decrement_pos(&mut self, val: usize) {
+        self.pos -= val;
+    }
+
+    fn decrement_cursor(&mut self, val: usize) {
+        self.cursor -= val;
+    }
+
+    fn decrement_line(&mut self, val: usize) {
+        self.line -= val;
+    }
+
     // fn reset_pos(&mut self) {
     //     self.pos = 0;
     // }
@@ -580,6 +592,9 @@ fn get_next_numeric(
                     pos.increment_pos(1);
                     pos.increment_cursor(1);
                 } else if c == '.' && float_flag == true {
+                    float_flag = false;
+                    pos.decrement_pos(1);
+                    pos.decrement_cursor(1);
                     break;
                 } else {
                     break;
