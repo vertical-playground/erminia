@@ -161,7 +161,6 @@ impl<'input> Lexer<'input> {
     }
 
     pub fn lookahead_by(&self, val: i8) -> LexerResult<TokenKind> {
-
         let mut next_start = trim_starting_whitespace(self.content, self.start);
         let mut kind;
         (kind, next_start) = get_next_token_kind(self.content, next_start)?;
@@ -771,7 +770,7 @@ mod test {
 
         let expected: Vec<Token> = vec![
             Token::new(TokenKind::LeftArrow, "<-", 1, 0),
-            Token::new(TokenKind::EOF, "", 1, 2)
+            Token::new(TokenKind::EOF, "", 1, 2),
         ];
 
         check_lex(text, expected)

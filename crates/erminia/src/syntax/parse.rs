@@ -514,7 +514,8 @@ mod test {
 
     #[test]
     fn test_parse_object_decl2() {
-        let text = "object HA { shape: [(0,1), (0,2), (x,y) | x <- [0..1], y <- [0..2]], color: 1 };";
+        let text =
+            "object HA { shape: [(0,1), (0,2), (x,y) | x <- [0..1], y <- [0..2]], color: 1 };";
 
         check_no_err(text, parse_object_decl)
     }
