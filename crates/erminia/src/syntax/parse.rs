@@ -143,6 +143,23 @@ fn consume_keyword(tokens: &mut Lexer, expected: TokenKind) -> ParserResult<()> 
 // Parsers                                                                              //
 // ==================================================================================== //
 
+// <var_def> ::= "let" <id> ":" <data_type> "=" <object_call> ";"
+fn parse_var_def(tokens: &mut Lexer) -> ParserResult<()> {
+    consume_keyword(tokens, TokenKind::LetKwd)?;
+
+    let _id = consume_identifier(tokens)?;
+
+    let _data_type = consume_data_type(tokens)?;
+
+    consume_keyword(tokens, TokenKind::Equals)?;
+
+    let _object = parse_object_call(tokens)?;
+
+    consume_keyword(tokens, TokenKind::SemiColon)?;
+
+    Ok(())
+}
+
 // <range> ::= ("[" | "(") <int_const> ".." <int_const> ("]" | ")")
 fn parse_range(tokens: &mut Lexer) -> ParserResult<()> {
     let is_left_inclusive = is_next_left_inclusive(tokens)?;
@@ -553,6 +570,13 @@ mod test {
         let text = "(x,y) | x <- [0..1], y <- [0..1]";
 
         check_no_err(text, parse_shape_tuple_compr)
+    }
+
+    #[test]
+    fn test_parse_var_def() {
+        let text = "let x: object = HA(0,1);";
+
+        check_no_err(text, parse_var_def)
     }
 
     // #[test]
