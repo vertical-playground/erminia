@@ -12,7 +12,7 @@ abstractions for shapes in the grid.
 
 > **__Keywords:__**
 
-    "def"   "object"    "superobject"    "shape"    "color"
+    "def"   "object"   "shape"    "color"
 
     "example"   "test"   "input"    "output"
 
@@ -91,9 +91,9 @@ abstractions for shapes in the grid.
 
 22. <func_call>           ::= <id> "(" [<expr_list>] ")" ";"
 
-23. <expr_list>           ::= <expr> ("," <expr>)
+23. <expr_list>           ::= <expr> ("," <expr>)*
 
-24. <var_def>             ::= <data_type> <id> "=" <object_call> ";"
+24. <var_def>             ::= "let" <id> ":" <data_type> "=" <object_call> ";"
 
 25. <data_type>           ::= "object" 
                             | "superobject"
@@ -120,29 +120,3 @@ abstractions for shapes in the grid.
 <!-- 28. \<fop_list> ::= \<type> **":"** \<expr> (**","** \<type> **":"** \<expr>)* -->
 <!-- 28. \<expr> ::= <int_const> | \<id> | \<expr> (**"+"** | **"-"**) \<expr> -->
 <!-- 29. \<include_call> ::= **"include"** \<id> **";"** -->
-
-### Compiler's Course Guide
-
-[Compiler's Course Guide](https://courses.softlab.ntua.gr/compilers/2024a/#lectures)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
