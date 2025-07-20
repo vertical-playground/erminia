@@ -144,12 +144,20 @@ fn consume_keyword(tokens: &mut Lexer, expected: TokenKind) -> ParserResult<()> 
 // ==================================================================================== //
 
 // <var_def> ::= "let" <id> ":" <data_type> "=" <object_call> ";"
+// let x: object = HA;
+// let x = HA;
 fn parse_var_def(tokens: &mut Lexer) -> ParserResult<()> {
+    let _data_type /* default of ToBeInfered */;
     consume_keyword(tokens, TokenKind::LetKwd)?;
 
     let _id = consume_identifier(tokens)?;
 
-    let _data_type = consume_data_type(tokens)?;
+    if match_next(tokens, TokenKind::Colon) {
+        consume_keyword(tokens, TokenKind::Colon)?;
+
+        // change here if it's explicit about data type
+        _data_type = consume_data_type(tokens)?;
+    }
 
     consume_keyword(tokens, TokenKind::Equals)?;
 
@@ -322,7 +330,6 @@ fn parse_list_of_shapes(tokens: &mut Lexer) -> ParserResult<()> {
     Ok(())
 }
 
-// TODO
 // <object_shape> ::= "shape" ":" <list_of_shapes>
 fn parse_object_shape(tokens: &mut Lexer) -> ParserResult<()> {
     consume_keyword(tokens, TokenKind::ObjectShape)?;
@@ -331,7 +338,6 @@ fn parse_object_shape(tokens: &mut Lexer) -> ParserResult<()> {
     Ok(())
 }
 
-// TODO
 // <object_desc> ::= <object_shape> "," <object_color> | <object_color> "," <object_shape>
 fn parse_object_desc(tokens: &mut Lexer) -> ParserResult<()> {
     let kind = tokens.peek().get_kind();
@@ -575,6 +581,20 @@ mod test {
     #[test]
     fn test_parse_var_def() {
         let text = "let x: object = HA(0,1);";
+
+        check_no_err(text, parse_var_def)
+    }
+
+    #[test]
+    fn test_parse_var_def_default_object() {
+        let text = "let x: object = HA;";
+
+        check_no_err(text, parse_var_def)
+    }
+
+    #[test]
+    fn test_parse_var_def_default_object_no_type() {
+        let text = "let x = HA;";
 
         check_no_err(text, parse_var_def)
     }
