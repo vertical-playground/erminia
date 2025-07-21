@@ -17,15 +17,15 @@ impl ObjectDecl {
 pub struct Program {
     id: String,
     int_const: i32,
-    stmts: Vec<Stmt>,
+    // stmts: Vec<Stmt>,
 }
 
 impl Program {
-    pub fn new(id: String, int_const: i32, stmts: Vec<Stmt>) -> Program {
+    pub fn new(id: String, int_const: i32, _stmts: () /* Vec<Stmt> */) -> Program {
         Program {
             id: id,
             int_const: int_const,
-            stmts: stmts,
+            // stmts: stmts,
         }
     }
 }
