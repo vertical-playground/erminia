@@ -47,7 +47,7 @@ abstractions for shapes in the grid.
  
  4. <stmt>                 ::= <object_def> 
                              | <example_def> 
-                             | <test_def> 
+                             | <solution_def> 
                              | <func_call> 
                              | <var_def>
  
@@ -87,7 +87,7 @@ abstractions for shapes in the grid.
 
 20. <example_def>         ::= "example" <id> <inner_compound_stmt>
 
-21. <test_def>            ::= "test" <id> <inner_compound_stmt>
+21. <solution_def>        ::= "solution" <id> <inner_compound_stmt>
 
 22. <func_call>           ::= <id> "(" [<expr_list>] ")" ";"
 
