@@ -2,7 +2,7 @@ use crate::diagnostics::diagnostics::Location;
 use crate::error::parser_error::{ParserError, ParserErrorInfo, ParserResult};
 use crate::lexer::lex::Lexer;
 use crate::lexer::token::TokenKind;
-use crate::syntax::ast::{ObjectDecl, Program, Stmt};
+use crate::ast::ast::{AST, Stmt, Expr};
 
 // ==================================================================================== //
 //  Utilities                                                                           //
@@ -96,7 +96,7 @@ fn consume_data_type(tokens: &mut Lexer) -> ParserResult<()> {
     }
 }
 
-fn consume_int_const<'a>(tokens: &mut Lexer<'a>) -> ParserResult<&'a str> {
+fn consume_int_const<'a>(tokens: &mut Lexer<'a>) -> ParserResult<i32> {
     let int_const = tokens.token;
     if int_const.get_kind() == TokenKind::Int {
         tokens.advance()?;
@@ -154,24 +154,24 @@ fn consume_keyword(tokens: &mut Lexer, expected: TokenKind) -> ParserResult<()> 
 // ==================================================================================== //
 
 // <expr> ::= <object_call> | <id> | <int_const>
-fn parse_expr(tokens: &mut Lexer) -> ParserResult<Stmt> {
+fn parse_expr(tokens: &mut Lexer) -> ParserResult<AST> {
     let kind = tokens.peek().get_kind();
+    let stmt: AST;
 
     match kind {
         TokenKind::Ident => {
             let lookahead = tokens.lookahead()?;
 
             if matches!(lookahead.0, TokenKind::LeftPar) {
-                let _object = parse_object_call(tokens)?;
+                stmt = parse_object_call(tokens)?;
             } else {
-                let _var = consume_identifier(tokens)?;
+                stmt = consume_identifier(tokens)?;
             }
-
-            Ok(Stmt::ObjectDecl(ObjectDecl::new()))
+            
+            Ok(stmt)
         },
         TokenKind::Int => {
-            let _var = consume_int_const(tokens)?;
-            Ok(Stmt::ObjectDecl(ObjectDecl::new()))
+            Ok(consume_int_const(tokens)?)
         },
         _ => {
             let position = tokens.peek().get_start();
@@ -186,10 +186,13 @@ fn parse_expr(tokens: &mut Lexer) -> ParserResult<Stmt> {
 }
 
 // <list_of_exprs> ::= <expr> ("," <expr>)*
-fn parse_list_of_exprs(tokens: &mut Lexer) -> ParserResult<()> {
+fn parse_list_of_exprs(tokens: &mut Lexer) -> ParserResult<AST> {
+    let exprs: AST = vec![];
 
     while next_is_expr(tokens) {
-        let _expr = parse_expr(tokens);
+        let expr = parse_expr(tokens);
+
+        exprs.push(expr);
         
         let next = tokens.peek().get_kind();
 
@@ -197,25 +200,30 @@ fn parse_list_of_exprs(tokens: &mut Lexer) -> ParserResult<()> {
             consume_keyword(tokens, TokenKind::Comma)?;
         }
     }
-    Ok(())
+
+    Ok(exprs)
 }
 
 // <func_call> ::= <id> "(" [<list_of_exprs>] ")" ";"
-fn parse_func_call(tokens: &mut Lexer) -> ParserResult<()> {
-    let _id = consume_identifier(tokens)?;
+fn parse_func_call(tokens: &mut Lexer) -> ParserResult<AST> {
+    let id = consume_identifier(tokens)?;
 
     consume_keyword(tokens, TokenKind::LeftPar)?;
 
-    let _exprs = parse_list_of_exprs(tokens)?;
+    let exprs = parse_list_of_exprs(tokens)?;
 
     consume_keyword(tokens, TokenKind::RightPar)?;
 
     consume_keyword(tokens, TokenKind::SemiColon)?;
 
-    Ok(())
+    let func = Expr::new_func_call(id, exprs);
+
+    let expr = AST::new_expr(func);
+
+    Ok(func)
 }
 
-// <inner_stmt> ::= <object_def> | <var_def> | <func_call>
+// <inner_stmt> ::= <object_decl> | <var_def> | <func_call>
 fn parse_inner_stmt(tokens: &mut Lexer) -> ParserResult<()> {
     let kind = tokens.peek().get_kind();
 
@@ -335,59 +343,64 @@ fn parse_shape_tuple_compr(tokens: &mut Lexer) -> ParserResult<()> {
 }
 
 // <object_call> ::= <id> <shape_tuple>
-fn parse_object_call(tokens: &mut Lexer) -> ParserResult<()> {
-    let _id = consume_identifier(tokens)?;
+fn parse_object_call(tokens: &mut Lexer) -> ParserResult<AST> {
+    let id = consume_identifier(tokens)?;
     match tokens.peek().get_kind() {
         TokenKind::LeftPar => {
-            let _tuple = parse_shape_tuple(tokens)?;
+            let tuple = parse_shape_tuple(tokens)?;
+            let object = Expr::new_object_call(id, Some(tuple));
+            Ok(AST::new_expr(object))
         }
-        _ => (),
+        _ => {
+            let object = Expr::new_object_call(id, None);
+            Ok(AST::new_expr(object))
+        }
     }
-    // Ok(Stmt::ObjectCall(ObjectCall::default(id)))
-    // Ok(Stmt::ObjectCall(ObjectCall::new(id, tuple)))
-    Ok(())
 }
 
 // <shape_tuple_generic> ::= "(" (<int_const> | <id>) "," (<int_const> | <id>) ")"
-fn parse_shape_tuple_generic(tokens: &mut Lexer) -> ParserResult<()> {
+fn parse_shape_tuple_generic(tokens: &mut Lexer) -> ParserResult<AST> {
     consume_keyword(tokens, TokenKind::LeftPar)?;
 
+    let left: AST;
+    let right: AST;
+
     if match_next(tokens, TokenKind::Int) {
-        let _left = consume_int_const(tokens)?;
+        let left = consume_int_const(tokens)?;
     } else if match_next(tokens, TokenKind::Ident) {
-        let _left = consume_identifier(tokens)?;
+        let left = consume_identifier(tokens)?;
     }
 
-    // <inner_stmt> ::= <object_def>
+    // <inner_stmt> ::= <object_decl>
     consume_keyword(tokens, TokenKind::Comma)?;
 
     if match_next(tokens, TokenKind::Int) {
-        let _right = consume_int_const(tokens)?;
+        let right = consume_int_const(tokens)?;
     } else if match_next(tokens, TokenKind::Ident) {
-        let _right = consume_identifier(tokens)?;
+        let right = consume_identifier(tokens)?;
     }
 
     consume_keyword(tokens, TokenKind::RightPar)?;
 
-    Ok(())
+    Ok(AST::new_stmt(Stmt::new_generic_tuple(left, right)))
 }
 
 // <shape_tuple> ::= "(" <int_const> "," <int_const> ")"
-fn parse_shape_tuple(tokens: &mut Lexer) -> ParserResult<()> {
+fn parse_shape_tuple(tokens: &mut Lexer) -> ParserResult<AST> {
     consume_keyword(tokens, TokenKind::LeftPar)?;
 
-    let _left = consume_int_const(tokens)?;
+    let left = consume_int_const(tokens)?;
 
     consume_keyword(tokens, TokenKind::Comma)?;
 
-    let _right = consume_int_const(tokens)?;
+    let right = consume_int_const(tokens)?;
 
     consume_keyword(tokens, TokenKind::RightPar)?;
-    Ok(())
+    Ok(AST::new_tuple(left, right))
 }
 
 // <shape> ::= <shape_tuple> | <shape_tuple_compr> | <object_call> | <id>
-fn parse_shape(tokens: &mut Lexer) -> ParserResult<Stmt> {
+fn parse_shape(tokens: &mut Lexer) -> ParserResult<AST> {
     let kind = tokens.peek().get_kind();
 
     match kind {
@@ -396,17 +409,17 @@ fn parse_shape(tokens: &mut Lexer) -> ParserResult<Stmt> {
 
             if matches!(lookahead, TokenKind::Pipe) {
                 let _shape = parse_shape_tuple_compr(tokens)?;
-                return Ok(Stmt::ObjectDecl(ObjectDecl::new()));
+                return Ok(AST::ObjectDecl(ObjectDecl::new()));
             }
 
             let _shape = parse_shape_tuple(tokens)?;
-            return Ok(Stmt::ObjectDecl(ObjectDecl::new()));
-            // Ok(Expr::Shape(Shape::new()))
+            return Ok(AST::ObjectDecl(ObjectDecl::new()));
+            // Ok(AST::Shape(Shape::new()))
         }
         TokenKind::Ident => {
             let _shape = parse_object_call(tokens)?;
-            Ok(Stmt::ObjectDecl(ObjectDecl::new()))
-            // Ok(Expr::Shape(Shape::new()))
+            Ok(AST::ObjectDecl(ObjectDecl::new()))
+            // Ok(AST::Shape(Shape::new()))
         }
         _ => {
             let position = tokens.peek().get_start();
@@ -430,7 +443,7 @@ fn parse_object_color<'a>(tokens: &mut Lexer<'a>) -> ParserResult<()> {
 
 // <list_of_shapes> ::= "[" <shape> ("," <shape>)* "]"
 fn parse_list_of_shapes(tokens: &mut Lexer) -> ParserResult<()> {
-    let mut _shapes: Vec<Stmt> = vec![];
+    let mut _shapes: Vec<AST> = vec![];
     consume_keyword(tokens, TokenKind::LeftBracket)?;
     let shape = parse_shape(tokens);
     match shape {
@@ -455,23 +468,23 @@ fn parse_object_shape(tokens: &mut Lexer) -> ParserResult<()> {
 }
 
 // <object_desc> ::= <object_shape> "," <object_color> | <object_color> "," <object_shape>
-fn parse_object_desc(tokens: &mut Lexer) -> ParserResult<()> {
+fn parse_object_desc(tokens: &mut Lexer) -> ParserResult<AST> {
     let kind = tokens.peek().get_kind();
 
     match kind {
         TokenKind::ObjectShape => {
-            let _shape = parse_object_shape(tokens)?;
+            let shape = parse_object_shape(tokens)?;
             consume_keyword(tokens, TokenKind::Comma)?;
-            let _color = parse_object_color(tokens)?;
-            // Ok(Stmt::ObjectDesc(ObjectDesc::new(shape, color)))
-            Ok(())
+            let color = parse_object_color(tokens)?;
+            let object_desc = Stmt::new_object_desc(shape, color);
+            Ok(AST::new_stmt(object_desc))
         }
         TokenKind::ObjectColor => {
-            let _color = parse_object_color(tokens)?;
+            let color = parse_object_color(tokens)?;
             consume_keyword(tokens, TokenKind::Comma)?;
-            let _shape = parse_object_shape(tokens)?;
-            // Ok(Stmt::ObjectDesc(ObjectDesc::new(shape, color)))
-            Ok(())
+            let shape = parse_object_shape(tokens)?;
+            let object_desc = Stmt::new_object_desc(shape, color);
+            Ok(AST::new_stmt(object_desc))
         }
         _ => {
             let position = tokens.peek().get_start();
@@ -485,32 +498,33 @@ fn parse_object_desc(tokens: &mut Lexer) -> ParserResult<()> {
     }
 }
 
-// <example_def> ::= "example" <id> <inner_compound_stmt>
-fn parse_problem_example(tokens: &mut Lexer) -> ParserResult<()> {
+// <example_decl> ::= "example" <id> <inner_compound_stmt>
+fn parse_problem_example(tokens: &mut Lexer) -> ParserResult<AST> {
     consume_keyword(tokens, TokenKind::ProblemExample)?;
-    let _id = consume_identifier(tokens)?;
-    let _desc = parse_inner_compound_stmt(tokens)?;
+    let id = consume_identifier(tokens)?;
+    let stmts = parse_inner_compound_stmt(tokens)?;
+    let example = Stmt::new_example_decl(id, stmts);
     Ok(())
 }
 
-// <stmt> ::= <object_def> | <example_def> | <var_def>
+// <stmt> ::= <object_decl> | <example_decl> | <var_def>
 fn parse_stmt(tokens: &mut Lexer) -> ParserResult<()> {
     let kind = tokens.peek().get_kind();
 
     match kind {
         TokenKind::Object => {
             let _object = parse_object_decl(tokens)?;
-            // Ok(Stmt::ObjectDecl(ObjectDecl::new(id, desc)))
+            // Ok(AST::ObjectDecl(ObjectDecl::new(id, desc)))
             Ok(())
         }
         TokenKind::ProblemExample => {
             let _example = parse_problem_example(tokens)?;
-            // Ok(Stmt::ExampleDecl(ExampleDecl::new(id, desc)))
+            // Ok(AST::ExampleDecl(ExampleDecl::new(id, desc)))
             Ok(())
         }
         TokenKind::LetKwd => {
             let _var = parse_var_def(tokens)?;
-            // Ok(Stmt::VarDef(VarDef::new(type, id, expr)))
+            // Ok(AST::VarDef(VarDef::new(type, id, expr)))
             Ok(())
         }
         _ => {
@@ -526,55 +540,60 @@ fn parse_stmt(tokens: &mut Lexer) -> ParserResult<()> {
 }
 
 // <stmts_list> ::= (<stmt>)*
-fn parse_stmt_list(tokens: &mut Lexer) -> ParserResult<() /* Vec<Stmt> */> {
-    // let mut stmts: Vec<Stmt> = vec![];
+fn parse_stmt_list(tokens: &mut Lexer) -> ParserResult<Vec<AST>> {
+    // let mut stmts: Vec<AST> = vec![];
+    let mut stmts: Vec<AST> = vec![];
+
     while next_is_stmt(tokens) {
-        let _stmt = parse_stmt(tokens)?;
-        // stmts.push(stmt);
+        let stmt = parse_stmt(tokens)?;
+        stmts.push(stmt);
     }
-    // Ok(stmts)
-    Ok(())
+
+    Ok(stmts)
 }
 
 // <object_compound_desc> ::= "{" <object_desc> "}"
-fn parse_object_compound_desc(tokens: &mut Lexer) -> ParserResult<()> {
+fn parse_object_compound_desc(tokens: &mut Lexer) -> ParserResult<AST> {
     consume_keyword(tokens, TokenKind::LeftBrace)?;
-    let _object_desc = parse_object_desc(tokens)?;
+    let object_desc = parse_object_desc(tokens)?;
     consume_keyword(tokens, TokenKind::RightBrace)?;
-    Ok(())
+    Ok(AST::new_stmt(object_desc))
 }
 
-// <object_def> ::= "object" <id> <object_compound_desc> ";"
-fn parse_object_decl(tokens: &mut Lexer) -> ParserResult<()> {
+// <object_decl> ::= "object" <id> <object_compound_desc> ";"
+fn parse_object_decl(tokens: &mut Lexer) -> ParserResult<AST> {
     consume_keyword(tokens, TokenKind::Object)?;
-    let _id = consume_identifier(tokens)?;
-    let _object_desc = parse_object_compound_desc(tokens)?;
+    let id = consume_identifier(tokens)?;
+    let object_desc = parse_object_compound_desc(tokens)?;
     consume_keyword(tokens, TokenKind::SemiColon)?;
-    Ok(())
+
+    let object_decl = Stmt::new_object_decl(id, object_desc);
+    Ok(AST::new_stmt(object_decl))
 }
 
 // <compound_stmt> ::= "{" [<stmt_list>] "}"
-fn parse_compound_stmt(tokens: &mut Lexer) -> ParserResult<()> {
+fn parse_compound_stmt(tokens: &mut Lexer) -> ParserResult<AST> {
     consume_keyword(tokens, TokenKind::LeftBrace)?;
-    let _stmts = parse_stmt_list(tokens)?;
+    let stmts = parse_stmt_list(tokens)?;
     consume_keyword(tokens, TokenKind::RightBrace)?;
-    Ok(_stmts)
+    Ok(stmts)
 }
 
 // <problem_declaration> ::= "def" <id> "(" <int_const> ")" <compound_stmt>
-fn parse_problem_decl(tokens: &mut Lexer) -> ParserResult<Program> {
+fn parse_problem_decl(tokens: &mut Lexer) -> ParserResult<AST> {
     consume_keyword(tokens, TokenKind::ProblemDef)?;
     let id = consume_identifier(tokens)?;
     consume_keyword(tokens, TokenKind::LeftPar)?;
     let int_const = consume_int_const(tokens)?;
     consume_keyword(tokens, TokenKind::RightPar)?;
-    let _stmts = parse_compound_stmt(tokens)?;
-    let program = Program::new(id.to_string(), int_const.parse::<i32>().unwrap(), _stmts);
-    Ok(program)
+    let stmts = parse_compound_stmt(tokens)?;
+    let program = Stmt::new_program(id, int_const, stmts);
+
+    Ok(AST::new_stmt(program))
 }
 
 // <program> ::= <problem_declaration>
-pub fn parse_program(tokens: &mut Lexer) -> ParserResult<Program> {
+pub fn parse_program(tokens: &mut Lexer) -> ParserResult<AST> {
     // [START] Token is first
     tokens.advance()?;
     let program = parse_problem_decl(tokens)?;
@@ -595,8 +614,8 @@ impl<'a> Parser<'a> {
         Parser { lexer: lexer }
     }
 
-    pub fn parse(&mut self) -> ParserResult<Program> {
-        parse_program(&mut self.lexer)
+    pub fn parse(&mut self) -> ParserResult<AST> {
+        parse_program(&mut self.lexer)?
     }
 }
 
