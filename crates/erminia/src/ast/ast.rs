@@ -67,6 +67,37 @@ impl ASTTrait for Program {
     }
 }
 
+impl ASTTrait for Range {
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
+    }
+}
+
+impl ASTTrait for TupleIterator {
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
+    }
+}
+
+impl ASTTrait for TupleComprehension {
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
+    }
+}
+
+
 impl ASTTrait for GenericTuple {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()

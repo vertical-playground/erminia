@@ -52,9 +52,29 @@ pub struct Tuple {
 }
 
 #[derive(Debug)]
+pub struct Range {
+    left_inclusive: bool,
+    right_inclusive: bool,
+    left: i32,
+    right: i32,
+}
+
+#[derive(Debug)]
+pub struct TupleIterator {
+    id: String,
+    range: BoxAST
+}
+
+#[derive(Debug)]
+pub struct TupleComprehension { 
+    tuple: BoxAST,
+    iter_pair: Vec<BoxAST>
+}
+
+#[derive(Debug)]
 pub struct Shape {
     shape_type: ShapeType,
-    values: Vec<BoxAST>,
+    values: BoxAST,
 }
 
 #[derive(Debug)]
@@ -110,6 +130,25 @@ impl GenericTupleOption {
     }
 }
 
+impl Range {
+    pub fn new(left_inclusive: bool, right_inclusive: bool, left: i32, right: i32) -> BoxAST {
+        Box::new(Range { left_inclusive, right_inclusive, left, right })
+    }
+}
+
+impl TupleIterator {
+    pub fn new(id: String, range: BoxAST) -> BoxAST {
+        Box::new(TupleIterator { id, range })
+    }
+}
+
+impl TupleComprehension {
+    pub fn new(tuple: BoxAST, iter_pair: Vec<BoxAST>) -> BoxAST {
+        Box::new(TupleComprehension { tuple, iter_pair })
+    }
+}
+
+
 impl GenericTuple {
     pub fn new(left: BoxAST, right: BoxAST) -> BoxAST {
         Box::new(GenericTuple { left, right })
@@ -130,7 +169,7 @@ impl VarDef {
 
 impl Shape {
     pub fn new_none() -> BoxAST {
-        Box::new(Shape { shape_type: ShapeType::ShapeTuple, values: vec![] })
+        Box::new(Shape { shape_type: ShapeType::ShapeTuple, values: GenericTupleOption::new_none() })
     }
 }
 
