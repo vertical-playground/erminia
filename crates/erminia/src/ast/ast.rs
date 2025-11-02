@@ -1,179 +1,178 @@
+use crate::ast::stmt::*;
+use crate::ast::expr::*;
+
+pub type BoxAST = Box<dyn ASTTrait>;
 pub type ASTError = String;
 
-pub enum GenericTupleOption {
-    Int(i32),
-    Id(&'static str),
-    None
-}
-
-pub struct GenericTuple {
-    left: GenericTupleOption,
-    right: GenericTupleOption,
-}
-
-impl GenericTuple {
-    pub fn new(left: GenericTupleOption, right: GenericTupleOption) -> Self {
-        GenericTuple { left, right }
-    }
-}
-
-pub struct Tuple {
-    left: i32,
-    right: i32,
-}
-
-impl Tuple {
-    pub fn new(left: i32, right: i32) -> Self {
-        Tuple { left, right }
-    }
-}
-
-pub struct ObjectShape {
-    shape: Vec<Tuple>
-}
-
-pub struct ObjectColor {
-    color: &'static str,
-}
-
-pub struct ObjectDesc {
-    shape: ObjectShape,
-    color: ObjectColor,
-}
-
-impl ObjectDesc {
-    pub fn new(shape: ObjectShape, color: ObjectColor) -> Self {
-        ObjectDesc { shape: shape, color: color }
-    }
-}
-
-pub struct ObjectDecl {
-    id: &'static str,
-    desc: ObjectDesc
-}
-
-impl ObjectDecl {
-    pub fn new(id: &'static str, desc: ObjectDesc) -> Self {
-        ObjectDecl { id, desc }
-    }
-}
-
-pub struct ObjectCall {
-    id: &'static str,
-    tuple: Option<Tuple> 
-}
-
-impl ObjectCall {
-    pub fn new(id: &'static str, tuple: Option<Tuple>) -> Self {
-        ObjectCall { id, tuple }
-    }
-}
-
-pub struct FuncCall {
-    id: &'static str,
-    expr: Vec<Expr>
-}
-
-impl FuncCall {
-    pub fn new(id: &'static str, exprs: Vec<Expr>) -> Self {
-        FuncCall { id, expr: exprs }
-    }
-}
-
-pub struct Program {
-    id: &'static str,
-    int_const: i32,
-    stmts: Vec<Stmt>
-}
-
-impl Program {
-    pub fn new(id: &'static str, int_const: i32, stmts: Vec<Stmt>) -> Self {
-        Program { id, int_const, stmts }
-    }
-}
-
-// ==================================================================================== //
-//  Stmts                                                                               //
-// ==================================================================================== //
-
-pub trait StmtTrait {
+pub trait ASTTrait {
     fn sem(&self /*, Semantic Table */) -> Result<bool, ASTError>;
-    fn run(&self) -> Result<u32, ASTError>;
-    fn get_scope(&self);
-    fn set_scope(&self);
+    fn print_on(&self) -> Result<(), ASTError>;
 }
 
-pub enum Stmt {
-    GenericTuple(GenericTuple),
-    Tuple(Tuple),
-    ObjectDecl(ObjectDecl),
-    ObjectDesc(ObjectDesc),
-    Program(Program)
+impl std::fmt::Debug for dyn ASTTrait {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ASTTrait")
+    }
 }
 
-impl Stmt {
-    pub fn new_tuple(left: i32, right: i32) -> Self {
-        Stmt::Tuple(Tuple::new(left, right))
-    }
+pub struct ASTDefault {}
 
-    pub fn new_generic_tuple(left: GenericTupleOption, right: GenericTupleOption) -> Self {
-        Stmt::GenericTuple(GenericTuple::new(left, right))
-    }
-
-    pub fn new_object_decl(id: &'static str, desc: ObjectDesc) -> Self {
-        Stmt::ObjectDecl(ObjectDecl::new(id, desc))
-    }
-
-    pub fn new_object_desc(shape: ObjectShape, color: ObjectColor) -> ObjectDesc {
-        ObjectDesc::new(shape, color)
-    }
-
-    pub fn new_program(id: &'static str, int_const: i32, stmts: Vec<Stmt>) -> Self {
-        Stmt::Program(Program::new(id, int_const, stmts))
+impl ASTDefault {
+    pub fn new() -> BoxAST {
+        Box::new(ASTDefault {})
     }
 }
 
 // ==================================================================================== //
-//  Exprs                                                                               //
+//  Implementations                                                                     //
 // ==================================================================================== //
 
-pub trait ExprTrait {
-    fn sem(&self /*, Semantic Table */) -> Result<bool, ASTError>;
-    fn eval(&self) -> Result<u32, ASTError>;
-    fn get_scope(&self);
-    fn set_scope(&self);
-}
-
-pub enum Expr {
-    FuncCall(FuncCall),
-    ObjectCall(ObjectCall),
-}
-
-impl Expr {
-    pub fn new_func_call(id: &'static str, tuple: Option<Tuple>) -> Self {
-        Expr::FuncCall(FuncCall::new(id, tuple))
+impl ASTTrait for ASTDefault {
+    fn sem(&self) -> Result<bool, ASTError> {
+        Ok(true)
     }
 
-    pub fn new_object_call(id: &'static str, tuple: Option<Tuple>) -> Self {
-        Expr::ObjectCall(ObjectCall::new(id, tuple))
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
     }
 }
 
-// ==================================================================================== //
-//  AST                                                                                 //
-// ==================================================================================== //
-
-pub enum AST {
-    Stmt(Stmt),
-    Expr(Expr)
-}
-
-impl AST {
-    pub fn new_stmt(stmt: Stmt) -> Self {
-        AST::Stmt(stmt)
+impl ASTTrait for GenericTupleOption {
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
     }
 
-    pub fn new_expr(expr: Expr) -> Self {
-        AST::Expr(expr)
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
+    }
+}
+
+impl ASTTrait for ProblemExample {
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
+    }
+}
+
+impl ASTTrait for Program { 
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
+    }
+}
+
+impl ASTTrait for GenericTuple {
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
+    }
+}
+
+impl ASTTrait for Tuple {
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
+    }
+}
+
+impl ASTTrait for Shape {
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
+    }
+}
+
+impl ASTTrait for ObjectShape {
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
+    }
+}
+
+impl ASTTrait for ObjectColor {
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
+    }
+}
+
+impl ASTTrait for ObjectDesc {
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
+    }
+}
+
+impl ASTTrait for ObjectDecl {
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
+    }
+}
+
+impl ASTTrait for VarDef {
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
+    }
+}
+
+impl ASTTrait for FuncCall { 
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
+    }
+}
+
+impl ASTTrait for ObjectCall { 
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
+    }
+}
+
+impl ASTTrait for RValue { 
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self) -> Result<(), ASTError> {
+        todo!()
     }
 }
