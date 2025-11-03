@@ -1,4 +1,5 @@
 use crate::ast::ast::{BoxAST, ASTTrait, ASTError};
+use crate::types::types::ErminiaType;
 
 pub type BoxStmt = Box<dyn StmtTrait>;
 
@@ -35,7 +36,7 @@ pub enum ShapeType {
 #[derive(Debug)]
 pub struct VarDef {
     id: String,
-    data_type: String,
+    data_type: ErminiaType,
     expr: BoxAST,
 }
 
@@ -162,7 +163,7 @@ impl Tuple {
 }
 
 impl VarDef { 
-    pub fn new(id: String, data_type: String, expr: BoxAST) -> BoxAST {
+    pub fn new(id: String, data_type: ErminiaType, expr: BoxAST) -> BoxAST {
         Box::new(VarDef { id, data_type, expr })
     }
 }

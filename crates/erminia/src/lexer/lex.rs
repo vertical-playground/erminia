@@ -725,6 +725,7 @@ mod test {
         let _ = check_lex(text, expected);
     }
 
+    // TODO: test fails
     #[test]
     fn test_float_member_int() {
         let text = "123.123.123";
