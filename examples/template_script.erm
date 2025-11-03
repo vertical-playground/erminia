@@ -29,8 +29,13 @@ def std () {
 
 def problem1 (7) {
 
-    object Background {
-        shape : [(x,y) | x <- [1..10], y <- [1..10)],
+    object VeryExtraShape {
+        shape : [
+            (x, y) | x <- [1..10], y <- [1..10],
+            (x, 1) | x <- [1..10] U [14..10],
+            (0, 1), (1,1),
+            Background(0,0)
+        ],
         color : "black"
     }
 

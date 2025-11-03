@@ -305,7 +305,6 @@ fn parse_var_def(tokens: &mut Lexer) -> ParserResult<BoxAST> {
     Ok(var_def)
 }
 
-// TODO
 // <range> ::= ("[" | "(") <int_const> ".." <int_const> ("]" | ")")
 fn parse_range(tokens: &mut Lexer) -> ParserResult<BoxAST> {
     let is_left_inclusive = is_next_left_inclusive(tokens)?;
@@ -316,9 +315,9 @@ fn parse_range(tokens: &mut Lexer) -> ParserResult<BoxAST> {
         consume_keyword(tokens, TokenKind::LeftPar)?;
     }
 
-    let _left = consume_int_const(tokens)?;
+    let left = consume_int_const(tokens)?;
     consume_keyword(tokens, TokenKind::Range)?;
-    let _right = consume_int_const(tokens)?;
+    let right = consume_int_const(tokens)?;
     let is_right_inclusive = is_next_right_inclusive(tokens)?;
 
     if is_right_inclusive {
@@ -326,39 +325,45 @@ fn parse_range(tokens: &mut Lexer) -> ParserResult<BoxAST> {
     } else {
         consume_keyword(tokens, TokenKind::RightPar)?;
     }
-    // return Range object
-    Ok(ASTDefault::new())
+
+    Ok(Range::new(
+        is_left_inclusive,
+        is_right_inclusive,
+        left,
+        right,
+    ))
 }
 
-// TODO
 // <shape_tuple_iter> ::= <id> "<-" <range>
 fn parse_shape_tuple_iter(tokens: &mut Lexer) -> ParserResult<BoxAST> {
-    let _coord = consume_identifier(tokens)?;
+    let coord = consume_identifier(tokens)?;
     consume_keyword(tokens, TokenKind::LeftArrow)?;
-    let _range = parse_range(tokens)?;
-    Ok(ASTDefault::new())
+    let range = parse_range(tokens)?;
+    Ok(TupleIterator::new(coord.to_string(), range))
 }
 
-// TODO
 // <shape_tuple_iter_pair> ::= <shape_tuple_iter> ("," <shape_tuple_iter>)
-fn parse_shape_tuple_iter_pair(tokens: &mut Lexer) -> ParserResult<BoxAST> {
-    let _first_tuple_iter = parse_shape_tuple_iter(tokens)?;
+fn parse_shape_tuple_iter_pair(tokens: &mut Lexer) -> ParserResult<Vec<BoxAST>> {
+    let mut pairs: Vec<BoxAST> = vec![];
+
+    let first_tuple_iter = parse_shape_tuple_iter(tokens)?;
+    pairs.push(first_tuple_iter);
+
     if next_is_comma(tokens) {
         consume_keyword(tokens, TokenKind::Comma)?;
-        let _second_tuple_iter = parse_shape_tuple_iter(tokens)?;
+        let second_tuple_iter = parse_shape_tuple_iter(tokens)?;
+        pairs.push(second_tuple_iter);
     }
-    Ok(ASTDefault::new())
+
+    Ok(pairs)
 }
 
-// TODO
 // <shape_tuple_compr> ::= <shape_tuple> "|" <shape_tuple_iter_pair>
 fn parse_shape_tuple_compr(tokens: &mut Lexer) -> ParserResult<BoxAST> {
-    let _tuple = parse_shape_tuple_generic(tokens)?;
+    let tuple = parse_shape_tuple_generic(tokens)?;
     consume_keyword(tokens, TokenKind::Pipe)?;
-    // we may need to include _tuple here to assign coordinates correctly
-    let _tuple_iter_pair = parse_shape_tuple_iter_pair(tokens)?;
-    // let shape = Shape::new(tuple, tuple_iter_pair);
-    Ok(ASTDefault::new())
+    let iter_pair = parse_shape_tuple_iter_pair(tokens)?;
+    Ok(TupleComprehension::new(tuple, iter_pair))
 }
 
 // <object_call> ::= <id> <shape_tuple>
@@ -647,15 +652,16 @@ impl<'a> Parser<'a> {
 mod test {
     use super::*;
 
-    fn check_no_err<F>(text: &str, f: F)
+    fn check_no_err<F, T>(text: &str, parser: F)
     where
-        F: FnOnce(&mut Lexer) -> ParserResult<()>,
+        F: FnOnce(&mut Lexer) -> ParserResult<T>,
+        T: std::fmt::Debug,
     {
         let mut tokens = Lexer::new(&text);
 
         let _ = tokens.advance();
 
-        let res = f(&mut tokens);
+        let res = parser(&mut tokens);
 
         if res.is_err() {
             let mut lexer = Lexer::new(&text);
@@ -755,7 +761,6 @@ mod test {
             draw(1, foo(0,1), a);
 
         }";
-            // let a = baz(0,0);
 
         check_no_err(text, parse_stmt)
     }
