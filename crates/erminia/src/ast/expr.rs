@@ -17,12 +17,12 @@ pub trait ExprTrait: ASTTrait {
 
 pub struct FuncCall {
     id: String,
-    expr: Vec<BoxAST>
+    pub exprs: Vec<BoxAST>
 }
 
 pub struct ObjectCall {
     id: String,
-    tuple: Option<BoxAST> 
+    pub tuple: Option<BoxAST> 
 }
 
 pub enum RValue {
@@ -36,7 +36,7 @@ pub enum RValue {
 
 impl FuncCall {
     pub fn new(id: String, exprs: Vec<BoxAST>) -> BoxAST {
-        Box::new(FuncCall { id, expr: exprs })
+        Box::new(FuncCall { id, exprs: exprs })
     }
 }
 
