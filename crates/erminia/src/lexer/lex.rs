@@ -580,6 +580,7 @@ fn get_next_numeric(
     let starting_text = &text[pos.pos..];
     let starting_pos = pos.pos;
     let mut float_flag = false;
+    let mut has_digits_after_dot = false;
 
     let mut chars = starting_text.chars();
 
@@ -596,6 +597,9 @@ fn get_next_numeric(
 
             while let Some(c) = chars.next() {
                 if c.is_numeric() || (c == '_') && (pos.pos - starting_pos % 3 == 0) {
+                    if float_flag {
+                        has_digits_after_dot = true;
+                    }
                     pos.increment_pos(1);
                     pos.increment_cursor(1);
                 } else if (c == '_') && ((pos.pos - starting_pos) % 3 == 0) {
@@ -606,10 +610,16 @@ fn get_next_numeric(
                     pos.increment_pos(1);
                     pos.increment_cursor(1);
                 } else if c == '.' && float_flag == true {
-                    float_flag = false;
-                    pos.decrement_pos(1);
-                    pos.decrement_cursor(1);
-                    break;
+                    if has_digits_after_dot {
+                        // Can't have second dot in float
+                        break;
+                    } else {
+                        // Handle range
+                        float_flag = false;
+                        pos.decrement_pos(1);
+                        pos.decrement_cursor(1);
+                        break;
+                    }
                 } else {
                     break;
                 }
