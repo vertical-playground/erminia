@@ -21,6 +21,7 @@ impl std::error::Error for ASTError {}
 
 impl From<LexerError> for ASTError {
     fn from(value: LexerError) -> Self {
+        #[allow(clippy::match_single_binding)]
         match value {
             _ => ASTError::ASTError,
         }
@@ -29,6 +30,7 @@ impl From<LexerError> for ASTError {
 
 impl From<std::io::Error> for ASTError {
     fn from(value: std::io::Error) -> Self {
+        #[allow(clippy::match_single_binding)]
         match value {
             _ => ASTError::ASTError,
         }

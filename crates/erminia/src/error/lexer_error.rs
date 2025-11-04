@@ -1,4 +1,4 @@
-use crate::diagnostics::diagnostics::Location;
+use crate::diagnostics::location::Location;
 use crate::lexer::token::Position;
 use derive_more::From;
 
@@ -24,6 +24,7 @@ impl std::error::Error for LexerError {}
 
 impl From<std::io::Error> for LexerError {
     fn from(value: std::io::Error) -> Self {
+        #[allow(clippy::match_single_binding)]
         match value {
             _ => LexerError::OpenFileFailureToken(Location::new(Position::default())),
         }

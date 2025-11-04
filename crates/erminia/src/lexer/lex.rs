@@ -1,11 +1,11 @@
 use std::fmt;
 use std::str::FromStr;
 
-use crate::diagnostics::diagnostics::Location;
+use crate::diagnostics::location::Location;
 use crate::error::lexer_error::{LexerError, LexerResult};
 use crate::lexer::token::*;
 
-static KEYWORDS: [&'static str; 10] = [
+static KEYWORDS: [&str; 10] = [
     "def",
     "let",
     "object",
@@ -116,26 +116,17 @@ impl fmt::Display for PositionalOffset {
 // Lexer Struct                                                                         //
 // ==================================================================================== //
 
+#[derive(Default, Debug)]
 pub struct Lexer<'input> {
     content: &'input str,
     start: PositionalOffset,
     pub token: Token<'input>,
 }
 
-impl Default for Lexer<'_> {
-    fn default() -> Self {
-        Lexer {
-            content: "",
-            start: PositionalOffset::default(),
-            token: Token::default(),
-        }
-    }
-}
-
 impl<'input> Lexer<'input> {
     pub fn new(content: &'input str) -> Lexer<'input> {
         Lexer {
-            content: content,
+            content,
             start: PositionalOffset::default(),
             token: Token::default(),
         }
@@ -321,7 +312,7 @@ fn get_next_symbol(
 
     let token = match chars.next() {
         Some('+') => {
-            let token = if matches!(chars.next(), Some('+')) {
+            if matches!(chars.next(), Some('+')) {
                 pos.increment_pos(2);
                 pos.increment_cursor(2);
                 TokenKind::Increment
@@ -329,12 +320,10 @@ fn get_next_symbol(
                 pos.increment_pos(1);
                 pos.increment_cursor(1);
                 TokenKind::Plus
-            };
-
-            token
+            }
         }
         Some('-') => {
-            let token = if matches!(chars.next(), Some('-')) {
+            if matches!(chars.next(), Some('-')) {
                 pos.increment_pos(2);
                 pos.increment_cursor(2);
                 TokenKind::Decrement
@@ -342,12 +331,10 @@ fn get_next_symbol(
                 pos.increment_pos(1);
                 pos.increment_cursor(1);
                 TokenKind::Minus
-            };
-
-            token
+            }
         }
         Some('*') => {
-            let token = if matches!(chars.next(), Some(')')) {
+            if matches!(chars.next(), Some(')')) {
                 pos.increment_pos(2);
                 pos.increment_cursor(2);
                 TokenKind::CommentEnd
@@ -355,12 +342,10 @@ fn get_next_symbol(
                 pos.increment_pos(1);
                 pos.increment_cursor(1);
                 TokenKind::Multi
-            };
-
-            token
+            }
         }
         Some('/') => {
-            let token = if matches!(chars.next(), Some('/')) {
+            if matches!(chars.next(), Some('/')) {
                 pos.increment_pos(2);
                 pos.increment_cursor(1);
                 TokenKind::FlatDiv
@@ -368,9 +353,7 @@ fn get_next_symbol(
                 pos.increment_pos(1);
                 pos.increment_cursor(1);
                 TokenKind::Div
-            };
-
-            token
+            }
         }
         Some('%') => {
             pos.increment_pos(1);
@@ -398,7 +381,7 @@ fn get_next_symbol(
             token
         }
         Some('>') => {
-            let token = if matches!(chars.next(), Some('>')) {
+            if matches!(chars.next(), Some('>')) {
                 pos.increment_pos(2);
                 pos.increment_cursor(2);
                 TokenKind::ShiftRight
@@ -406,9 +389,7 @@ fn get_next_symbol(
                 pos.increment_pos(1);
                 pos.increment_cursor(1);
                 TokenKind::Greater
-            };
-
-            token
+            }
         }
         Some('=') => {
             pos.increment_pos(1);
@@ -416,7 +397,7 @@ fn get_next_symbol(
             TokenKind::Equals
         }
         Some('(') => {
-            let token = if matches!(chars.next(), Some('*')) {
+            if matches!(chars.next(), Some('*')) {
                 pos.increment_pos(2);
                 pos.increment_cursor(2);
                 TokenKind::CommentStart
@@ -424,12 +405,10 @@ fn get_next_symbol(
                 pos.increment_pos(1);
                 pos.increment_cursor(1);
                 TokenKind::LeftPar
-            };
-
-            token
+            }
         }
         Some('.') => {
-            let token = if matches!(chars.next(), Some('.')) {
+            if matches!(chars.next(), Some('.')) {
                 pos.increment_pos(2);
                 pos.increment_cursor(2);
                 TokenKind::Range
@@ -437,12 +416,10 @@ fn get_next_symbol(
                 pos.increment_pos(1);
                 pos.increment_cursor(1);
                 TokenKind::Member
-            };
-
-            token
+            }
         }
         Some('!') => {
-            let token = if matches!(chars.next(), Some('=')) {
+            if matches!(chars.next(), Some('=')) {
                 pos.increment_pos(2);
                 pos.increment_cursor(2);
                 TokenKind::NotEquals
@@ -450,9 +427,7 @@ fn get_next_symbol(
                 pos.increment_pos(1);
                 pos.increment_cursor(1);
                 TokenKind::Not
-            };
-
-            token
+            }
         }
         Some(')') => {
             pos.increment_pos(1);
@@ -504,8 +479,9 @@ fn get_next_symbol(
             pos.increment_cursor(1);
             let mut string_flag = false;
 
-            while let Some(ch) = chars.next() {
-                match ch {
+            // while let Some(ch) = chars.next() {
+            for c in chars {
+                match c {
                     '"' => {
                         pos.increment_pos(1);
                         pos.increment_cursor(1);
@@ -518,7 +494,7 @@ fn get_next_symbol(
                         pos.reset_cursor();
                     }
                     _ => {
-                        if ch == '"' && string_flag {
+                        if c == '"' && string_flag {
                             break;
                         } else {
                             pos.increment_pos(1);
@@ -558,7 +534,8 @@ fn get_next_ident(text: &str, mut pos: PositionalOffset) -> Option<(TokenKind, P
             pos.increment_pos(1);
             pos.increment_cursor(1);
 
-            while let Some(c) = chars.next() {
+            // while let Some(c) = chars.next() {
+            for c in chars {
                 if c.is_alphanumeric() | (c == '_') {
                     pos.increment_pos(1);
                     pos.increment_cursor(1);
@@ -570,7 +547,7 @@ fn get_next_ident(text: &str, mut pos: PositionalOffset) -> Option<(TokenKind, P
             Some((TokenKind::Ident, pos))
         }
 
-        None => return None,
+        None => None,
     }
 }
 
@@ -596,21 +573,22 @@ fn get_next_numeric(
             pos.increment_pos(1);
             pos.increment_cursor(1);
 
-            while let Some(c) = chars.next() {
+            // while let Some(c) = chars.next() {
+            for c in chars {
                 if c.is_numeric() || (c == '_') && (pos.pos - starting_pos % 3 == 0) {
                     if float_flag {
                         has_digits_after_dot = true;
                     }
                     pos.increment_pos(1);
                     pos.increment_cursor(1);
-                } else if (c == '_') && ((pos.pos - starting_pos) % 3 == 0) {
+                } else if (c == '_') && ((pos.pos - starting_pos).is_multiple_of(3)) {
                     pos.increment_pos(1);
                     pos.increment_cursor(1);
-                } else if float_flag == false && c == '.' {
+                } else if !float_flag && c == '.' {
                     float_flag = true;
                     pos.increment_pos(1);
                     pos.increment_cursor(1);
-                } else if c == '.' && float_flag == true {
+                } else if c == '.' && float_flag {
                     if has_digits_after_dot {
                         // Can't have second dot in float
                         break;
@@ -633,7 +611,7 @@ fn get_next_numeric(
             Some((TokenKind::Float, pos))
         }
 
-        None => return None,
+        None => None,
     }
 }
 
@@ -661,7 +639,7 @@ fn get_next_token_kind(
         return Ok((token, pos));
     }
 
-    return Ok((TokenKind::EOF, pos));
+    Ok((TokenKind::EOF, pos))
 }
 
 // ==================================================================================== //
@@ -679,7 +657,7 @@ mod test {
         assert_eq!(expected, actual);
     }
 
-    // #[test]
+    #[test]
     fn test_lex_def_leftpar_comment_start() {
         let text = "   def ((*!!=";
 
@@ -692,10 +670,10 @@ mod test {
             Token::new(TokenKind::EOF, "", 1, 13),
         ];
 
-        let _ = check_lex(text, expected);
+        check_lex(text, expected);
     }
 
-    // #[test]
+    #[test]
     fn test_lex_multiple_pluses() {
         let text = "++++ ++ ++ +";
 
@@ -708,11 +686,11 @@ mod test {
             Token::new(TokenKind::EOF, "", 1, 12),
         ];
 
-        let _ = check_lex(text, expected);
+        check_lex(text, expected);
     }
 
-    // #[test]
-    // #[should_panic]
+    #[test]
+    #[should_panic]
     fn test_lex_unfinished_string() {
         let text = "\"hello";
 
@@ -721,10 +699,10 @@ mod test {
             Token::new(TokenKind::EOF, "", 1, 20),
         ];
 
-        let _ = check_lex(text, expected);
+        check_lex(text, expected);
     }
 
-    // #[test]
+    #[test]
     fn test_lex_string() {
         let text = "\"poustiiiii hliaaaa\"";
 
@@ -733,7 +711,7 @@ mod test {
             Token::new(TokenKind::EOF, "", 1, 20),
         ];
 
-        let _ = check_lex(text, expected);
+        check_lex(text, expected);
     }
 
     #[test]
@@ -747,7 +725,7 @@ mod test {
             Token::new(TokenKind::EOF, "", 1, 11),
         ];
 
-        let _ = check_lex(text, expected);
+        check_lex(text, expected);
     }
 
     #[test]
@@ -760,7 +738,7 @@ mod test {
             Token::new(TokenKind::EOF, "", 1, 11),
         ];
 
-        let _ = check_lex(text, expected);
+        check_lex(text, expected);
     }
 
     #[test]
@@ -772,7 +750,7 @@ mod test {
             Token::new(TokenKind::EOF, "", 1, 7),
         ];
 
-        let _ = check_lex(text, expected);
+        check_lex(text, expected);
     }
 
     #[test]
@@ -784,7 +762,7 @@ mod test {
             Token::new(TokenKind::EOF, "", 1, 2),
         ];
 
-        check_lex(text, expected)
+        check_lex(text, expected);
     }
 
     #[test]
@@ -802,7 +780,7 @@ mod test {
             Token::new(TokenKind::EOF, "", 2, 23),
         ];
 
-        let _ = check_lex(text, expected);
+        check_lex(text, expected);
     }
 
     #[test]

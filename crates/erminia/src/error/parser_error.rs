@@ -1,4 +1,4 @@
-use crate::diagnostics::diagnostics::Location;
+use crate::diagnostics::location::Location;
 use crate::error::lexer_error::LexerError;
 use crate::lexer::token::{Position, TokenKind};
 // use derive_more::From;
@@ -59,6 +59,7 @@ impl std::error::Error for ParserError {}
 
 impl From<LexerError> for ParserError {
     fn from(value: LexerError) -> Self {
+        #[allow(clippy::match_single_binding)]
         match value {
             _ => ParserError::default(),
         }
@@ -67,6 +68,7 @@ impl From<LexerError> for ParserError {
 
 impl From<std::io::Error> for ParserError {
     fn from(value: std::io::Error) -> Self {
+        #[allow(clippy::match_single_binding)]
         match value {
             _ => ParserError::default(),
         }
