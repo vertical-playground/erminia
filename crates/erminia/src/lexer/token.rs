@@ -1,4 +1,4 @@
-use crate::diagnostics::diagnostics::Location;
+use crate::diagnostics::location::Location;
 use crate::error::lexer_error::LexerError;
 use std::fmt;
 
@@ -211,21 +211,15 @@ impl std::str::FromStr for TokenKind {
 // Position Struct                                                                      //
 // ==================================================================================== //
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct Position {
     x: usize,
     y: usize,
 }
 
-impl Default for Position {
-    fn default() -> Self {
-        Position { x: 0, y: 0 }
-    }
-}
-
 impl Position {
     pub fn new(x: usize, y: usize) -> Position {
-        Position { x: x, y: y }
+        Position { x, y }
     }
 }
 
@@ -269,11 +263,11 @@ impl Token<'_> {
         let start = Position::new(col, row);
         let end = Position::new(col + size, row);
         Token {
-            kind: kind,
-            text: text,
-            size: size,
-            start: start,
-            end: end,
+            kind,
+            text,
+            size,
+            start,
+            end,
         }
     }
 

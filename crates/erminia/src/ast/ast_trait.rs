@@ -20,7 +20,7 @@ impl std::fmt::Debug for dyn ASTTrait {
 pub struct ASTDefault {}
 
 impl ASTDefault {
-    pub fn new() -> BoxAST {
+    pub fn boxed() -> BoxAST {
         Box::new(ASTDefault {})
     }
 }
