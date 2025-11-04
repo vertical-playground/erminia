@@ -5,6 +5,7 @@ use crate::lexer::token::TokenKind;
 use crate::ast::ast::{ASTDefault, BoxAST};
 use crate::ast::stmt::*;
 use crate::ast::expr::*;
+use crate::types::types::ErminiaType;
 
 // ==================================================================================== //
 //  Utilities                                                                           //
@@ -78,20 +79,22 @@ fn match_next(tokens: &mut Lexer, matched: TokenKind) -> bool {
 //  Consumers                                                                           //
 // ==================================================================================== //
 
-// TODO
-fn consume_data_type(tokens: &mut Lexer) -> ParserResult<String> {
+// TODO: handle tuple & list types
+fn consume_data_type(tokens: &mut Lexer) -> ParserResult<ErminiaType> {
     let kind = tokens.peek().get_kind();
-
+    // TODO: Map TokenKind to ErminiaType
     match kind {
         TokenKind::Object => {
             tokens.advance()?;
-            // Ok(ErminiaType::ObjectType)
-            Ok("object".to_string())
+            Ok(ErminiaType::Object)
         }
         TokenKind::Int => {
             tokens.advance()?;
-            // Ok(ErminiaType::IntType)
-            Ok("int".to_string())
+            Ok(ErminiaType::Int)
+        }
+        TokenKind::String => {
+            tokens.advance()?;
+            Ok(ErminiaType::String)
         }
         _ => {
             let position = tokens.peek().get_start();
@@ -278,10 +281,10 @@ fn parse_inner_compound_stmt(tokens: &mut Lexer) -> ParserResult<Vec<BoxAST>> {
     Ok(stmts)
 }
 
-// TODO
+// TODO: handle type inference
 // <var_def> ::= "let" <id> ":" <data_type> "=" <expr> ";"
 fn parse_var_def(tokens: &mut Lexer) -> ParserResult<BoxAST> {
-    let mut data_type: String = "object".to_string();
+    let mut data_type: ErminiaType = ErminiaType::default();
     consume_keyword(tokens, TokenKind::LetKwd)?;
 
     let id = consume_identifier(tokens)?;
@@ -676,6 +679,25 @@ mod test {
         assert!(!res.is_err())
     }
 
+    fn check_type(text: &str, expected_type: ErminiaType) {
+        let mut tokens = Lexer::new(&text);
+
+        let _ = tokens.advance();
+
+        let _ = consume_keyword(&mut tokens, TokenKind::LetKwd);
+        let _ = consume_identifier(&mut tokens);
+
+        let actual_type = if match_next(&mut tokens, TokenKind::Colon) {
+            let _ = consume_keyword(&mut tokens, TokenKind::Colon);
+            consume_data_type(&mut tokens).unwrap()
+        // TODO: Add logic for type inference
+        } else {
+            ErminiaType::default()
+        };
+
+        assert_eq!(actual_type, expected_type);
+    }
+
     #[test]
     fn test_parse_object_decl() {
         let text = "object HA { shape: [(0,1), (0,2)], color: 1 };";
@@ -739,6 +761,13 @@ mod test {
 
         check_no_err(text, parse_var_def)
     }
+    
+    #[test]
+    fn test_parse_var_def_explicit_object_type() {
+        let text = "let x: object = HA(0,1);";
+
+        check_type(text, ErminiaType::Object);
+    }
 
     #[test]
     fn test_parse_var_def_default_object() {
@@ -748,11 +777,26 @@ mod test {
     }
 
     #[test]
+    fn test_parse_var_def_default_explicit_object_type() {
+        let text = "let x: object = HA;";
+
+        check_type(text, ErminiaType::Object);
+    }
+
+    #[test]
     fn test_parse_var_def_default_object_no_type() {
         let text = "let x = HA;";
 
         check_no_err(text, parse_var_def)
     }
+
+    // TODO: Include when inference logic is added
+    // #[test]
+    // fn test_parse_var_def_default_no_object_type() {
+    //     let text = "let x = HA;";
+
+    //     check_type(text, ErminiaType::Object);
+    // }
 
     #[test]
     fn test_parse_example_decl() {
