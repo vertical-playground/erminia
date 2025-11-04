@@ -1,5 +1,5 @@
-use crate::ast::stmt::*;
 use crate::ast::expr::*;
+use crate::ast::stmt::*;
 
 pub type BoxAST = Box<dyn ASTTrait>;
 pub type ASTError = String;
@@ -73,7 +73,7 @@ impl ASTTrait for ProblemExample {
         print_tabs(f, depth)?;
         let s = format!("<ProblemExample id: {:?}>", self.id);
         writeln!(f, "{}", s)?;
-        for stmt in &self.stmts { 
+        for stmt in &self.stmts {
             stmt.print_on(f, depth)?;
         }
         Ok(())
@@ -90,7 +90,7 @@ impl ASTTrait for ProblemSolution {
         print_tabs(f, depth)?;
         let s = format!("<ProblemSolution id: {:?}>", self.id);
         writeln!(f, "{}", s)?;
-        for stmt in &self.stmts { 
+        for stmt in &self.stmts {
             stmt.print_on(f, depth)?;
         }
         Ok(())
@@ -107,7 +107,7 @@ impl ASTTrait for ProblemInput {
         print_tabs(f, depth)?;
         let s = format!("<ProblemInput id: {:?}>", self.id);
         writeln!(f, "{}", s)?;
-        for stmt in &self.stmts { 
+        for stmt in &self.stmts {
             stmt.print_on(f, depth)?;
         }
         Ok(())
@@ -124,14 +124,14 @@ impl ASTTrait for ProblemOutput {
         print_tabs(f, depth)?;
         let s = format!("<ProblemOutput id: {:?}>", self.id);
         writeln!(f, "{}", s)?;
-        for stmt in &self.stmts { 
+        for stmt in &self.stmts {
             stmt.print_on(f, depth)?;
         }
         Ok(())
     }
 }
 
-impl ASTTrait for Program { 
+impl ASTTrait for Program {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -139,7 +139,7 @@ impl ASTTrait for Program {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
         let s = format!("<Program id: {:?}, int_const: {}>", self.id, self.int_const);
         writeln!(f, "{}", s)?;
-        for stmt in &self.stmts { 
+        for stmt in &self.stmts {
             stmt.print_on(f, depth)?;
         }
         Ok(())
@@ -195,7 +195,6 @@ impl ASTTrait for TupleComprehension {
     }
 }
 
-
 impl ASTTrait for GenericTuple {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
@@ -239,7 +238,6 @@ impl ASTTrait for Shape {
         Ok(())
     }
 }
-
 
 impl ASTTrait for ObjectShape {
     fn sem(&self) -> Result<bool, ASTError> {
@@ -308,14 +306,17 @@ impl ASTTrait for VarDef {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
         depth += 1;
         print_tabs(f, depth)?;
-        let s = format!("<VarDef id: {:?}, data_type: {:?}>", self.id, self.data_type);
+        let s = format!(
+            "<VarDef id: {:?}, data_type: {:?}>",
+            self.id, self.data_type
+        );
         writeln!(f, "{}", s)?;
         let _ = &self.expr.print_on(f, depth)?;
         Ok(())
     }
 }
 
-impl ASTTrait for FuncCall { 
+impl ASTTrait for FuncCall {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -332,7 +333,7 @@ impl ASTTrait for FuncCall {
     }
 }
 
-impl ASTTrait for ObjectCall { 
+impl ASTTrait for ObjectCall {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -349,7 +350,7 @@ impl ASTTrait for ObjectCall {
     }
 }
 
-impl ASTTrait for RValue { 
+impl ASTTrait for RValue {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }

@@ -1,11 +1,10 @@
-use crate::ast::ast::{BoxAST, ASTTrait, ASTError};
+use crate::ast::ast::{ASTError, ASTTrait, BoxAST};
 
 pub type BoxExpr = Box<dyn ExprTrait>;
 
 // ==================================================================================== //
 //  Traits                                                                              //
 // ==================================================================================== //
-
 
 pub trait ExprTrait: ASTTrait {
     fn eval(&self) -> Result<u32, ASTError>;
@@ -17,12 +16,12 @@ pub trait ExprTrait: ASTTrait {
 
 pub struct FuncCall {
     pub id: String,
-    pub exprs: Vec<BoxAST>
+    pub exprs: Vec<BoxAST>,
 }
 
 pub struct ObjectCall {
     pub id: String,
-    pub tuple: Option<BoxAST> 
+    pub tuple: Option<BoxAST>,
 }
 
 #[derive(Debug)]

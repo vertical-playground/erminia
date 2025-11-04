@@ -11,6 +11,8 @@ pub struct Location {
 
 impl Location {
     pub fn new(position: Position) -> Self {
-        Location { _position: position }
+        Location {
+            _position: position,
+        }
     }
 }

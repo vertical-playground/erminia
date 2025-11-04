@@ -1,10 +1,10 @@
+use crate::ast::ast::BoxAST;
+use crate::ast::expr::*;
+use crate::ast::stmt::*;
 use crate::diagnostics::diagnostics::Location;
 use crate::error::parser_error::{ParserError, ParserErrorInfo, ParserResult};
 use crate::lexer::lex::Lexer;
 use crate::lexer::token::TokenKind;
-use crate::ast::ast::BoxAST;
-use crate::ast::stmt::*;
-use crate::ast::expr::*;
 use crate::types::types::ErminiaType;
 
 // ==================================================================================== //
@@ -56,17 +56,16 @@ fn next_is_comma(tokens: &mut Lexer) -> bool {
 
 fn next_is_expr(tokens: &mut Lexer) -> bool {
     match tokens.peek().get_kind() {
-        TokenKind::Ident | TokenKind::Int => {
-
-            true
-        },
-        _ => false
+        TokenKind::Ident | TokenKind::Int => true,
+        _ => false,
     }
 }
 
 fn next_is_stmt(tokens: &mut Lexer) -> bool {
     match tokens.peek().get_kind() {
-        TokenKind::Ident | TokenKind::Object | TokenKind::LetKwd | TokenKind::ProblemExample => true,
+        TokenKind::Ident | TokenKind::Object | TokenKind::LetKwd | TokenKind::ProblemExample => {
+            true
+        }
         _ => false,
     }
 }
@@ -180,12 +179,10 @@ fn parse_expr(tokens: &mut Lexer) -> ParserResult<BoxAST> {
                 let id = consume_identifier(tokens)?;
                 stmt = RValue::new_id(id.to_string());
             }
-            
+
             Ok(stmt)
-        },
-        TokenKind::Int => {
-            Ok(RValue::new_int(consume_int_const(tokens)?))
-        },
+        }
+        TokenKind::Int => Ok(RValue::new_int(consume_int_const(tokens)?)),
         _ => {
             let position = tokens.peek().get_start();
 
@@ -206,7 +203,7 @@ fn parse_list_of_exprs(tokens: &mut Lexer) -> ParserResult<Vec<BoxAST>> {
         let expr = parse_expr(tokens)?;
 
         exprs.push(expr);
-        
+
         let next = tokens.peek().get_kind();
 
         if matches!(next, TokenKind::Comma) {
@@ -800,7 +797,7 @@ mod test {
 
         check_no_err(text, parse_var_def)
     }
-    
+
     #[test]
     fn test_parse_var_def_explicit_object_type() {
         let text = "let x: object = HA(0,1);";

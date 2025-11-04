@@ -1,4 +1,4 @@
-use crate::ast::ast::{BoxAST, ASTTrait, ASTError};
+use crate::ast::ast::{ASTError, ASTTrait, BoxAST};
 use crate::types::types::ErminiaType;
 
 pub type BoxStmt = Box<dyn StmtTrait>;
@@ -6,7 +6,6 @@ pub type BoxStmt = Box<dyn StmtTrait>;
 // ==================================================================================== //
 //  Traits                                                                              //
 // ==================================================================================== //
-
 
 pub trait StmtTrait: ASTTrait {
     fn run(&self) -> Result<u32, ASTError>;
@@ -20,7 +19,7 @@ pub trait StmtTrait: ASTTrait {
 pub enum GenericTupleOption {
     Int(i32),
     Id(String),
-    None
+    None,
 }
 
 #[derive(Debug)]
@@ -63,13 +62,13 @@ pub struct Range {
 #[derive(Debug)]
 pub struct TupleIterator {
     pub id: String,
-    pub range: BoxAST
+    pub range: BoxAST,
 }
 
 #[derive(Debug)]
-pub struct TupleComprehension { 
+pub struct TupleComprehension {
     pub tuple: BoxAST,
-    pub iter_pair: Vec<BoxAST>
+    pub iter_pair: Vec<BoxAST>,
 }
 
 #[derive(Debug)]
@@ -80,7 +79,7 @@ pub struct Shape {
 
 #[derive(Debug)]
 pub struct ObjectShape {
-    pub shape: Vec<BoxAST>
+    pub shape: Vec<BoxAST>,
 }
 
 #[derive(Debug)]
@@ -97,7 +96,7 @@ pub struct ObjectDesc {
 #[derive(Debug)]
 pub struct ObjectDecl {
     pub id: String,
-    pub desc: BoxAST
+    pub desc: BoxAST,
 }
 
 #[derive(Debug)]
@@ -128,7 +127,7 @@ pub struct ProblemOutput {
 pub struct Program {
     pub id: String,
     pub int_const: i32,
-    pub stmts: Vec<BoxAST>
+    pub stmts: Vec<BoxAST>,
 }
 
 // ==================================================================================== //
@@ -151,7 +150,12 @@ impl GenericTupleOption {
 
 impl Range {
     pub fn new(left_inclusive: bool, right_inclusive: bool, left: i32, right: i32) -> BoxAST {
-        Box::new(Range { left_inclusive, right_inclusive, left, right })
+        Box::new(Range {
+            left_inclusive,
+            right_inclusive,
+            left,
+            right,
+        })
     }
 }
 
@@ -167,7 +171,6 @@ impl TupleComprehension {
     }
 }
 
-
 impl GenericTuple {
     pub fn new(left: BoxAST, right: BoxAST) -> BoxAST {
         Box::new(GenericTuple { left, right })
@@ -180,15 +183,22 @@ impl Tuple {
     }
 }
 
-impl VarDef { 
+impl VarDef {
     pub fn new(id: String, data_type: ErminiaType, expr: BoxAST) -> BoxAST {
-        Box::new(VarDef { id, data_type, expr })
+        Box::new(VarDef {
+            id,
+            data_type,
+            expr,
+        })
     }
 }
 
 impl Shape {
     pub fn new_none() -> BoxAST {
-        Box::new(Shape { shape_type: ShapeType::ShapeTuple, values: GenericTupleOption::new_none() })
+        Box::new(Shape {
+            shape_type: ShapeType::ShapeTuple,
+            values: GenericTupleOption::new_none(),
+        })
     }
 }
 
@@ -206,7 +216,10 @@ impl ObjectColor {
 
 impl ObjectDesc {
     pub fn new(shape: BoxAST, color: BoxAST) -> BoxAST {
-        Box::new(ObjectDesc { shape: shape, color: color })
+        Box::new(ObjectDesc {
+            shape: shape,
+            color: color,
+        })
     }
 }
 
@@ -242,6 +255,10 @@ impl ProblemOutput {
 
 impl Program {
     pub fn new(id: String, int_const: i32, stmts: Vec<BoxAST>) -> BoxAST {
-        Box::new(Program { id, int_const, stmts })
+        Box::new(Program {
+            id,
+            int_const,
+            stmts,
+        })
     }
 }
