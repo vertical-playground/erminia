@@ -1,4 +1,4 @@
-use crate::ast::ast::{BoxAST, ASTTrait, ASTError};
+use crate::ast::ast::{ASTError, ASTTrait, BoxAST};
 use crate::types::types::ErminiaType;
 
 pub type BoxStmt = Box<dyn StmtTrait>;
@@ -6,7 +6,6 @@ pub type BoxStmt = Box<dyn StmtTrait>;
 // ==================================================================================== //
 //  Traits                                                                              //
 // ==================================================================================== //
-
 
 pub trait StmtTrait: ASTTrait {
     fn run(&self) -> Result<u32, ASTError>;
@@ -20,7 +19,7 @@ pub trait StmtTrait: ASTTrait {
 pub enum GenericTupleOption {
     Int(i32),
     Id(String),
-    None
+    None,
 }
 
 #[derive(Debug)]
@@ -35,9 +34,9 @@ pub enum ShapeType {
 
 #[derive(Debug)]
 pub struct VarDef {
-    id: String,
-    data_type: ErminiaType,
-    expr: BoxAST,
+    pub id: String,
+    pub data_type: ErminiaType,
+    pub expr: BoxAST,
 }
 
 #[derive(Debug)]
@@ -48,44 +47,44 @@ pub struct GenericTuple {
 
 #[derive(Debug)]
 pub struct Tuple {
-    left: i32,
-    right: i32,
+    pub left: i32,
+    pub right: i32,
 }
 
 #[derive(Debug)]
 pub struct Range {
-    left_inclusive: bool,
-    right_inclusive: bool,
-    left: i32,
-    right: i32,
+    pub left_inclusive: bool,
+    pub right_inclusive: bool,
+    pub left: i32,
+    pub right: i32,
 }
 
 #[derive(Debug)]
 pub struct TupleIterator {
-    id: String,
-    pub range: BoxAST
+    pub id: String,
+    pub range: BoxAST,
 }
 
 #[derive(Debug)]
-pub struct TupleComprehension { 
+pub struct TupleComprehension {
     pub tuple: BoxAST,
-    pub iter_pair: Vec<BoxAST>
+    pub iter_pair: Vec<BoxAST>,
 }
 
 #[derive(Debug)]
 pub struct Shape {
-    shape_type: ShapeType,
+    pub shape_type: ShapeType,
     pub values: BoxAST,
 }
 
 #[derive(Debug)]
 pub struct ObjectShape {
-    pub shape: Vec<BoxAST>
+    pub shape: Vec<BoxAST>,
 }
 
 #[derive(Debug)]
 pub struct ObjectColor {
-    color: String,
+    pub color: i32,
 }
 
 #[derive(Debug)]
@@ -96,21 +95,39 @@ pub struct ObjectDesc {
 
 #[derive(Debug)]
 pub struct ObjectDecl {
-    id: String,
-    pub desc: BoxAST
+    pub id: String,
+    pub desc: BoxAST,
 }
 
 #[derive(Debug)]
 pub struct ProblemExample {
-    id: String,
+    pub id: String,
+    pub stmts: Vec<BoxAST>,
+}
+
+#[derive(Debug)]
+pub struct ProblemSolution {
+    pub id: String,
+    pub stmts: Vec<BoxAST>,
+}
+
+#[derive(Debug)]
+pub struct ProblemInput {
+    pub id: String,
+    pub stmts: Vec<BoxAST>,
+}
+
+#[derive(Debug)]
+pub struct ProblemOutput {
+    pub id: String,
     pub stmts: Vec<BoxAST>,
 }
 
 #[derive(Debug)]
 pub struct Program {
-    id: String,
-    int_const: i32,
-    pub stmts: Vec<BoxAST>
+    pub id: String,
+    pub int_const: i32,
+    pub stmts: Vec<BoxAST>,
 }
 
 // ==================================================================================== //
@@ -133,7 +150,12 @@ impl GenericTupleOption {
 
 impl Range {
     pub fn new(left_inclusive: bool, right_inclusive: bool, left: i32, right: i32) -> BoxAST {
-        Box::new(Range { left_inclusive, right_inclusive, left, right })
+        Box::new(Range {
+            left_inclusive,
+            right_inclusive,
+            left,
+            right,
+        })
     }
 }
 
@@ -149,7 +171,6 @@ impl TupleComprehension {
     }
 }
 
-
 impl GenericTuple {
     pub fn new(left: BoxAST, right: BoxAST) -> BoxAST {
         Box::new(GenericTuple { left, right })
@@ -162,15 +183,22 @@ impl Tuple {
     }
 }
 
-impl VarDef { 
+impl VarDef {
     pub fn new(id: String, data_type: ErminiaType, expr: BoxAST) -> BoxAST {
-        Box::new(VarDef { id, data_type, expr })
+        Box::new(VarDef {
+            id,
+            data_type,
+            expr,
+        })
     }
 }
 
 impl Shape {
     pub fn new_none() -> BoxAST {
-        Box::new(Shape { shape_type: ShapeType::ShapeTuple, values: GenericTupleOption::new_none() })
+        Box::new(Shape {
+            shape_type: ShapeType::ShapeTuple,
+            values: GenericTupleOption::new_none(),
+        })
     }
 }
 
@@ -181,14 +209,17 @@ impl ObjectShape {
 }
 
 impl ObjectColor {
-    pub fn new(color: String) -> BoxAST {
+    pub fn new(color: i32) -> BoxAST {
         Box::new(ObjectColor { color })
     }
 }
 
 impl ObjectDesc {
     pub fn new(shape: BoxAST, color: BoxAST) -> BoxAST {
-        Box::new(ObjectDesc { shape: shape, color: color })
+        Box::new(ObjectDesc {
+            shape: shape,
+            color: color,
+        })
     }
 }
 
@@ -204,8 +235,30 @@ impl ProblemExample {
     }
 }
 
+impl ProblemSolution {
+    pub fn new(id: String, stmts: Vec<BoxAST>) -> BoxAST {
+        Box::new(ProblemSolution { id, stmts })
+    }
+}
+
+impl ProblemInput {
+    pub fn new(id: String, stmts: Vec<BoxAST>) -> BoxAST {
+        Box::new(ProblemInput { id, stmts })
+    }
+}
+
+impl ProblemOutput {
+    pub fn new(id: String, stmts: Vec<BoxAST>) -> BoxAST {
+        Box::new(ProblemOutput { id, stmts })
+    }
+}
+
 impl Program {
     pub fn new(id: String, int_const: i32, stmts: Vec<BoxAST>) -> BoxAST {
-        Box::new(Program { id, int_const, stmts })
+        Box::new(Program {
+            id,
+            int_const,
+            stmts,
+        })
     }
 }
