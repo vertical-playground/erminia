@@ -5,17 +5,17 @@ use crate::lexer::token::{Position, TokenKind};
 
 #[derive(Debug)]
 pub struct ParserErrorInfo {
-    loc: Location,
-    expected: TokenKind,
-    actual: TokenKind,
+    _loc: Location,
+    _expected: TokenKind,
+    _actual: TokenKind,
 }
 
 impl Default for ParserErrorInfo {
     fn default() -> Self {
         ParserErrorInfo {
-            loc: Location::new(Position::default()),
-            expected: TokenKind::START,
-            actual: TokenKind::EOF,
+            _loc: Location::new(Position::default()),
+            _expected: TokenKind::START,
+            _actual: TokenKind::EOF,
         }
     }
 }
@@ -23,9 +23,9 @@ impl Default for ParserErrorInfo {
 impl ParserErrorInfo {
     pub fn new(loc: Location, expected: TokenKind, actual: TokenKind) -> Self {
         ParserErrorInfo {
-            loc,
-            expected,
-            actual,
+            _loc: loc,
+            _expected: expected,
+            _actual: actual,
         }
     }
 }

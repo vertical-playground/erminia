@@ -41,7 +41,8 @@ impl ASTTrait for ASTDefault {
         Ok(true)
     }
 
-    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
         print_tabs(f, depth)?;
         writeln!(f, "<ASTDefault>")?;
         Ok(())
@@ -53,9 +54,11 @@ impl ASTTrait for GenericTupleOption {
         todo!()
     }
 
-    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
         print_tabs(f, depth)?;
-        writeln!(f, "<GenericTupleOption>")?;
+        let s = format!("<GenericTupleOption {:?}>", self);
+        writeln!(f, "{}", s)?;
         Ok(())
     }
 }
@@ -65,9 +68,62 @@ impl ASTTrait for ProblemExample {
         todo!()
     }
 
-    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
         print_tabs(f, depth)?;
-        writeln!(f, "<ProblemExample>")?;
+        let s = format!("<ProblemExample id: {:?}>", self.id);
+        writeln!(f, "{}", s)?;
+        for stmt in &self.stmts { 
+            stmt.print_on(f, depth)?;
+        }
+        Ok(())
+    }
+}
+
+impl ASTTrait for ProblemSolution {
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
+        print_tabs(f, depth)?;
+        let s = format!("<ProblemSolution id: {:?}>", self.id);
+        writeln!(f, "{}", s)?;
+        for stmt in &self.stmts { 
+            stmt.print_on(f, depth)?;
+        }
+        Ok(())
+    }
+}
+
+impl ASTTrait for ProblemInput {
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
+        print_tabs(f, depth)?;
+        let s = format!("<ProblemInput id: {:?}>", self.id);
+        writeln!(f, "{}", s)?;
+        for stmt in &self.stmts { 
+            stmt.print_on(f, depth)?;
+        }
+        Ok(())
+    }
+}
+
+impl ASTTrait for ProblemOutput {
+    fn sem(&self) -> Result<bool, ASTError> {
+        todo!()
+    }
+
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
+        print_tabs(f, depth)?;
+        let s = format!("<ProblemOutput id: {:?}>", self.id);
+        writeln!(f, "{}", s)?;
         for stmt in &self.stmts { 
             stmt.print_on(f, depth)?;
         }
@@ -81,8 +137,8 @@ impl ASTTrait for Program {
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
-        print_tabs(f, depth)?;
-        writeln!(f, "<Program>")?;
+        let s = format!("<Program id: {:?}, int_const: {}>", self.id, self.int_const);
+        writeln!(f, "{}", s)?;
         for stmt in &self.stmts { 
             stmt.print_on(f, depth)?;
         }
@@ -95,9 +151,14 @@ impl ASTTrait for Range {
         todo!()
     }
 
-    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
         print_tabs(f, depth)?;
-        writeln!(f, "<Range>")?;
+        let s = format!(
+            "<Range left_inclusive: {}, right_inclusive: {}, left: {}, right: {}>",
+            self.left_inclusive, self.right_inclusive, self.left, self.right
+        );
+        writeln!(f, "{}", s)?;
         Ok(())
     }
 }
@@ -107,9 +168,11 @@ impl ASTTrait for TupleIterator {
         todo!()
     }
 
-    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
         print_tabs(f, depth)?;
-        writeln!(f, "<TupleIterator>")?;
+        let s = format!("<TupleIterator id: {:?}>", self.id);
+        writeln!(f, "{}", s)?;
         let _ = &self.range.print_on(f, depth)?;
         Ok(())
     }
@@ -120,10 +183,10 @@ impl ASTTrait for TupleComprehension {
         todo!()
     }
 
-    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
         print_tabs(f, depth)?;
         writeln!(f, "<TupleComprehension>")?;
-        writeln!(f, "\t")?;
         let _ = &self.tuple.print_on(f, depth)?;
         for iter in &self.iter_pair {
             iter.print_on(f, depth)?;
@@ -138,7 +201,8 @@ impl ASTTrait for GenericTuple {
         todo!()
     }
 
-    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
         print_tabs(f, depth)?;
         writeln!(f, "<GenericTuple>")?;
         let _ = &self.left.print_on(f, depth)?;
@@ -152,9 +216,11 @@ impl ASTTrait for Tuple {
         todo!()
     }
 
-    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
         print_tabs(f, depth)?;
-        writeln!(f, "<Tuple>")?;
+        let s = format!("<Tuple left: {}, right: {}>", self.left, self.right);
+        writeln!(f, "{}", s)?;
         Ok(())
     }
 }
@@ -164,20 +230,24 @@ impl ASTTrait for Shape {
         todo!()
     }
 
-    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
         print_tabs(f, depth)?;
-        writeln!(f, "<Shape>")?;
+        let s = format!("<Shape type: {:?}>", self.shape_type);
+        writeln!(f, "{}", s)?;
         let _ = &self.values.print_on(f, depth)?;
         Ok(())
     }
 }
+
 
 impl ASTTrait for ObjectShape {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
 
-    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
         print_tabs(f, depth)?;
         writeln!(f, "<ObjectShape>")?;
         for shape in &self.shape {
@@ -192,9 +262,11 @@ impl ASTTrait for ObjectColor {
         todo!()
     }
 
-    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
         print_tabs(f, depth)?;
-        writeln!(f, "<ObjectColor>")?;
+        let s = format!("<ObjectColor color: {}>", self.color);
+        writeln!(f, "{}", s)?;
         Ok(())
     }
 }
@@ -218,9 +290,11 @@ impl ASTTrait for ObjectDecl {
         todo!()
     }
 
-    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
         print_tabs(f, depth)?;
-        writeln!(f, "<ObjectDecl>")?;
+        let s = format!("<ObjectDecl id: {:?}>", self.id);
+        writeln!(f, "{}", s)?;
         let _ = &self.desc.print_on(f, depth)?;
         Ok(())
     }
@@ -231,9 +305,11 @@ impl ASTTrait for VarDef {
         todo!()
     }
 
-    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
         print_tabs(f, depth)?;
-        writeln!(f, "<VarDef>")?;
+        let s = format!("<VarDef id: {:?}, data_type: {:?}>", self.id, self.data_type);
+        writeln!(f, "{}", s)?;
         let _ = &self.expr.print_on(f, depth)?;
         Ok(())
     }
@@ -244,9 +320,11 @@ impl ASTTrait for FuncCall {
         todo!()
     }
 
-    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
         print_tabs(f, depth)?;
-        writeln!(f, "<FuncCall>")?;
+        let s = format!("<FuncCall id: {:?}>", self.id);
+        writeln!(f, "{}", s)?;
         for expr in &self.exprs {
             expr.print_on(f, depth)?;
         }
@@ -259,9 +337,11 @@ impl ASTTrait for ObjectCall {
         todo!()
     }
 
-    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
         print_tabs(f, depth)?;
-        writeln!(f, "<ObjectCall>")?;
+        let s = format!("<ObjectCall id: {:?}>", self.id);
+        writeln!(f, "{}", s)?;
         if let Some(t) = &self.tuple {
             t.print_on(f, depth)?;
         };
@@ -274,9 +354,11 @@ impl ASTTrait for RValue {
         todo!()
     }
 
-    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
+    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+        depth += 1;
         print_tabs(f, depth)?;
-        writeln!(f, "<RValue>")?;
+        let s = format!("<RValue {:?}>", self);
+        writeln!(f, "{}", s)?;
         Ok(())
     }
 }

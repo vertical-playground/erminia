@@ -5,7 +5,7 @@ use crate::diagnostics::diagnostics::Location;
 use crate::error::lexer_error::{LexerError, LexerResult};
 use crate::lexer::token::*;
 
-static KEYWORDS: [&'static str; 9] = [
+static KEYWORDS: [&'static str; 10] = [
     "def",
     "let",
     "object",
@@ -13,6 +13,7 @@ static KEYWORDS: [&'static str; 9] = [
     "shape",
     "color",
     "example",
+    "solution",
     "input",
     "output",
 ];
@@ -72,9 +73,9 @@ impl PositionalOffset {
         self.cursor -= val;
     }
 
-    fn decrement_line(&mut self, val: usize) {
-        self.line -= val;
-    }
+    // fn decrement_line(&mut self, val: usize) {
+    //     self.line -= val;
+    // }
 
     // fn reset_pos(&mut self) {
     //     self.pos = 0;
@@ -140,7 +141,7 @@ impl<'input> Lexer<'input> {
         }
     }
 
-    pub fn peek(&mut self) -> Token {
+    pub fn peek(&mut self) -> Token<'_> {
         self.token
     }
 
@@ -196,7 +197,7 @@ impl<'input> Lexer<'input> {
         Ok((first, second, first_end_pos, second_end_pos))
     }
 
-    pub fn lex_with_separate_pass(&mut self) -> LexerResult<Vec<Token>> {
+    pub fn lex_with_separate_pass(&mut self) -> LexerResult<Vec<Token<'_>>> {
         let mut tokens: Vec<Token> = Vec::new();
 
         loop {
@@ -223,7 +224,7 @@ impl<'input> Lexer<'input> {
 // Lexer Utilities                                                                      //
 // ==================================================================================== //
 
-fn _advance(text: &str, po: PositionalOffset) -> LexerResult<(Token, PositionalOffset)> {
+fn _advance(text: &str, po: PositionalOffset) -> LexerResult<(Token<'_>, PositionalOffset)> {
     let start_pos = trim_starting_whitespace(text, po);
 
     let (kind, end_pos) = get_next_token_kind(text, start_pos)?;

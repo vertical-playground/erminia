@@ -16,15 +16,16 @@ pub trait ExprTrait: ASTTrait {
 // ==================================================================================== //
 
 pub struct FuncCall {
-    id: String,
+    pub id: String,
     pub exprs: Vec<BoxAST>
 }
 
 pub struct ObjectCall {
-    id: String,
+    pub id: String,
     pub tuple: Option<BoxAST> 
 }
 
+#[derive(Debug)]
 pub enum RValue {
     Int(i32),
     Id(String),

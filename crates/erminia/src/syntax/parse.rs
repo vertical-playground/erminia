@@ -2,7 +2,7 @@ use crate::diagnostics::diagnostics::Location;
 use crate::error::parser_error::{ParserError, ParserErrorInfo, ParserResult};
 use crate::lexer::lex::Lexer;
 use crate::lexer::token::TokenKind;
-use crate::ast::ast::{ASTDefault, BoxAST};
+use crate::ast::ast::BoxAST;
 use crate::ast::stmt::*;
 use crate::ast::expr::*;
 use crate::types::types::ErminiaType;
@@ -468,7 +468,7 @@ fn parse_object_color(tokens: &mut Lexer) -> ParserResult<BoxAST> {
     consume_keyword(tokens, TokenKind::ObjectColor)?;
     consume_keyword(tokens, TokenKind::Colon)?;
     let int_const = consume_int_const(tokens)?;
-    let color = ObjectColor::new(int_const.to_string());
+    let color = ObjectColor::new(int_const);
     Ok(color)
 }
 
@@ -539,6 +539,33 @@ fn parse_problem_example(tokens: &mut Lexer) -> ParserResult<BoxAST> {
     Ok(example)
 }
 
+// <problem_solution> ::= "solution" <id> <inner_compound_stmt>
+fn parse_problem_solution(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    consume_keyword(tokens, TokenKind::ProblemSolution)?;
+    let id = consume_identifier(tokens)?;
+    let stmts = parse_inner_compound_stmt(tokens)?;
+    let solution = ProblemSolution::new(id.to_string(), stmts);
+    Ok(solution)
+}
+
+// <problem_input> ::= "input" <id> <tuple> <inner_compound_stmt>
+fn parse_problem_input(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    consume_keyword(tokens, TokenKind::ProblemInput)?;
+    let id = consume_identifier(tokens)?;
+    let stmts = parse_inner_compound_stmt(tokens)?;
+    let input = ProblemInput::new(id.to_string(), stmts);
+    Ok(input)
+}
+
+// <problem_output> ::= "output" <id> <tuple> <inner_compound_stmt>
+fn parse_problem_output(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    consume_keyword(tokens, TokenKind::ProblemOutput)?;
+    let id = consume_identifier(tokens)?;
+    let stmts = parse_inner_compound_stmt(tokens)?;
+    let output = ProblemOutput::new(id.to_string(), stmts);
+    Ok(output)
+}
+
 // <stmt> ::= <object_decl> | <example_decl> | <var_def>
 fn parse_stmt(tokens: &mut Lexer) -> ParserResult<BoxAST> {
     let kind = tokens.peek().get_kind();
@@ -551,6 +578,18 @@ fn parse_stmt(tokens: &mut Lexer) -> ParserResult<BoxAST> {
         TokenKind::ProblemExample => {
             let example = parse_problem_example(tokens)?;
             Ok(example)
+        }
+        TokenKind::ProblemSolution => {
+            let solution = parse_problem_solution(tokens)?;
+            Ok(solution)
+        }
+        TokenKind::ProblemInput => {
+            let input = parse_problem_input(tokens)?;
+            Ok(input)
+        }
+        TokenKind::ProblemOutput => {
+            let output = parse_problem_output(tokens)?;
+            Ok(output)
         }
         TokenKind::LetKwd => {
             let var = parse_var_def(tokens)?;

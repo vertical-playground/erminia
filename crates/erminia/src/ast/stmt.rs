@@ -35,9 +35,9 @@ pub enum ShapeType {
 
 #[derive(Debug)]
 pub struct VarDef {
-    id: String,
-    data_type: ErminiaType,
-    expr: BoxAST,
+    pub id: String,
+    pub data_type: ErminiaType,
+    pub expr: BoxAST,
 }
 
 #[derive(Debug)]
@@ -48,21 +48,21 @@ pub struct GenericTuple {
 
 #[derive(Debug)]
 pub struct Tuple {
-    left: i32,
-    right: i32,
+    pub left: i32,
+    pub right: i32,
 }
 
 #[derive(Debug)]
 pub struct Range {
-    left_inclusive: bool,
-    right_inclusive: bool,
-    left: i32,
-    right: i32,
+    pub left_inclusive: bool,
+    pub right_inclusive: bool,
+    pub left: i32,
+    pub right: i32,
 }
 
 #[derive(Debug)]
 pub struct TupleIterator {
-    id: String,
+    pub id: String,
     pub range: BoxAST
 }
 
@@ -74,7 +74,7 @@ pub struct TupleComprehension {
 
 #[derive(Debug)]
 pub struct Shape {
-    shape_type: ShapeType,
+    pub shape_type: ShapeType,
     pub values: BoxAST,
 }
 
@@ -85,7 +85,7 @@ pub struct ObjectShape {
 
 #[derive(Debug)]
 pub struct ObjectColor {
-    color: String,
+    pub color: i32,
 }
 
 #[derive(Debug)]
@@ -96,20 +96,38 @@ pub struct ObjectDesc {
 
 #[derive(Debug)]
 pub struct ObjectDecl {
-    id: String,
+    pub id: String,
     pub desc: BoxAST
 }
 
 #[derive(Debug)]
 pub struct ProblemExample {
-    id: String,
+    pub id: String,
+    pub stmts: Vec<BoxAST>,
+}
+
+#[derive(Debug)]
+pub struct ProblemSolution {
+    pub id: String,
+    pub stmts: Vec<BoxAST>,
+}
+
+#[derive(Debug)]
+pub struct ProblemInput {
+    pub id: String,
+    pub stmts: Vec<BoxAST>,
+}
+
+#[derive(Debug)]
+pub struct ProblemOutput {
+    pub id: String,
     pub stmts: Vec<BoxAST>,
 }
 
 #[derive(Debug)]
 pub struct Program {
-    id: String,
-    int_const: i32,
+    pub id: String,
+    pub int_const: i32,
     pub stmts: Vec<BoxAST>
 }
 
@@ -181,7 +199,7 @@ impl ObjectShape {
 }
 
 impl ObjectColor {
-    pub fn new(color: String) -> BoxAST {
+    pub fn new(color: i32) -> BoxAST {
         Box::new(ObjectColor { color })
     }
 }
@@ -201,6 +219,24 @@ impl ObjectDecl {
 impl ProblemExample {
     pub fn new(id: String, stmts: Vec<BoxAST>) -> BoxAST {
         Box::new(ProblemExample { id, stmts })
+    }
+}
+
+impl ProblemSolution {
+    pub fn new(id: String, stmts: Vec<BoxAST>) -> BoxAST {
+        Box::new(ProblemSolution { id, stmts })
+    }
+}
+
+impl ProblemInput {
+    pub fn new(id: String, stmts: Vec<BoxAST>) -> BoxAST {
+        Box::new(ProblemInput { id, stmts })
+    }
+}
+
+impl ProblemOutput {
+    pub fn new(id: String, stmts: Vec<BoxAST>) -> BoxAST {
+        Box::new(ProblemOutput { id, stmts })
     }
 }
 

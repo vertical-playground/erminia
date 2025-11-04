@@ -6,11 +6,11 @@ use crate::lexer::token::Position;
 
 #[derive(Debug)]
 pub struct Location {
-    position: Position,
+    _position: Position,
 }
 
 impl Location {
     pub fn new(position: Position) -> Self {
-        Location { position: position }
+        Location { _position: position }
     }
 }
