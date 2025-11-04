@@ -42,8 +42,8 @@ pub struct VarDef {
 
 #[derive(Debug)]
 pub struct GenericTuple {
-    left: BoxAST,
-    right: BoxAST,
+    pub left: BoxAST,
+    pub right: BoxAST,
 }
 
 #[derive(Debug)]
@@ -63,24 +63,24 @@ pub struct Range {
 #[derive(Debug)]
 pub struct TupleIterator {
     id: String,
-    range: BoxAST
+    pub range: BoxAST
 }
 
 #[derive(Debug)]
 pub struct TupleComprehension { 
-    tuple: BoxAST,
-    iter_pair: Vec<BoxAST>
+    pub tuple: BoxAST,
+    pub iter_pair: Vec<BoxAST>
 }
 
 #[derive(Debug)]
 pub struct Shape {
     shape_type: ShapeType,
-    values: BoxAST,
+    pub values: BoxAST,
 }
 
 #[derive(Debug)]
 pub struct ObjectShape {
-    shape: Vec<BoxAST>
+    pub shape: Vec<BoxAST>
 }
 
 #[derive(Debug)]
@@ -90,27 +90,27 @@ pub struct ObjectColor {
 
 #[derive(Debug)]
 pub struct ObjectDesc {
-    shape: BoxAST,
-    color: BoxAST,
+    pub shape: BoxAST,
+    pub color: BoxAST,
 }
 
 #[derive(Debug)]
 pub struct ObjectDecl {
     id: String,
-    desc: BoxAST
+    pub desc: BoxAST
 }
 
 #[derive(Debug)]
 pub struct ProblemExample {
     id: String,
-    stmts: Vec<BoxAST>,
+    pub stmts: Vec<BoxAST>,
 }
 
 #[derive(Debug)]
 pub struct Program {
     id: String,
     int_const: i32,
-    stmts: Vec<BoxAST>
+    pub stmts: Vec<BoxAST>
 }
 
 // ==================================================================================== //
