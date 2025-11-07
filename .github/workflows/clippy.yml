@@ -10,7 +10,7 @@ env:
 
 jobs:
   clippy:
-    name: Rust project - latest
+    name: Rust Clippy
     runs-on: ubuntu-latest
     strategy:
       matrix:
