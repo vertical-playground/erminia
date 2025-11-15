@@ -1,7 +1,7 @@
-use crate::ast::ast_trait::BoxAST;
+use crate::ast::ast::BoxAST;
 use crate::ast::expr::*;
 use crate::ast::stmt::*;
-use crate::diagnostics::location::Location;
+use crate::diagnostics::location::*;
 use crate::error::parser_error::{ParserError, ParserErrorInfo, ParserResult};
 use crate::lexer::lex::Lexer;
 use crate::lexer::token::TokenKind;
@@ -212,6 +212,7 @@ fn parse_list_of_exprs(tokens: &mut Lexer) -> ParserResult<Vec<BoxAST>> {
 
 // <func_call> ::= <id> "(" [<list_of_exprs>] ")" ";"
 fn parse_func_call(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    let start = tokens.get_position();
     let id = consume_identifier(tokens)?;
 
     consume_keyword(tokens, TokenKind::LeftPar)?;
@@ -221,8 +222,10 @@ fn parse_func_call(tokens: &mut Lexer) -> ParserResult<BoxAST> {
     consume_keyword(tokens, TokenKind::RightPar)?;
 
     consume_keyword(tokens, TokenKind::SemiColon)?;
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
 
-    let func = FuncCall::boxed(id.to_string(), exprs);
+    let func = FuncCall::boxed(id.to_string(), exprs, span);
 
     Ok(func)
 }
@@ -277,6 +280,7 @@ fn parse_inner_compound_stmt(tokens: &mut Lexer) -> ParserResult<Vec<BoxAST>> {
 // TODO: handle type inference
 // <var_def> ::= "let" <id> ":" <data_type> "=" <expr> ";"
 fn parse_var_def(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    let start = tokens.get_position();
     let mut data_type: ErminiaType = ErminiaType::default();
     consume_keyword(tokens, TokenKind::LetKwd)?;
 
@@ -294,15 +298,18 @@ fn parse_var_def(tokens: &mut Lexer) -> ParserResult<BoxAST> {
     let expr = parse_expr(tokens)?;
 
     consume_keyword(tokens, TokenKind::SemiColon)?;
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
 
     // TODO
-    let var_def = VarDef::boxed(id.to_string(), data_type, expr);
+    let var_def = VarDef::boxed(id.to_string(), data_type, expr, span);
 
     Ok(var_def)
 }
 
 // <range> ::= ("[" | "(") <int_const> ".." <int_const> ("]" | ")")
 fn parse_range(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    let start = tokens.get_position();
     let is_left_inclusive = is_next_left_inclusive(tokens)?;
 
     if is_left_inclusive {
@@ -321,21 +328,28 @@ fn parse_range(tokens: &mut Lexer) -> ParserResult<BoxAST> {
     } else {
         consume_keyword(tokens, TokenKind::RightPar)?;
     }
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
 
     Ok(Range::boxed(
         is_left_inclusive,
         is_right_inclusive,
         left,
         right,
+        span,
     ))
 }
 
 // <shape_tuple_iter> ::= <id> "<-" <range>
 fn parse_shape_tuple_iter(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    let start = tokens.get_position();
     let coord = consume_identifier(tokens)?;
     consume_keyword(tokens, TokenKind::LeftArrow)?;
     let range = parse_range(tokens)?;
-    Ok(TupleIterator::boxed(coord.to_string(), range))
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
+
+    Ok(TupleIterator::boxed(coord.to_string(), range, span))
 }
 
 // <shape_tuple_iter_pair> ::= <shape_tuple_iter> ("," <shape_tuple_iter>)
@@ -356,23 +370,34 @@ fn parse_shape_tuple_iter_pair(tokens: &mut Lexer) -> ParserResult<Vec<BoxAST>> 
 
 // <shape_tuple_compr> ::= <shape_tuple> "|" <shape_tuple_iter_pair>
 fn parse_shape_tuple_compr(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    let start = tokens.get_position();
     let tuple = parse_shape_tuple_generic(tokens)?;
     consume_keyword(tokens, TokenKind::Pipe)?;
     let iter_pair = parse_shape_tuple_iter_pair(tokens)?;
-    Ok(TupleComprehension::boxed(tuple, iter_pair))
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
+
+    Ok(TupleComprehension::boxed(tuple, iter_pair, span))
 }
 
 // <object_call> ::= <id> <shape_tuple>
 fn parse_object_call(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    let start = tokens.get_position();
     let id = consume_identifier(tokens)?;
     match tokens.peek().get_kind() {
         TokenKind::LeftPar => {
             let tuple = parse_shape_tuple(tokens)?;
-            let object = ObjectCall::boxed(id.to_string(), Some(tuple));
+            let end = tokens.get_position();
+            let span = Span::new(start, end);
+
+            let object = ObjectCall::boxed(id.to_string(), Some(tuple), span);
             Ok(object)
         }
         _ => {
-            let object = ObjectCall::boxed(id.to_string(), None);
+            let end = tokens.get_position();
+            let span = Span::new(start, end);
+
+            let object = ObjectCall::boxed(id.to_string(), None, span);
             Ok(object)
         }
     }
@@ -380,6 +405,7 @@ fn parse_object_call(tokens: &mut Lexer) -> ParserResult<BoxAST> {
 
 // <shape_tuple_generic> ::= "(" (<int_const> | <id>) "," (<int_const> | <id>) ")"
 fn parse_shape_tuple_generic(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    let start = tokens.get_position();
     consume_keyword(tokens, TokenKind::LeftPar)?;
 
     let mut left: BoxAST = GenericTupleOption::boxed_none();
@@ -405,12 +431,15 @@ fn parse_shape_tuple_generic(tokens: &mut Lexer) -> ParserResult<BoxAST> {
     }
 
     consume_keyword(tokens, TokenKind::RightPar)?;
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
 
-    Ok(GenericTuple::boxed(left, right))
+    Ok(GenericTuple::boxed(left, right, span))
 }
 
 // <shape_tuple> ::= "(" <int_const> "," <int_const> ")"
 fn parse_shape_tuple(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    let span_start = tokens.get_position();
     consume_keyword(tokens, TokenKind::LeftPar)?;
 
     let left = consume_int_const(tokens)?;
@@ -420,7 +449,10 @@ fn parse_shape_tuple(tokens: &mut Lexer) -> ParserResult<BoxAST> {
     let right = consume_int_const(tokens)?;
 
     consume_keyword(tokens, TokenKind::RightPar)?;
-    Ok(Tuple::boxed(left, right))
+    let span_end = tokens.get_position();
+    let span = Span::new(span_start, span_end);
+
+    Ok(Tuple::boxed(left, right, span))
 }
 
 // <shape> ::= <shape_tuple> | <shape_tuple_compr> | <object_call> | <id>
@@ -457,10 +489,14 @@ fn parse_shape(tokens: &mut Lexer) -> ParserResult<BoxAST> {
 
 // <object_color> ::= "color" ":" <int_const>
 fn parse_object_color(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    let start = tokens.get_position();
     consume_keyword(tokens, TokenKind::ObjectColor)?;
     consume_keyword(tokens, TokenKind::Colon)?;
     let int_const = consume_int_const(tokens)?;
-    let color = ObjectColor::boxed(int_const);
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
+
+    let color = ObjectColor::boxed(int_const, span);
     Ok(color)
 }
 
@@ -483,10 +519,14 @@ fn parse_list_of_shapes(tokens: &mut Lexer) -> ParserResult<Vec<BoxAST>> {
 
 // <object_shape> ::= "shape" ":" <list_of_shapes>
 fn parse_object_shape(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    let start = tokens.get_position();
     consume_keyword(tokens, TokenKind::ObjectShape)?;
     consume_keyword(tokens, TokenKind::Colon)?;
     let shapes = parse_list_of_shapes(tokens)?;
-    let object_shape = ObjectShape::boxed(shapes);
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
+
+    let object_shape = ObjectShape::boxed(shapes, span);
     Ok(object_shape)
 }
 
@@ -494,19 +534,27 @@ fn parse_object_shape(tokens: &mut Lexer) -> ParserResult<BoxAST> {
 fn parse_object_desc(tokens: &mut Lexer) -> ParserResult<BoxAST> {
     let kind = tokens.peek().get_kind();
 
+    let start = tokens.get_position();
+
     match kind {
         TokenKind::ObjectShape => {
             let shape = parse_object_shape(tokens)?;
             consume_keyword(tokens, TokenKind::Comma)?;
             let color = parse_object_color(tokens)?;
-            let object_desc = ObjectDesc::boxed(shape, color);
+            let end = tokens.get_position();
+            let span = Span::new(start, end);
+
+            let object_desc = ObjectDesc::boxed(shape, color, span);
             Ok(object_desc)
         }
         TokenKind::ObjectColor => {
             let color = parse_object_color(tokens)?;
             consume_keyword(tokens, TokenKind::Comma)?;
             let shape = parse_object_shape(tokens)?;
-            let object_desc = ObjectDesc::boxed(shape, color);
+            let end = tokens.get_position();
+            let span = Span::new(start, end);
+
+            let object_desc = ObjectDesc::boxed(shape, color, span);
             Ok(object_desc)
         }
         _ => {
@@ -523,37 +571,56 @@ fn parse_object_desc(tokens: &mut Lexer) -> ParserResult<BoxAST> {
 
 // <example_decl> ::= "example" <id> <inner_compound_stmt>
 fn parse_problem_example(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    let start = tokens.get_position();
     consume_keyword(tokens, TokenKind::ProblemExample)?;
     let id = consume_identifier(tokens)?;
     let stmts = parse_inner_compound_stmt(tokens)?;
-    let example = ProblemExample::boxed(id.to_string(), stmts);
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
+
+    let example = ProblemExample::boxed(id.to_string(), stmts, span);
     Ok(example)
 }
 
 // <problem_solution> ::= "solution" <id> <inner_compound_stmt>
 fn parse_problem_solution(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    let start = tokens.get_position();
+
     consume_keyword(tokens, TokenKind::ProblemSolution)?;
     let id = consume_identifier(tokens)?;
     let stmts = parse_inner_compound_stmt(tokens)?;
-    let solution = ProblemSolution::boxed(id.to_string(), stmts);
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
+
+    let solution = ProblemSolution::boxed(id.to_string(), stmts, span);
     Ok(solution)
 }
 
 // <problem_input> ::= "input" <id> <tuple> <inner_compound_stmt>
 fn parse_problem_input(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    let start = tokens.get_position();
+
     consume_keyword(tokens, TokenKind::ProblemInput)?;
     let id = consume_identifier(tokens)?;
     let stmts = parse_inner_compound_stmt(tokens)?;
-    let input = ProblemInput::boxed(id.to_string(), stmts);
+
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
+
+    let input = ProblemInput::boxed(id.to_string(), stmts, span);
     Ok(input)
 }
 
 // <problem_output> ::= "output" <id> <tuple> <inner_compound_stmt>
 fn parse_problem_output(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    let start = tokens.get_position();
     consume_keyword(tokens, TokenKind::ProblemOutput)?;
     let id = consume_identifier(tokens)?;
     let stmts = parse_inner_compound_stmt(tokens)?;
-    let output = ProblemOutput::boxed(id.to_string(), stmts);
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
+
+    let output = ProblemOutput::boxed(id.to_string(), stmts, span);
     Ok(output)
 }
 
@@ -620,12 +687,15 @@ fn parse_object_compound_desc(tokens: &mut Lexer) -> ParserResult<BoxAST> {
 
 // <object_decl> ::= "object" <id> <object_compound_desc> ";"
 fn parse_object_decl(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    let start = tokens.get_position();
     consume_keyword(tokens, TokenKind::Object)?;
     let id = consume_identifier(tokens)?;
     let object_desc = parse_object_compound_desc(tokens)?;
     consume_keyword(tokens, TokenKind::SemiColon)?;
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
 
-    let object_decl = ObjectDecl::boxed(id.to_string(), object_desc);
+    let object_decl = ObjectDecl::boxed(id.to_string(), object_desc, span);
     Ok(object_decl)
 }
 
@@ -639,13 +709,17 @@ fn parse_compound_stmt(tokens: &mut Lexer) -> ParserResult<Vec<BoxAST>> {
 
 // <problem_declaration> ::= "def" <id> "(" <int_const> ")" <compound_stmt>
 fn parse_problem_decl(tokens: &mut Lexer) -> ParserResult<BoxAST> {
+    let start = tokens.get_position();
     consume_keyword(tokens, TokenKind::ProblemDef)?;
     let id = consume_identifier(tokens)?;
     consume_keyword(tokens, TokenKind::LeftPar)?;
     let int_const = consume_int_const(tokens)?;
     consume_keyword(tokens, TokenKind::RightPar)?;
     let stmts = parse_compound_stmt(tokens)?;
-    let program = Program::boxed(id.to_string(), int_const, stmts);
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
+
+    let program = Program::boxed(id.to_string(), int_const, stmts, span);
 
     Ok(program)
 }
