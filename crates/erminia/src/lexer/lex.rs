@@ -209,6 +209,14 @@ impl<'input> Lexer<'input> {
     fn set_start(&mut self, pos: PositionalOffset) {
         self.start = pos
     }
+
+    pub fn get_position(&self) -> PositionalOffset {
+        self.start
+    }
+
+    fn _return_content(&self, start: PositionalOffset, end: PositionalOffset) -> &str {
+        &self.content[start.pos..end.pos]
+    }
 }
 
 // ==================================================================================== //
