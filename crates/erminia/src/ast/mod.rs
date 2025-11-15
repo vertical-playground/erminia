@@ -1,3 +1,3 @@
-pub mod ast_trait;
+pub mod ast;
 pub mod expr;
 pub mod stmt;
