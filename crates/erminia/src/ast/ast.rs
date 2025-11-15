@@ -1,15 +1,15 @@
 use crate::ast::expr::*;
 use crate::ast::stmt::*;
 
-pub type BoxAST = Box<dyn ASTTrait>;
+pub type BoxAST = Box<dyn AST>;
 pub type ASTError = String;
 
-pub trait ASTTrait {
+pub trait AST {
     fn sem(&self /*, Semantic Table */) -> Result<bool, ASTError>;
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result;
 }
 
-impl std::fmt::Debug for dyn ASTTrait {
+impl std::fmt::Debug for dyn AST {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let depth: i32 = 0;
         self.print_on(f, depth)?;
@@ -36,7 +36,7 @@ fn print_tabs(f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
     Ok(())
 }
 
-impl ASTTrait for ASTDefault {
+impl AST for ASTDefault {
     fn sem(&self) -> Result<bool, ASTError> {
         Ok(true)
     }
@@ -49,7 +49,7 @@ impl ASTTrait for ASTDefault {
     }
 }
 
-impl ASTTrait for GenericTupleOption {
+impl AST for GenericTupleOption {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -63,7 +63,7 @@ impl ASTTrait for GenericTupleOption {
     }
 }
 
-impl ASTTrait for ProblemExample {
+impl AST for ProblemExample {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -80,7 +80,7 @@ impl ASTTrait for ProblemExample {
     }
 }
 
-impl ASTTrait for ProblemSolution {
+impl AST for ProblemSolution {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -97,7 +97,7 @@ impl ASTTrait for ProblemSolution {
     }
 }
 
-impl ASTTrait for ProblemInput {
+impl AST for ProblemInput {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -114,7 +114,7 @@ impl ASTTrait for ProblemInput {
     }
 }
 
-impl ASTTrait for ProblemOutput {
+impl AST for ProblemOutput {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -131,7 +131,7 @@ impl ASTTrait for ProblemOutput {
     }
 }
 
-impl ASTTrait for Program {
+impl AST for Program {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -146,7 +146,7 @@ impl ASTTrait for Program {
     }
 }
 
-impl ASTTrait for Range {
+impl AST for Range {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -163,7 +163,7 @@ impl ASTTrait for Range {
     }
 }
 
-impl ASTTrait for TupleIterator {
+impl AST for TupleIterator {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -178,7 +178,7 @@ impl ASTTrait for TupleIterator {
     }
 }
 
-impl ASTTrait for TupleComprehension {
+impl AST for TupleComprehension {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -195,7 +195,7 @@ impl ASTTrait for TupleComprehension {
     }
 }
 
-impl ASTTrait for GenericTuple {
+impl AST for GenericTuple {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -210,7 +210,7 @@ impl ASTTrait for GenericTuple {
     }
 }
 
-impl ASTTrait for Tuple {
+impl AST for Tuple {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -224,7 +224,7 @@ impl ASTTrait for Tuple {
     }
 }
 
-impl ASTTrait for Shape {
+impl AST for Shape {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -239,7 +239,7 @@ impl ASTTrait for Shape {
     }
 }
 
-impl ASTTrait for ObjectShape {
+impl AST for ObjectShape {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -255,7 +255,7 @@ impl ASTTrait for ObjectShape {
     }
 }
 
-impl ASTTrait for ObjectColor {
+impl AST for ObjectColor {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -269,7 +269,7 @@ impl ASTTrait for ObjectColor {
     }
 }
 
-impl ASTTrait for ObjectDesc {
+impl AST for ObjectDesc {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -283,7 +283,7 @@ impl ASTTrait for ObjectDesc {
     }
 }
 
-impl ASTTrait for ObjectDecl {
+impl AST for ObjectDecl {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -298,7 +298,7 @@ impl ASTTrait for ObjectDecl {
     }
 }
 
-impl ASTTrait for VarDef {
+impl AST for VarDef {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -316,7 +316,7 @@ impl ASTTrait for VarDef {
     }
 }
 
-impl ASTTrait for FuncCall {
+impl AST for FuncCall {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -333,7 +333,7 @@ impl ASTTrait for FuncCall {
     }
 }
 
-impl ASTTrait for ObjectCall {
+impl AST for ObjectCall {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
@@ -350,7 +350,7 @@ impl ASTTrait for ObjectCall {
     }
 }
 
-impl ASTTrait for RValue {
+impl AST for RValue {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
     }
