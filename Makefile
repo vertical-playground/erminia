@@ -5,3 +5,7 @@ FMT ?= 'fmt --all -- --check'
 watch:
 	cargo watch -x ${CLIPPY} \
 	-x ${FMT}
+
+.PHONY: test
+test:
+	cargo test --all-features

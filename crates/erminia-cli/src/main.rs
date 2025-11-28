@@ -12,18 +12,17 @@ fn main() -> io::Result<()> {
         write!(stdout, "-> ")?;
         stdout.flush()?;
 
+        input.clear();
         stdin.read_line(&mut input)?;
 
         let mut parser = Parser::new(&input);
 
         let program = parser.parse();
 
-        println!("{:?}", program.unwrap());
+        println!("{:?}", program);
 
         // parse to AST Tree
         // check semantics
         // generate json
-
-        input.clear();
     }
 }

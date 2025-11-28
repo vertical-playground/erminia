@@ -2,13 +2,13 @@ use crate::ast::ast::{ASTError, BoxAST, AST};
 use crate::diagnostics::location::Span;
 use crate::types::ErminiaType;
 
-pub type BoxStmt = Box<dyn StmtTrait>;
+pub type BoxStmt<'a> = Box<dyn StmtTrait<'a> + 'a>;
 
 // ==================================================================================== //
 //  Traits                                                                              //
 // ==================================================================================== //
 
-pub trait StmtTrait: AST {
+pub trait StmtTrait<'a>: AST<'a> {
     fn run(&self) -> Result<u32, ASTError>;
 }
 
@@ -21,12 +21,14 @@ pub enum GenericTupleOption {
     Int(i32),
     Id(String),
     None,
+    Poisoned,
 }
 
 #[derive(Debug)]
 pub enum ShapeType {
     ShapeTuple,
     ShapeTupleIter,
+    Poisoned,
 }
 
 // ==================================================================================== //
@@ -34,18 +36,20 @@ pub enum ShapeType {
 // ==================================================================================== //
 
 #[derive(Debug)]
-pub struct VarDef {
+pub struct VarDef<'a> {
     pub id: String,
     pub data_type: ErminiaType,
-    pub expr: BoxAST,
+    pub expr: BoxAST<'a>,
     pub span: Span,
+    pub is_poisoned: bool,
 }
 
 #[derive(Debug)]
-pub struct GenericTuple {
-    pub left: BoxAST,
-    pub right: BoxAST,
+pub struct GenericTuple<'a> {
+    pub left: BoxAST<'a>,
+    pub right: BoxAST<'a>,
     pub span: Span,
+    pub is_poisoned: bool,
 }
 
 #[derive(Debug)]
@@ -53,6 +57,7 @@ pub struct Tuple {
     pub left: i32,
     pub right: i32,
     pub span: Span,
+    pub is_poisoned: bool,
 }
 
 #[derive(Debug)]
@@ -62,231 +67,259 @@ pub struct Range {
     pub left: i32,
     pub right: i32,
     pub span: Span,
+    pub is_poisoned: bool,
 }
 
 #[derive(Debug)]
-pub struct TupleIterator {
+pub struct TupleIterator<'a> {
     pub id: String,
-    pub range: BoxAST,
+    pub range: BoxAST<'a>,
     pub span: Span,
+    pub is_poisoned: bool,
 }
 
 #[derive(Debug)]
-pub struct TupleComprehension {
-    pub tuple: BoxAST,
-    pub iter_pair: Vec<BoxAST>,
+pub struct TupleComprehension<'a> {
+    pub tuple: BoxAST<'a>,
+    pub iter_pair: Vec<BoxAST<'a>>,
     pub span: Span,
+    pub is_poisoned: bool,
 }
 
 #[derive(Debug)]
-pub struct Shape {
+pub struct Shape<'a> {
     pub shape_type: ShapeType,
-    pub values: BoxAST,
+    pub values: BoxAST<'a>,
     pub span: Span,
+    pub is_poisoned: bool,
 }
 
 #[derive(Debug)]
-pub struct ObjectShape {
-    pub shape: Vec<BoxAST>,
+pub struct ObjectShape<'a> {
+    pub shape: Vec<BoxAST<'a>>,
     pub span: Span,
+    pub is_poisoned: bool,
 }
 
 #[derive(Debug)]
 pub struct ObjectColor {
     pub color: i32,
     pub span: Span,
+    pub is_poisoned: bool,
 }
 
 #[derive(Debug)]
-pub struct ObjectDesc {
-    pub shape: BoxAST,
-    pub color: BoxAST,
+pub struct ObjectDesc<'a> {
+    pub shape: BoxAST<'a>,
+    pub color: BoxAST<'a>,
     pub span: Span,
+    pub is_poisoned: bool,
 }
 
 #[derive(Debug)]
-pub struct ObjectDecl {
+pub struct ObjectDecl<'a> {
     pub id: String,
-    pub desc: BoxAST,
+    pub desc: BoxAST<'a>,
     pub span: Span,
+    pub is_poisoned: bool,
 }
 
 #[derive(Debug)]
-pub struct ProblemExample {
+pub struct ProblemExample<'a> {
     pub id: String,
-    pub stmts: Vec<BoxAST>,
+    pub stmts: Vec<BoxAST<'a>>,
     pub span: Span,
+    pub is_poisoned: bool,
 }
 
 #[derive(Debug)]
-pub struct ProblemSolution {
+pub struct ProblemSolution<'a> {
     pub id: String,
-    pub stmts: Vec<BoxAST>,
+    pub stmts: Vec<BoxAST<'a>>,
     pub span: Span,
+    pub is_poisoned: bool,
 }
 
 #[derive(Debug)]
-pub struct ProblemInput {
+pub struct ProblemInput<'a> {
     pub id: String,
-    pub stmts: Vec<BoxAST>,
+    pub stmts: Vec<BoxAST<'a>>,
     pub span: Span,
+    pub is_poisoned: bool,
 }
 
 #[derive(Debug)]
-pub struct ProblemOutput {
+pub struct ProblemOutput<'a> {
     pub id: String,
-    pub stmts: Vec<BoxAST>,
+    pub stmts: Vec<BoxAST<'a>>,
     pub span: Span,
+    pub is_poisoned: bool,
 }
 
 #[derive(Debug)]
-pub struct Program {
+pub struct Program<'a> {
     pub id: String,
     pub int_const: i32,
-    pub stmts: Vec<BoxAST>,
+    pub stmts: Vec<BoxAST<'a>>,
     pub span: Span,
+    pub is_poisoned: bool,
 }
 
 // ==================================================================================== //
 //  Implementations                                                                     //
 // ==================================================================================== //
 
-impl GenericTupleOption {
-    pub fn boxed_int(value: i32) -> BoxAST {
+impl<'a> GenericTupleOption {
+    pub fn boxed_int(value: i32, poisoned: bool) -> BoxAST<'a> {
+        if poisoned {
+            return Box::new(GenericTupleOption::Poisoned);
+        }
+
         Box::new(GenericTupleOption::Int(value))
     }
 
-    pub fn boxed_id(value: String) -> BoxAST {
-        Box::new(GenericTupleOption::Id(value))
+    pub fn boxed_id(name: String, poisoned: bool) -> BoxAST<'a> {
+        if poisoned {
+            return Box::new(GenericTupleOption::Poisoned);
+        }
+
+        Box::new(GenericTupleOption::Id(name))
     }
 
-    pub fn boxed_none() -> BoxAST {
+    pub fn boxed_none() -> BoxAST<'a> {
         Box::new(GenericTupleOption::None)
     }
 }
 
-impl Range {
+
+impl<'a> Range {
     pub fn boxed(
         left_inclusive: bool,
         right_inclusive: bool,
         left: i32,
         right: i32,
         span: Span,
-    ) -> BoxAST {
+        is_poisoned: bool,
+    ) -> BoxAST<'a> {
         Box::new(Range {
             left_inclusive,
             right_inclusive,
             left,
             right,
             span,
+            is_poisoned,
         })
     }
 }
 
-impl TupleIterator {
-    pub fn boxed(id: String, range: BoxAST, span: Span) -> BoxAST {
-        Box::new(TupleIterator { id, range, span })
+impl<'a> TupleIterator<'a> {
+    pub fn boxed(id: String, range: BoxAST<'a>, span: Span, is_poisoned: bool) -> BoxAST<'a> {
+        Box::new(TupleIterator { id, range, span, is_poisoned }) as BoxAST<'a>
     }
 }
 
-impl TupleComprehension {
-    pub fn boxed(tuple: BoxAST, iter_pair: Vec<BoxAST>, span: Span) -> BoxAST {
+impl<'a> TupleComprehension<'a> {
+    pub fn boxed(tuple: BoxAST<'a>, iter_pair: Vec<BoxAST<'a>>, span: Span, is_poisoned: bool) -> BoxAST<'a> {
         Box::new(TupleComprehension {
             tuple,
             iter_pair,
             span,
-        })
+            is_poisoned,
+        }) as BoxAST<'a>
     }
 }
 
-impl GenericTuple {
-    pub fn boxed(left: BoxAST, right: BoxAST, span: Span) -> BoxAST {
-        Box::new(GenericTuple { left, right, span })
+impl<'a> GenericTuple<'a> {
+    pub fn boxed(left: BoxAST<'a>, right: BoxAST<'a>, span: Span, is_poisoned: bool) -> BoxAST<'a> {
+        Box::new(GenericTuple { left, right, span, is_poisoned }) as BoxAST<'a>
     }
 }
 
-impl Tuple {
-    pub fn boxed(left: i32, right: i32, span: Span) -> BoxAST {
-        Box::new(Tuple { left, right, span })
+impl<'a> Tuple {
+    pub fn boxed(left: i32, right: i32, span: Span, is_poisoned: bool) -> BoxAST<'a> {
+        Box::new(Tuple { left, right, span, is_poisoned })
     }
 }
 
-impl VarDef {
-    pub fn boxed(id: String, data_type: ErminiaType, expr: BoxAST, span: Span) -> BoxAST {
+impl<'a>  VarDef<'a> {
+    pub fn boxed(id: String, data_type: ErminiaType, expr: BoxAST<'a>, span: Span, is_poisoned: bool) -> BoxAST<'a> {
         Box::new(VarDef {
             id,
             data_type,
             expr,
             span,
-        })
+            is_poisoned,
+        }) as BoxAST<'a>
     }
 }
 
-impl Shape {
-    pub fn boxed_none(span: Span) -> BoxAST {
+impl<'a> Shape<'a> {
+    pub fn boxed_none(span: Span, is_poisoned: bool) -> BoxAST<'a> {
         Box::new(Shape {
             shape_type: ShapeType::ShapeTuple,
             values: GenericTupleOption::boxed_none(),
             span,
-        })
+            is_poisoned,
+        }) as BoxAST<'a>
     }
 }
 
-impl ObjectShape {
-    pub fn boxed(shape: Vec<BoxAST>, span: Span) -> BoxAST {
-        Box::new(ObjectShape { shape, span })
+impl<'a> ObjectShape<'a> {
+    pub fn boxed(shape: Vec<BoxAST<'a>>, span: Span, is_poisoned: bool) -> BoxAST<'a> {
+        Box::new(ObjectShape { shape, span, is_poisoned }) as BoxAST<'a>
     }
 }
 
-impl ObjectColor {
-    pub fn boxed(color: i32, span: Span) -> BoxAST {
-        Box::new(ObjectColor { color, span })
+impl<'a> ObjectColor {
+    pub fn boxed(color: i32, span: Span, is_poisoned: bool) -> BoxAST<'a> {
+        Box::new(ObjectColor { color, span, is_poisoned })
     }
 }
 
-impl ObjectDesc {
-    pub fn boxed(shape: BoxAST, color: BoxAST, span: Span) -> BoxAST {
-        Box::new(ObjectDesc { shape, color, span })
+impl<'a> ObjectDesc<'a> {
+    pub fn boxed(shape: BoxAST<'a>, color: BoxAST<'a>, span: Span, is_poisoned: bool) -> BoxAST<'a> {
+        Box::new(ObjectDesc { shape, color, span, is_poisoned }) as BoxAST<'a>
     }
 }
 
-impl ObjectDecl {
-    pub fn boxed(id: String, desc: BoxAST, span: Span) -> BoxAST {
-        Box::new(ObjectDecl { id, desc, span })
+impl<'a> ObjectDecl<'a> {
+    pub fn boxed(id: String, desc: BoxAST<'a>, span: Span, is_poisoned: bool) -> BoxAST<'a> {
+        Box::new(ObjectDecl { id, desc, span, is_poisoned }) as BoxAST<'a>
     }
 }
 
-impl ProblemExample {
-    pub fn boxed(id: String, stmts: Vec<BoxAST>, span: Span) -> BoxAST {
-        Box::new(ProblemExample { id, stmts, span })
+impl<'a> ProblemExample<'a> {
+    pub fn boxed(id: String, stmts: Vec<BoxAST<'a>>, span: Span, is_poisoned: bool) -> BoxAST<'a> {
+        Box::new(ProblemExample { id, stmts, span, is_poisoned }) as BoxAST<'a>
     }
 }
 
-impl ProblemSolution {
-    pub fn boxed(id: String, stmts: Vec<BoxAST>, span: Span) -> BoxAST {
-        Box::new(ProblemSolution { id, stmts, span })
+impl<'a> ProblemSolution<'a> {
+    pub fn boxed(id: String, stmts: Vec<BoxAST<'a>>, span: Span, is_poisoned: bool) -> BoxAST<'a> {
+        Box::new(ProblemSolution { id, stmts, span, is_poisoned }) as BoxAST<'a>
     }
 }
 
-impl ProblemInput {
-    pub fn boxed(id: String, stmts: Vec<BoxAST>, span: Span) -> BoxAST {
-        Box::new(ProblemInput { id, stmts, span })
+impl<'a> ProblemInput<'a> {
+    pub fn boxed(id: String, stmts: Vec<BoxAST<'a>>, span: Span, is_poisoned: bool) -> BoxAST<'a> {
+        Box::new(ProblemInput { id, stmts, span, is_poisoned }) as BoxAST<'a>
     }
 }
 
-impl ProblemOutput {
-    pub fn boxed(id: String, stmts: Vec<BoxAST>, span: Span) -> BoxAST {
-        Box::new(ProblemOutput { id, stmts, span })
+impl<'a> ProblemOutput<'a> {
+    pub fn boxed(id: String, stmts: Vec<BoxAST<'a>>, span: Span, is_poisoned: bool) -> BoxAST<'a> {
+        Box::new(ProblemOutput { id, stmts, span, is_poisoned }) as BoxAST<'a>
     }
 }
 
-impl Program {
-    pub fn boxed(id: String, int_const: i32, stmts: Vec<BoxAST>, span: Span) -> BoxAST {
+impl<'a> Program<'a> {
+    pub fn boxed(id: String, int_const: i32, stmts: Vec<BoxAST<'a>>, span: Span, is_poisoned: bool) -> BoxAST<'a> {
         Box::new(Program {
             id,
             int_const,
             stmts,
             span,
-        })
+            is_poisoned,
+        }) as BoxAST<'a>
     }
 }

@@ -1,13 +1,11 @@
-use crate::diagnostics::location::Location;
-use crate::lexer::token::Position;
 use derive_more::From;
 
 #[derive(Debug, From)]
 pub enum LexerError {
-    NoTokenFoundError(Location),
-    UnfinishedStringError(Location),
-    OpenFileFailureToken(Location),
-    TokenError(Location),
+    NoTokenFoundError,
+    UnfinishedStringError,
+    OpenFileFailureToken,
+    TokenError,
     #[from]
     SerdeJson(serde_json::Error),
 }
@@ -26,7 +24,7 @@ impl From<std::io::Error> for LexerError {
     fn from(value: std::io::Error) -> Self {
         #[allow(clippy::match_single_binding)]
         match value {
-            _ => LexerError::OpenFileFailureToken(Location::new(Position::default())),
+            _ => LexerError::OpenFileFailureToken,
         }
     }
 }

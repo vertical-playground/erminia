@@ -1,11 +1,9 @@
-use crate::diagnostics::location::Location;
 use crate::error::lexer_error::LexerError;
 use crate::lexer::token::{Position, TokenKind};
 // use derive_more::From;
 
 #[derive(Debug)]
 pub struct ParserErrorInfo {
-    _loc: Location,
     _expected: TokenKind,
     _actual: TokenKind,
 }
@@ -13,7 +11,6 @@ pub struct ParserErrorInfo {
 impl Default for ParserErrorInfo {
     fn default() -> Self {
         ParserErrorInfo {
-            _loc: Location::new(Position::default()),
             _expected: TokenKind::START,
             _actual: TokenKind::EOF,
         }
@@ -21,9 +18,8 @@ impl Default for ParserErrorInfo {
 }
 
 impl ParserErrorInfo {
-    pub fn new(loc: Location, expected: TokenKind, actual: TokenKind) -> Self {
+    pub fn new(expected: TokenKind, actual: TokenKind) -> Self {
         ParserErrorInfo {
-            _loc: loc,
             _expected: expected,
             _actual: actual,
         }

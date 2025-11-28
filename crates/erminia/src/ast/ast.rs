@@ -1,15 +1,48 @@
 use crate::ast::expr::*;
 use crate::ast::stmt::*;
 
-pub type BoxAST = Box<dyn AST>;
+pub type BoxAST<'a> = Box<dyn AST<'a> + 'a>;
 pub type ASTError = String;
 
-pub trait AST {
+#[derive(Debug)]
+pub enum ASTResult<'a> {
+    One(BoxAST<'a>),
+    Many(Vec<BoxAST<'a>>),
+}
+
+impl<'a> ASTResult<'a> {
+    pub fn is_one(&self) -> bool {
+        matches!(self, ASTResult::One(_))
+    }
+
+    pub fn is_many(&self) -> bool {
+        matches!(self, ASTResult::Many(_))
+    }
+
+    pub fn is_err(&self) -> bool {
+        match self {
+            ASTResult::One(ast) => ast.is_err(),
+            ASTResult::Many(asts) => asts.iter().any(|ast| ast.is_err()),
+        }
+    }
+
+    pub fn is_ok(&self) -> bool {
+        match self {
+            ASTResult::One(ast) => ast.is_ok(),
+            ASTResult::Many(asts) => asts.iter().all(|ast| ast.is_ok()),
+        }
+    }
+
+}
+
+pub trait AST<'a>: 'a {
     fn sem(&self /*, Semantic Table */) -> Result<bool, ASTError>;
+    fn is_err(&self) -> bool;
+    fn is_ok(&self) -> bool; 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result;
 }
 
-impl std::fmt::Debug for dyn AST {
+impl<'a> std::fmt::Debug for dyn AST<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let depth: i32 = 0;
         self.print_on(f, depth)?;
@@ -17,13 +50,13 @@ impl std::fmt::Debug for dyn AST {
     }
 }
 
-pub struct ASTDefault {}
-
-impl ASTDefault {
-    pub fn boxed() -> BoxAST {
-        Box::new(ASTDefault {})
-    }
-}
+// pub struct ASTDefault<'a> {}
+//
+// impl<'a> ASTDefault<'a> {
+//     pub fn boxed() -> BoxAST<'a> {
+//         Box::new(ASTDefault {}) 
+//     }
+// }
 
 // ==================================================================================== //
 //  Implementations                                                                     //
@@ -36,22 +69,38 @@ fn print_tabs(f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
     Ok(())
 }
 
-impl AST for ASTDefault {
-    fn sem(&self) -> Result<bool, ASTError> {
-        Ok(true)
-    }
+// impl<'a> AST<'a> for ASTDefault<'a> {
+//     fn sem(&self) -> Result<bool, ASTError> {
+//         Ok(true)
+//     }
+//
+//     fn is_err(&self) -> bool {
+//         false
+//     }
+//
+//     fn is_ok(&self) -> bool {
+//         true
+//     }
+//
+//     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
+//         depth += 1;
+//         print_tabs(f, depth)?;
+//         writeln!(f, "<ASTDefault>")?;
+//         Ok(())
+//     }
+// }
 
-    fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
-        depth += 1;
-        print_tabs(f, depth)?;
-        writeln!(f, "<ASTDefault>")?;
-        Ok(())
-    }
-}
-
-impl AST for GenericTupleOption {
+impl<'a> AST<'a> for GenericTupleOption {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        false
+    }
+
+    fn is_ok(&self) -> bool {
+        true
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
@@ -63,9 +112,17 @@ impl AST for GenericTupleOption {
     }
 }
 
-impl AST for ProblemExample {
+impl<'a> AST<'a> for ProblemExample<'a> {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
@@ -80,9 +137,17 @@ impl AST for ProblemExample {
     }
 }
 
-impl AST for ProblemSolution {
+impl<'a> AST<'a> for ProblemSolution<'a> {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
@@ -97,9 +162,17 @@ impl AST for ProblemSolution {
     }
 }
 
-impl AST for ProblemInput {
+impl<'a> AST<'a> for ProblemInput<'a> {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
@@ -114,9 +187,17 @@ impl AST for ProblemInput {
     }
 }
 
-impl AST for ProblemOutput {
+impl<'a> AST<'a> for ProblemOutput<'a> {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
@@ -131,9 +212,17 @@ impl AST for ProblemOutput {
     }
 }
 
-impl AST for Program {
+impl<'a> AST<'a> for Program<'a> {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
@@ -146,9 +235,17 @@ impl AST for Program {
     }
 }
 
-impl AST for Range {
+impl<'a> AST<'a> for Range {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
@@ -163,9 +260,17 @@ impl AST for Range {
     }
 }
 
-impl AST for TupleIterator {
+impl<'a> AST<'a> for TupleIterator<'a> {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
@@ -178,9 +283,17 @@ impl AST for TupleIterator {
     }
 }
 
-impl AST for TupleComprehension {
+impl<'a> AST<'a> for TupleComprehension<'a> {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
@@ -195,9 +308,17 @@ impl AST for TupleComprehension {
     }
 }
 
-impl AST for GenericTuple {
+impl<'a> AST<'a> for GenericTuple<'a> {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
@@ -210,9 +331,17 @@ impl AST for GenericTuple {
     }
 }
 
-impl AST for Tuple {
+impl<'a> AST<'a> for Tuple {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
@@ -224,9 +353,17 @@ impl AST for Tuple {
     }
 }
 
-impl AST for Shape {
+impl<'a> AST<'a> for Shape<'a> {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
@@ -239,9 +376,17 @@ impl AST for Shape {
     }
 }
 
-impl AST for ObjectShape {
+impl<'a> AST<'a> for ObjectShape<'a> {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
@@ -255,9 +400,17 @@ impl AST for ObjectShape {
     }
 }
 
-impl AST for ObjectColor {
+impl<'a> AST<'a> for ObjectColor {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
@@ -269,9 +422,17 @@ impl AST for ObjectColor {
     }
 }
 
-impl AST for ObjectDesc {
+impl<'a> AST<'a> for ObjectDesc<'a> {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
@@ -283,9 +444,17 @@ impl AST for ObjectDesc {
     }
 }
 
-impl AST for ObjectDecl {
+impl<'a> AST<'a> for ObjectDecl<'a> {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
@@ -298,9 +467,17 @@ impl AST for ObjectDecl {
     }
 }
 
-impl AST for VarDef {
+impl<'a> AST<'a> for VarDef<'a> {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
@@ -316,9 +493,17 @@ impl AST for VarDef {
     }
 }
 
-impl AST for FuncCall {
+impl<'a> AST<'a> for FuncCall<'a> {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
@@ -333,9 +518,17 @@ impl AST for FuncCall {
     }
 }
 
-impl AST for ObjectCall {
+impl<'a> AST<'a> for ObjectCall<'a> {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        self.is_poisoned
+    }
+
+    fn is_ok(&self) -> bool {
+        !self.is_poisoned
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
@@ -350,9 +543,17 @@ impl AST for ObjectCall {
     }
 }
 
-impl AST for RValue {
+impl<'a> AST<'a> for RValue {
     fn sem(&self) -> Result<bool, ASTError> {
         todo!()
+    }
+
+    fn is_err(&self) -> bool {
+        false
+    }
+
+    fn is_ok(&self) -> bool {
+        true
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {

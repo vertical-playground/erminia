@@ -1,40 +1,13 @@
+use crate::diagnostics::code::{Code, DiagnosticLevel, FromCode};
 use crate::lexer::lex::PositionalOffset;
-use crate::lexer::token::Position;
-use derive_more::Display;
+use crate::lexer::lex::Lexer;
+use crate::config::CompilerPass;
 
 // ==================================================================================== //
-// Location Struct                                                                      //
+// Structs                                                                              //
 // ==================================================================================== //
 
-#[derive(Debug)]
-pub struct Location {
-    _position: Position,
-}
-
-impl Location {
-    pub fn new(position: Position) -> Self {
-        Location {
-            _position: position,
-        }
-    }
-}
-
-#[derive(Display)]
-pub enum Code {
-    E000X,
-    W000X,
-    N000X,
-    H000X,
-}
-
-pub enum DiagnosticLevel {
-    Error,
-    Warning,
-    Note,
-    Help,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Span {
     pub start: PositionalOffset,
     pub end: PositionalOffset,
@@ -54,6 +27,7 @@ pub struct DiagnosticWindow {
 pub struct Diagnostic {
     pub level: DiagnosticLevel,
     pub code: Code,
+    pub pass: CompilerPass,
     pub message: String,
     pub window: DiagnosticWindow,
 }
@@ -66,30 +40,18 @@ pub struct Accumulator {
 // Implementations                                                                      //
 // ==================================================================================== //
 
-impl DiagnosticLevel {
-    pub fn from_code(code: &Code) -> Self {
-        if code.to_string().starts_with('E') {
-            DiagnosticLevel::Error
-        } else if code.to_string().starts_with('W') {
-            DiagnosticLevel::Warning
-        } else if code.to_string().starts_with('N') {
-            DiagnosticLevel::Note
-        } else {
-            DiagnosticLevel::Help
-        }
-    }
-}
-
 impl Diagnostic {
     pub fn new(
         level: DiagnosticLevel,
         code: Code,
+        pass: CompilerPass,
         message: String,
         window: DiagnosticWindow,
     ) -> Self {
         Diagnostic {
             level,
             code,
+            pass,
             message,
             window,
         }
@@ -123,38 +85,22 @@ impl Default for Accumulator {
     }
 }
 
-pub trait FromCode {
-    fn from_code(code: &Code) -> Self;
-}
-
-impl FromCode for DiagnosticLevel {
-    fn from_code(code: &Code) -> Self {
-        DiagnosticLevel::from_code(code)
-    }
-}
-
-impl FromCode for String {
-    fn from_code(code: &Code) -> Self {
-        match code {
-            Code::E000X => "An error occurred.".to_string(),
-            Code::W000X => "This is a warning.".to_string(),
-            Code::N000X => "This is a note.".to_string(),
-            Code::H000X => "This is a help message.".to_string(),
-        }
-    }
+pub trait ToSnippet {
+    fn to_snippet(&self) -> String;
 }
 
 // ==================================================================================== //
 // Macros                                                                               //
 // ==================================================================================== //
 
-#[macro_export]
-macro_rules! diag {
-    (code: $code:expr, window: $window:expr) => {{
-        let level = DiagnosticLevel::from_code(&$code);
-        let message = String::from_code(&$code);
-        Diagnostic::new(level, $code, message, $window)
-    }};
-}
+pub fn create_diagnostic(pass: CompilerPass, tokens: &mut Lexer, code: Code) -> Diagnostic {
+    let level = DiagnosticLevel::from_code(&code);
+    let message = String::from_code(&code);
+    let start = tokens.get_position();
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
+    let snippet = tokens.get_snippet(span);
+    let window = DiagnosticWindow { span, snippet: snippet.to_string() };
 
-pub use crate::diag;
+    Diagnostic::new(level, code, pass, message, window)
+}
