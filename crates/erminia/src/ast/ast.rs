@@ -32,14 +32,14 @@ impl<'a> ASTResult<'a> {
             ASTResult::Many(asts) => asts.iter().all(|ast| ast.is_ok()),
         }
     }
-
 }
 
 pub trait AST<'a>: 'a {
     fn sem(&self /*, Semantic Table */) -> Result<bool, ASTError>;
     fn is_err(&self) -> bool;
-    fn is_ok(&self) -> bool; 
+    fn is_ok(&self) -> bool;
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result;
+    fn get_ast_id(&self) -> u32;
 }
 
 impl<'a> std::fmt::Debug for dyn AST<'a> {
@@ -54,7 +54,7 @@ impl<'a> std::fmt::Debug for dyn AST<'a> {
 //
 // impl<'a> ASTDefault<'a> {
 //     pub fn boxed() -> BoxAST<'a> {
-//         Box::new(ASTDefault {}) 
+//         Box::new(ASTDefault {})
 //     }
 // }
 
@@ -110,6 +110,10 @@ impl<'a> AST<'a> for GenericTupleOption {
         writeln!(f, "{}", s)?;
         Ok(())
     }
+
+    fn get_ast_id(&self) -> u32 {
+        0
+    }
 }
 
 impl<'a> AST<'a> for ProblemExample<'a> {
@@ -134,6 +138,10 @@ impl<'a> AST<'a> for ProblemExample<'a> {
             stmt.print_on(f, depth)?;
         }
         Ok(())
+    }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
     }
 }
 
@@ -160,6 +168,10 @@ impl<'a> AST<'a> for ProblemSolution<'a> {
         }
         Ok(())
     }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
+    }
 }
 
 impl<'a> AST<'a> for ProblemInput<'a> {
@@ -184,6 +196,10 @@ impl<'a> AST<'a> for ProblemInput<'a> {
             stmt.print_on(f, depth)?;
         }
         Ok(())
+    }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
     }
 }
 
@@ -210,6 +226,10 @@ impl<'a> AST<'a> for ProblemOutput<'a> {
         }
         Ok(())
     }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
+    }
 }
 
 impl<'a> AST<'a> for Program<'a> {
@@ -232,6 +252,10 @@ impl<'a> AST<'a> for Program<'a> {
             stmt.print_on(f, depth)?;
         }
         Ok(())
+    }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
     }
 }
 
@@ -258,6 +282,10 @@ impl<'a> AST<'a> for Range {
         writeln!(f, "{}", s)?;
         Ok(())
     }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
+    }
 }
 
 impl<'a> AST<'a> for TupleIterator<'a> {
@@ -280,6 +308,10 @@ impl<'a> AST<'a> for TupleIterator<'a> {
         writeln!(f, "{}", s)?;
         let _ = &self.range.print_on(f, depth)?;
         Ok(())
+    }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
     }
 }
 
@@ -306,6 +338,10 @@ impl<'a> AST<'a> for TupleComprehension<'a> {
         }
         Ok(())
     }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
+    }
 }
 
 impl<'a> AST<'a> for GenericTuple<'a> {
@@ -329,6 +365,10 @@ impl<'a> AST<'a> for GenericTuple<'a> {
         let _ = &self.right.print_on(f, depth)?;
         Ok(())
     }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
+    }
 }
 
 impl<'a> AST<'a> for Tuple {
@@ -350,6 +390,10 @@ impl<'a> AST<'a> for Tuple {
         let s = format!("<Tuple left: {}, right: {}>", self.left, self.right);
         writeln!(f, "{}", s)?;
         Ok(())
+    }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
     }
 }
 
@@ -373,6 +417,10 @@ impl<'a> AST<'a> for Shape<'a> {
         writeln!(f, "{}", s)?;
         let _ = &self.values.print_on(f, depth)?;
         Ok(())
+    }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
     }
 }
 
@@ -398,6 +446,10 @@ impl<'a> AST<'a> for ObjectShape<'a> {
         }
         Ok(())
     }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
+    }
 }
 
 impl<'a> AST<'a> for ObjectColor {
@@ -419,6 +471,10 @@ impl<'a> AST<'a> for ObjectColor {
         let s = format!("<ObjectColor color: {}>", self.color);
         writeln!(f, "{}", s)?;
         Ok(())
+    }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
     }
 }
 
@@ -442,6 +498,10 @@ impl<'a> AST<'a> for ObjectDesc<'a> {
         let _ = &self.color.print_on(f, depth)?;
         Ok(())
     }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
+    }
 }
 
 impl<'a> AST<'a> for ObjectDecl<'a> {
@@ -464,6 +524,10 @@ impl<'a> AST<'a> for ObjectDecl<'a> {
         writeln!(f, "{}", s)?;
         let _ = &self.desc.print_on(f, depth)?;
         Ok(())
+    }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
     }
 }
 
@@ -491,6 +555,10 @@ impl<'a> AST<'a> for VarDef<'a> {
         let _ = &self.expr.print_on(f, depth)?;
         Ok(())
     }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
+    }
 }
 
 impl<'a> AST<'a> for FuncCall<'a> {
@@ -515,6 +583,10 @@ impl<'a> AST<'a> for FuncCall<'a> {
             expr.print_on(f, depth)?;
         }
         Ok(())
+    }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
     }
 }
 
@@ -541,6 +613,10 @@ impl<'a> AST<'a> for ObjectCall<'a> {
         };
         Ok(())
     }
+
+    fn get_ast_id(&self) -> u32 {
+        self.unique_ast_id
+    }
 }
 
 impl<'a> AST<'a> for RValue {
@@ -562,5 +638,9 @@ impl<'a> AST<'a> for RValue {
         let s = format!("<RValue {:?}>", self);
         writeln!(f, "{}", s)?;
         Ok(())
+    }
+
+    fn get_ast_id(&self) -> u32 {
+        0
     }
 }

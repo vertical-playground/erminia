@@ -20,6 +20,7 @@ pub struct FuncCall<'a> {
     pub exprs: Vec<BoxAST<'a>>,
     pub span: Span,
     pub is_poisoned: bool,
+    pub unique_ast_id: u32,
 }
 
 pub struct ObjectCall<'a> {
@@ -27,6 +28,7 @@ pub struct ObjectCall<'a> {
     pub tuple: Option<BoxAST<'a>>,
     pub span: Span,
     pub is_poisoned: bool,
+    pub unique_ast_id: u32,
 }
 
 #[derive(Debug)]
@@ -41,13 +43,32 @@ pub enum RValue {
 
 impl<'a> FuncCall<'a> {
     pub fn boxed(id: String, exprs: Vec<BoxAST<'a>>, span: Span, is_poisoned: bool) -> BoxAST<'a> {
-        Box::new(FuncCall { id, exprs, span, is_poisoned }) as BoxAST<'a>
+        let unique_ast_id = 0;
+        Box::new(FuncCall {
+            id,
+            exprs,
+            span,
+            is_poisoned,
+            unique_ast_id,
+        }) as BoxAST<'a>
     }
 }
 
 impl<'a> ObjectCall<'a> {
-    pub fn boxed(id: String, tuple: Option<BoxAST<'a>>, span: Span, is_poisoned: bool) -> BoxAST<'a> {
-        Box::new(ObjectCall { id, tuple, span, is_poisoned }) as BoxAST<'a>
+    pub fn boxed(
+        id: String,
+        tuple: Option<BoxAST<'a>>,
+        span: Span,
+        is_poisoned: bool,
+    ) -> BoxAST<'a> {
+        let unique_ast_id = 0;
+        Box::new(ObjectCall {
+            id,
+            tuple,
+            span,
+            is_poisoned,
+            unique_ast_id,
+        }) as BoxAST<'a>
     }
 }
 

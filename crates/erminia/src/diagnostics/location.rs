@@ -1,13 +1,14 @@
-use crate::diagnostics::code::{Code, DiagnosticLevel, FromCode};
-use crate::lexer::lex::PositionalOffset;
-use crate::lexer::lex::Lexer;
 use crate::config::CompilerPass;
+use crate::diagnostics::code::{Code, DiagnosticLevel, FromCode};
+use crate::lexer::lex::Lexer;
+use crate::lexer::lex::PositionalOffset;
+use std::fmt;
 
 // ==================================================================================== //
 // Structs                                                                              //
 // ==================================================================================== //
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Span {
     pub start: PositionalOffset,
     pub end: PositionalOffset,
@@ -19,19 +20,23 @@ impl Span {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DiagnosticWindow {
     pub span: Span,
     pub snippet: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Diagnostic {
     pub level: DiagnosticLevel,
     pub code: Code,
     pub pass: CompilerPass,
     pub message: String,
     pub window: DiagnosticWindow,
+    pub note: String,
 }
 
+#[derive(Debug, Clone)]
 pub struct Accumulator {
     pub diagnostics: Vec<Diagnostic>,
 }
@@ -54,7 +59,52 @@ impl Diagnostic {
             pass,
             message,
             window,
+            note: String::new(),
         }
+    }
+
+    pub fn add_note(&mut self, note: String) -> Self {
+        self.note = note;
+        self.clone()
+    }
+}
+
+impl fmt::Display for Diagnostic {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "{}[{:?}] {}",
+            match self.level {
+                DiagnosticLevel::Error => "error",
+                DiagnosticLevel::Warning => "warning",
+                DiagnosticLevel::Note => "note",
+                DiagnosticLevel::Help => "help",
+            },
+            self.code,
+            self.message,
+        )?;
+
+        writeln!(f, "  ┌─ pass: {:?}", self.pass)?;
+        writeln!(
+            f,
+            "  │   span: {}..{}",
+            self.window.span.start, self.window.span.end
+        )?;
+
+        writeln!(f, "  │")?;
+        for line in self.window.snippet.lines() {
+            writeln!(f, "  │   {}", line)?;
+        }
+        writeln!(f, "  │")?;
+
+        // Optional note
+        if !self.note.is_empty() {
+            writeln!(f, "  = note: {}", self.note)?;
+        }
+
+        writeln!(f)?;
+
+        Ok(())
     }
 }
 
@@ -65,17 +115,49 @@ impl Accumulator {
         }
     }
 
-    pub fn add_diagnostic(&mut self, diagnostic: Diagnostic) {
+    pub fn add_diag(&mut self, diagnostic: Diagnostic) {
         self.diagnostics.push(diagnostic);
     }
 
-    pub fn sort_by_level(&mut self) {
+    pub fn sort(&mut self) {
         self.diagnostics.sort_by_key(|d| match d.level {
             DiagnosticLevel::Error => 0,
             DiagnosticLevel::Warning => 1,
             DiagnosticLevel::Note => 2,
             DiagnosticLevel::Help => 3,
         });
+    }
+
+    pub fn is_blocking(&mut self, next: CompilerPass) -> bool {
+        self.diagnostics.sort();
+        for diag in &self.diagnostics {
+            if diag.pass < next && diag.level == DiagnosticLevel::Error {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn get(&self, pass: CompilerPass) -> Vec<Diagnostic> {
+        if pass == CompilerPass::ALL {
+            return self.diagnostics.clone();
+        }
+
+        self.diagnostics
+            .iter()
+            .filter(|d| d.pass == pass)
+            .cloned()
+            .collect()
+    }
+}
+
+impl fmt::Display for Accumulator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for d in &self.diagnostics {
+            writeln!(f, "{}", d)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -100,7 +182,10 @@ pub fn create_diagnostic(pass: CompilerPass, tokens: &mut Lexer, code: Code) -> 
     let end = tokens.get_position();
     let span = Span::new(start, end);
     let snippet = tokens.get_snippet(span);
-    let window = DiagnosticWindow { span, snippet: snippet.to_string() };
+    let window = DiagnosticWindow {
+        span,
+        snippet: snippet.to_string(),
+    };
 
     Diagnostic::new(level, code, pass, message, window)
 }

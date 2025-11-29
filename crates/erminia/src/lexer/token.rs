@@ -80,7 +80,6 @@ pub enum TokenKind {
     EOF,
     START,
     Poisoned,
-
 }
 
 impl fmt::Display for TokenKind {

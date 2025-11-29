@@ -1,10 +1,10 @@
 use std::fmt;
 use std::str::FromStr;
 
-use crate::lexer::token::*;
-use crate::diagnostics::location::*;
-use crate::diagnostics::code::Code;
 use crate::config::CompilerPass;
+use crate::diagnostics::code::Code;
+use crate::diagnostics::location::*;
+use crate::lexer::token::*;
 
 static KEYWORDS: [&str; 10] = [
     "def",
@@ -28,7 +28,7 @@ static KEYWORDS: [&str; 10] = [
 // Positional Offset Struct                                                             //
 // ==================================================================================== //
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PositionalOffset {
     pos: usize,
     cursor: usize,
@@ -137,7 +137,7 @@ impl<'input> Lexer<'input> {
         self.token
     }
 
-    pub fn advance(&mut self) -> () {
+    pub fn advance(&mut self) {
         let start_pos = trim_starting_whitespace(self.content, self.start);
 
         let (kind, end_pos) = get_next_token_kind(self.content, start_pos);
@@ -173,9 +173,7 @@ impl<'input> Lexer<'input> {
         (kind, end_pos)
     }
 
-    pub fn lookahead2(
-        &self,
-    ) -> (TokenKind, TokenKind, PositionalOffset, PositionalOffset) {
+    pub fn lookahead2(&self) -> (TokenKind, TokenKind, PositionalOffset, PositionalOffset) {
         let first_start_pos = trim_starting_whitespace(self.content, self.start);
 
         let (first, first_end_pos) = get_next_token_kind(self.content, first_start_pos);
@@ -309,10 +307,7 @@ fn get_next_keyword(
     None
 }
 
-fn get_next_symbol(
-    text: &str,
-    mut pos: PositionalOffset,
-) -> Option<(TokenKind, PositionalOffset)> {
+fn get_next_symbol(text: &str, mut pos: PositionalOffset) -> Option<(TokenKind, PositionalOffset)> {
     let starting_text = &text[pos.pos..];
 
     let mut chars = starting_text.chars();
@@ -370,7 +365,7 @@ fn get_next_symbol(
         Some('<') => {
             let next = chars.next();
 
-            let token = if matches!(next, Some('<')) {
+            if matches!(next, Some('<')) {
                 pos.increment_pos(2);
                 pos.increment_cursor(2);
                 TokenKind::ShiftLeft
@@ -382,9 +377,7 @@ fn get_next_symbol(
                 pos.increment_pos(1);
                 pos.increment_cursor(1);
                 TokenKind::Lesser
-            };
-
-            token
+            }
         }
         Some('>') => {
             if matches!(chars.next(), Some('>')) {
@@ -514,11 +507,7 @@ fn get_next_symbol(
                 TokenKind::String
             } else {
                 // We got to the end of the text without closing the string
-                create_diagnostic(
-                    CompilerPass::Lexer,
-                    &mut Lexer::new(text),
-                    Code::E000X,
-                );
+                create_diagnostic(CompilerPass::Lexer, &mut Lexer::new(text), Code::E000X);
 
                 TokenKind::String
             }
@@ -626,10 +615,7 @@ fn get_next_numeric(
     }
 }
 
-fn get_next_token_kind(
-    text: &str,
-    pos: PositionalOffset,
-) -> (TokenKind, PositionalOffset) {
+fn get_next_token_kind(text: &str, pos: PositionalOffset) -> (TokenKind, PositionalOffset) {
     // it's a keywords
     if let Some((token, pos)) = get_next_keyword(text, &KEYWORDS, pos) {
         return (token, pos);

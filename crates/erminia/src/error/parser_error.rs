@@ -1,5 +1,5 @@
 use crate::error::lexer_error::LexerError;
-use crate::lexer::token::{Position, TokenKind};
+use crate::lexer::token::TokenKind;
 // use derive_more::From;
 
 #[derive(Debug)]
