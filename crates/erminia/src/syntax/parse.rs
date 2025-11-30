@@ -276,6 +276,8 @@ fn parse_inner_stmt<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a
         TokenKind::Object => parse_object_decl(tokens, diag),
         TokenKind::LetKwd => parse_var_def(tokens, diag),
         TokenKind::Ident => parse_func_call(tokens, diag),
+        TokenKind::ProblemInput => parse_problem_input(tokens, diag),
+        TokenKind::ProblemOutput => parse_problem_output(tokens, diag),
         _ => parse_object_decl(tokens, diag),
     }
 }
@@ -994,5 +996,90 @@ mod test {
         let text = "object Shape { shape : [(0,1), (1,1)], color: 1 };";
 
         check_no_err_single_ast(text, parse_object_decl)
+    }
+
+    #[test]
+    fn test_parse_problem_example() {
+        let text = "example sol1 {
+
+            input i1 (0, 1) {
+                let x: object = HA(0,1);
+                draw(1, x, a);
+            };
+
+            output o1 (0, 1) {
+                let y: object = HA(1,1);
+                draw(1, y, b);
+            };
+        }";
+
+        check_no_err_single_ast(text, parse_problem_example)
+    }
+
+    #[test]
+    fn test_parse_problem_solution() {
+        let text = "solution sol1 {
+
+            input i1 (0, 1) {
+                let x: object = HA(0,1);
+                draw(1, x, a);
+            };
+
+            output o1 (0, 1) {
+                let y: object = HA(1,1);
+                draw(1, y, b);
+            };
+        }";
+
+        check_no_err_single_ast(text, parse_problem_solution)
+    }
+    
+    #[test]
+    fn test_parse_problem_input() {
+        let text = "input in1 (0, 1) {
+            let x: object = HA(0,1);
+            draw(1, x, a);
+        }";
+
+        check_no_err_single_ast(text, parse_problem_input)
+    }
+
+    #[test]
+    fn test_parse_problem_output() {
+        let text = "output out1 (0, 1) {
+            let y: object = HA(1,1);
+            draw(1, y, b);
+        }";
+
+        check_no_err_single_ast(text, parse_problem_output)
+    }
+
+    #[test]
+    fn test_parse_program() {
+        let text = "def problem1 (2) {
+            object HA { shape: [(0,1), (0,2)], color: 1 };
+
+            example ex1 {
+                let x: object = HA(0,1);
+                draw(1, x, a);
+            };
+
+            solution sol1 {
+                let y: object = HA(1,1);
+                draw(1, y, b);
+            };
+
+            input in1 (0, 1) {
+                let x: object = HA(0,1);
+                draw(1, x, a);
+            };
+
+            output out1 (0, 1) {
+                let y: object = HA(1,1);
+                draw(1, y, b);
+            };
+        }";
+
+        check_no_err_single_ast(text, parse_program)
     }
 }
