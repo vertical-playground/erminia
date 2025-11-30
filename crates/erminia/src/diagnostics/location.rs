@@ -2,13 +2,15 @@ use crate::config::CompilerPass;
 use crate::diagnostics::code::{Code, DiagnosticLevel, FromCode};
 use crate::lexer::lex::Lexer;
 use crate::lexer::lex::PositionalOffset;
+
+use colored::*;
 use std::fmt;
 
 // ==================================================================================== //
 // Structs                                                                              //
 // ==================================================================================== //
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Span {
     pub start: PositionalOffset,
     pub end: PositionalOffset,
@@ -34,6 +36,7 @@ pub struct Diagnostic {
     pub message: String,
     pub window: DiagnosticWindow,
     pub note: String,
+    pub help: String,
 }
 
 #[derive(Debug, Clone)]
@@ -60,12 +63,16 @@ impl Diagnostic {
             message,
             window,
             note: String::new(),
+            help: String::new(),
         }
     }
 
-    pub fn add_note(&mut self, note: String) -> Self {
+    pub fn add_note(&mut self, note: String) {
         self.note = note;
-        self.clone()
+    }
+
+    pub fn add_help(&mut self, help: String) {
+        self.help = help;
     }
 }
 
@@ -73,23 +80,22 @@ impl fmt::Display for Diagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(
             f,
-            "{}[{:?}] {}",
-            match self.level {
-                DiagnosticLevel::Error => "error",
-                DiagnosticLevel::Warning => "warning",
-                DiagnosticLevel::Note => "note",
-                DiagnosticLevel::Help => "help",
-            },
-            self.code,
-            self.message,
+            " {}[{}] {}",
+            self.level,
+            self.code.to_string().red().bold(),
+            self.message.bold()
         )?;
+        writeln!(f, "  {} {:?}", "pass:".dimmed(), self.pass)?;
 
-        writeln!(f, "  ┌─ pass: {:?}", self.pass)?;
-        writeln!(
-            f,
-            "  │   span: {}..{}",
-            self.window.span.start, self.window.span.end
-        )?;
+        if self.pass != CompilerPass::Internal {
+            writeln!(
+                f,
+                "  {} {}..{}",
+                "span:".dimmed(),
+                self.window.span.start,
+                self.window.span.end
+            )?;
+        }
 
         writeln!(f, "  │")?;
         for line in self.window.snippet.lines() {
@@ -97,13 +103,15 @@ impl fmt::Display for Diagnostic {
         }
         writeln!(f, "  │")?;
 
-        // Optional note
         if !self.note.is_empty() {
-            writeln!(f, "  = note: {}", self.note)?;
+            writeln!(f, "  = {} {}", "note:".bold(), self.note)?;
+        }
+
+        if !self.help.is_empty() {
+            writeln!(f, "  * {} {}", "help:".bold(), self.help)?;
         }
 
         writeln!(f)?;
-
         Ok(())
     }
 }
@@ -121,6 +129,7 @@ impl Accumulator {
 
     pub fn sort(&mut self) {
         self.diagnostics.sort_by_key(|d| match d.level {
+            DiagnosticLevel::Internal => -1,
             DiagnosticLevel::Error => 0,
             DiagnosticLevel::Warning => 1,
             DiagnosticLevel::Note => 2,
@@ -175,12 +184,14 @@ pub trait ToSnippet {
 // Macros                                                                               //
 // ==================================================================================== //
 
-pub fn create_diagnostic(pass: CompilerPass, tokens: &mut Lexer, code: Code) -> Diagnostic {
+pub fn create_diagnostic(
+    pass: CompilerPass,
+    tokens: &mut Lexer,
+    code: Code,
+    span: Span,
+) -> Diagnostic {
     let level = DiagnosticLevel::from_code(&code);
     let message = String::from_code(&code);
-    let start = tokens.get_position();
-    let end = tokens.get_position();
-    let span = Span::new(start, end);
     let snippet = tokens.get_snippet(span);
     let window = DiagnosticWindow {
         span,

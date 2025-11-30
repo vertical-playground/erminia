@@ -4,9 +4,14 @@ use crate::ast::stmt::*;
 use crate::config::CompilerPass;
 use crate::diagnostics::code::Code;
 use crate::diagnostics::location::*;
+use crate::diagnostics::messages::*;
+use crate::diagnostics::DiagnosticBuilder;
 use crate::lexer::lex::Lexer;
 use crate::lexer::token::TokenKind;
 use crate::types::ErminiaType;
+
+type DB = DiagnosticBuilder;
+const PARSER_PASS: CompilerPass = CompilerPass::Parser;
 
 // ==================================================================================== //
 //  Utilities                                                                           //
@@ -15,39 +20,48 @@ use crate::types::ErminiaType;
 fn is_next_right_inclusive(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaType {
     let kind = tokens.peek().get_kind();
 
-    match kind {
+    let res = match kind {
         TokenKind::RightPar => ErminiaType::Bool(false),
         TokenKind::RightBracket => ErminiaType::Bool(true),
         _ => {
-            let note = format!(
-                "Expected ')' or ']' for range inclusivity, but found {:?}",
-                kind
+            diag.add_diag(
+                DB::build(PARSER_PASS, Code::E0002)
+                    .with_note(Note::ExpectedRightInclusive)
+                    .with_args(MessageKind::Note, vec![kind.to_string()])
+                    .with_help(Help::ConsiderChangingToInclusive)
+                    .emmit(tokens, Span::default()),
             );
-            let mut diagnostic = create_diagnostic(CompilerPass::Parser, tokens, Code::E0002);
-            diagnostic.add_note(note);
-            diag.add_diag(diagnostic);
+
             ErminiaType::Poisoned
         }
-    }
+    };
+
+    tokens.advance();
+
+    res
 }
 
 fn is_next_left_inclusive(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaType {
     let kind = tokens.peek().get_kind();
 
-    match kind {
+    let res = match kind {
         TokenKind::LeftPar => ErminiaType::Bool(false),
         TokenKind::LeftBracket => ErminiaType::Bool(true),
         _ => {
-            let note = format!(
-                "Expected '(' or '[' for range inclusivity, but found {:?}",
-                kind
+            diag.add_diag(
+                DB::build(PARSER_PASS, Code::E0002)
+                    .with_note(Note::ExpectedLeftInclusive)
+                    .with_args(MessageKind::Note, vec![kind.to_string()])
+                    .emmit(tokens, Span::default()),
             );
-            let mut diagnostic = create_diagnostic(CompilerPass::Parser, tokens, Code::E0002);
-            diagnostic.add_note(note);
-            diag.add_diag(diagnostic);
+
             ErminiaType::Poisoned
         }
-    }
+    };
+
+    tokens.advance();
+
+    res
 }
 
 fn next_is_comma(tokens: &mut Lexer) -> bool {
@@ -83,72 +97,93 @@ fn match_next(tokens: &mut Lexer, matched: TokenKind) -> bool {
 fn consume_data_type(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaType {
     let kind = tokens.peek().get_kind();
     // TODO: Map TokenKind to ErminiaType
-    match kind {
-        TokenKind::Object => {
-            tokens.advance();
-            ErminiaType::Object
-        }
-        TokenKind::Int => {
-            tokens.advance();
-            ErminiaType::Int
-        }
-        TokenKind::String => {
-            tokens.advance();
-            ErminiaType::String
-        }
+    let res = match kind {
+        TokenKind::Object => ErminiaType::Object,
+        TokenKind::Int => ErminiaType::Int,
+        TokenKind::String => ErminiaType::String,
         _ => {
-            let note = format!("Expected data type but found {:?}. Did you mean to use 'int', 'string', or 'object'?", kind);
-            let mut diagnostic = create_diagnostic(CompilerPass::Parser, tokens, Code::E0001);
-            diagnostic.add_note(note);
-            diag.add_diag(diagnostic);
+            diag.add_diag(
+                DB::build(PARSER_PASS, Code::E0002)
+                    .with_note(Note::ExpectedDataType)
+                    .with_args(MessageKind::Note, vec![kind.to_string()])
+                    .with_help(Help::ConsiderChangingToInclusive)
+                    .emmit(tokens, Span::default()),
+            );
+
             ErminiaType::Poisoned
         }
-    }
+    };
+
+    tokens.advance();
+
+    res
 }
 
 fn consume_int_const(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaType {
     let int_const = tokens.token;
-    if int_const.get_kind() == TokenKind::Int {
-        tokens.advance();
+
+    let res = if int_const.get_kind() == TokenKind::Int {
         ErminiaType::Integer(int_const.text.parse::<i32>().unwrap())
     } else {
-        let note = format!("{:?} is not an integer.", int_const.get_kind());
-        let mut diagnostic = create_diagnostic(CompilerPass::Parser, tokens, Code::E0003);
-        diagnostic.add_note(note);
-        diag.add_diag(diagnostic);
+        diag.add_diag(
+            DB::build(PARSER_PASS, Code::E0003)
+                .with_note(Note::ExpectedInteger)
+                .with_args(MessageKind::Note, vec![int_const.get_kind().to_string()])
+                .emmit(tokens, Span::default()),
+        );
+
         ErminiaType::Poisoned
-    }
+    };
+
+    tokens.advance();
+
+    res
 }
 
 fn consume_identifier(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaType {
     let id = tokens.token;
-    match id.get_kind() {
-        TokenKind::Ident => {
-            tokens.advance();
-            ErminiaType::Ident(id.text.to_string())
-        }
+
+    let res = match id.get_kind() {
+        TokenKind::Ident => ErminiaType::Ident(id.text.to_string()),
         _ => {
-            let note = format!("{:?} is not an identifier.", id.get_kind());
-            let mut diagnostic = create_diagnostic(CompilerPass::Parser, tokens, Code::E0001);
-            diagnostic.add_note(note);
-            diag.add_diag(diagnostic);
+            diag.add_diag(
+                DB::build(PARSER_PASS, Code::E0001)
+                    .with_note(Note::ExpectedIdentifier)
+                    .with_args(MessageKind::Note, vec![id.get_kind().to_string()])
+                    .emmit(tokens, Span::default()),
+            );
+
             ErminiaType::Poisoned
         }
-    }
+    };
+
+    tokens.advance();
+
+    res
 }
 
 fn consume_keyword(tokens: &mut Lexer, expected: TokenKind, diag: &mut Accumulator) -> ErminiaType {
     let actual = tokens.peek().get_kind();
-    if actual == expected {
-        tokens.advance();
+
+    let res = if actual == expected {
         ErminiaType::Void
     } else {
-        let note = format!("Expected {:?} but found {:?}.", expected, actual);
-        let mut diagnostic = create_diagnostic(CompilerPass::Parser, tokens, Code::E0001);
-        diagnostic.add_note(note);
-        diag.add_diag(diagnostic);
+        diag.add_diag(
+            DB::build(PARSER_PASS, Code::E0001)
+                .with_note(Note::ExpectedSomethingElse)
+                .with_args(
+                    MessageKind::Note,
+                    vec![expected.to_string(), actual.to_string()],
+                )
+                .emmit(tokens, Span::default()),
+        );
+
         ErminiaType::Poisoned
-    }
+    };
+
+    tokens.advance();
+
+    res
 }
 
 // ==================================================================================== //
@@ -166,48 +201,28 @@ fn parse_expr<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
 
             if matches!(lookahead.0, TokenKind::LeftPar) {
                 stmt = parse_object_call(tokens, diag);
-
-                if stmt.is_err() {
-                    let note = format!(
-                        "Expected 'ObjectCall' AST Node but failed to parse Node with id: {:?}.",
-                        stmt.get_ast_id()
-                    );
-                    let mut diagnostic = create_diagnostic(CompilerPass::AST, tokens, Code::E0004);
-                    diagnostic.add_note(note);
-                    diag.add_diag(diagnostic);
-                }
             } else {
                 let id = consume_identifier(tokens, diag);
-
-                if id.is_poisoned() {
-                    let note = format!("{:?} is not an identifier.", id);
-                    let mut diagnostic = create_diagnostic(CompilerPass::AST, tokens, Code::E0001);
-                    diagnostic.add_note(note);
-                    diag.add_diag(diagnostic);
-                }
                 stmt = RValue::boxed_id(id.to_string());
-
-                if stmt.is_err() {
-                    let note = format!(
-                        "Expected 'RValue' AST Node but failed to parse Node with id: {:?}.",
-                        stmt.get_ast_id()
-                    );
-                    let mut diagnostic = create_diagnostic(CompilerPass::AST, tokens, Code::E0004);
-                    diagnostic.add_note(note);
-                    diag.add_diag(diagnostic);
-                }
+                stmt.check(tokens, diag, Span::default());
             }
 
             stmt
         }
-        TokenKind::Int => RValue::boxed_int(consume_int_const(tokens, diag).to_int()),
+        TokenKind::Int => {
+            let stmt = RValue::boxed_int(consume_int_const(tokens, diag).to_int());
+            stmt.check(tokens, diag, Span::default());
+
+            stmt
+        }
         _ => {
-            let note = format!(
-                "Could not parse expression. Expected id or integer but found {:?}",
-                kind
+            diag.add_diag(
+                DB::build(PARSER_PASS, Code::E0001)
+                    .with_note(Note::ExpectedIDorInteger)
+                    .with_args(MessageKind::Note, vec![kind.to_string()])
+                    .emmit(tokens, Span::default()),
             );
-            let mut diagnostic = create_diagnostic(CompilerPass::Parser, tokens, Code::E0001);
-            diagnostic.add_note(note);
+
             stmt = parse_object_call(tokens, diag);
             stmt
         }
@@ -235,15 +250,8 @@ fn parse_list_of_exprs<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Vec<Bo
 
 // <func_call> ::= <id> "(" [<list_of_exprs>] ")" ";"
 fn parse_func_call<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let mut poisoned: bool = false;
-
     let start = tokens.get_position();
     let id = consume_identifier(tokens, diag);
-
-    if id.is_poisoned() {
-        poisoned = true;
-    }
-
     consume_keyword(tokens, TokenKind::LeftPar, diag);
 
     let exprs = parse_list_of_exprs(tokens, diag);
@@ -254,7 +262,8 @@ fn parse_func_call<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a>
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let func = FuncCall::boxed(id.to_string(), exprs, span, poisoned);
+    let func = FuncCall::boxed(id, exprs, span);
+    func.check(tokens, diag, span);
 
     func
 }
@@ -264,23 +273,10 @@ fn parse_inner_stmt<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a
     let kind = tokens.peek().get_kind();
 
     match kind {
-        TokenKind::Object => {
-            let object = parse_object_decl(tokens, diag);
-            object
-        }
-        TokenKind::LetKwd => {
-            let var = parse_var_def(tokens, diag);
-            var
-        }
-        TokenKind::Ident => {
-            let func = parse_func_call(tokens, diag);
-            func
-        }
-        _ => {
-            create_diagnostic(CompilerPass::Parser, tokens, Code::E000X);
-            let object = parse_object_decl(tokens, diag);
-            object
-        }
+        TokenKind::Object => parse_object_decl(tokens, diag),
+        TokenKind::LetKwd => parse_var_def(tokens, diag),
+        TokenKind::Ident => parse_func_call(tokens, diag),
+        _ => parse_object_decl(tokens, diag),
     }
 }
 
@@ -305,128 +301,73 @@ fn parse_inner_compound_stmt<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> 
 // TODO: handle type inference
 // <var_def> ::= "let" <id> ":" <data_type> "=" <expr> ";"
 fn parse_var_def<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let mut poisoned: bool = false;
-
     let start = tokens.get_position();
     let mut data_type: ErminiaType = ErminiaType::default();
 
-    if consume_keyword(tokens, TokenKind::LetKwd, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::LetKwd, diag);
 
     let id = consume_identifier(tokens, diag);
 
-    if id.is_poisoned() {
-        poisoned = true;
-    }
-
     if match_next(tokens, TokenKind::Colon) {
-        if consume_keyword(tokens, TokenKind::Colon, diag).is_poisoned() {
-            poisoned = true;
-        }
+        consume_keyword(tokens, TokenKind::Colon, diag);
 
         // change here if it's explicit about data type
         data_type = consume_data_type(tokens, diag);
-
-        if data_type.is_poisoned() {
-            poisoned = true;
-        }
     }
 
-    if consume_keyword(tokens, TokenKind::Equals, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::Equals, diag);
 
     let expr = parse_expr(tokens, diag);
 
-    if expr.is_err() {
-        poisoned = true;
-    }
-
-    if consume_keyword(tokens, TokenKind::SemiColon, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::SemiColon, diag);
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    // TODO
-    let var_def = VarDef::boxed(id.to_string(), data_type, expr, span, poisoned);
+    let var_def = VarDef::boxed(id, data_type, expr, span);
+    var_def.check(tokens, diag, span);
 
     var_def
 }
 
 // <range> ::= ("[" | "(") <int_const> ".." <int_const> ("]" | ")")
 fn parse_range<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let mut poisoned: bool = false;
-
     let start = tokens.get_position();
     let is_left_inclusive = is_next_left_inclusive(tokens, diag);
 
-    if is_left_inclusive.is_poisoned() {
-        poisoned = true;
-    }
-
     let left = consume_int_const(tokens, diag);
 
-    if left.is_poisoned() {
-        poisoned = true;
-    }
-
-    if consume_keyword(tokens, TokenKind::Range, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::Range, diag);
 
     let right = consume_int_const(tokens, diag);
 
-    if right.is_poisoned() {
-        poisoned = true;
-    }
-
     let is_right_inclusive = is_next_right_inclusive(tokens, diag);
-
-    if is_right_inclusive.is_poisoned() {
-        poisoned = true;
-    }
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    Range::boxed(
-        is_left_inclusive.to_bool(),
-        is_right_inclusive.to_bool(),
-        left.to_int(),
-        right.to_int(),
-        span,
-        poisoned,
-    )
+    let range = Range::boxed(is_left_inclusive, is_right_inclusive, left, right, span);
+    range.check(tokens, diag, span);
+
+    range
 }
 
 // <shape_tuple_iter> ::= <id> "<-" <range>
 fn parse_shape_tuple_iter<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let mut poisoned: bool = false;
-
     let start = tokens.get_position();
     let coord = consume_identifier(tokens, diag);
 
-    if coord.is_poisoned() {
-        poisoned = true;
-    }
-
-    if consume_keyword(tokens, TokenKind::LeftArrow, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::LeftArrow, diag);
 
     let range = parse_range(tokens, diag);
-
-    if range.is_err() {
-        poisoned = true;
-    }
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    TupleIterator::boxed(coord.to_string(), range, span, poisoned)
+    let tuple_iter = TupleIterator::boxed(coord, range, span);
+    tuple_iter.check(tokens, diag, span);
+
+    tuple_iter
 }
 
 // <shape_tuple_iter_pair> ::= <shape_tuple_iter> ("," <shape_tuple_iter>)
@@ -434,16 +375,6 @@ fn parse_shape_tuple_iter_pair<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -
     let mut pairs: Vec<BoxAST> = vec![];
 
     let first_tuple_iter = parse_shape_tuple_iter(tokens, diag);
-
-    if first_tuple_iter.is_err() {
-        let note = format!(
-            "Expected 'TupleIterator' AST Node but failed to parse Node with id: {:?}.",
-            first_tuple_iter.get_ast_id()
-        );
-        let mut diagnostic = create_diagnostic(CompilerPass::AST, tokens, Code::E0004);
-        diagnostic.add_note(note);
-        diag.add_diag(diagnostic);
-    }
 
     pairs.push(first_tuple_iter);
 
@@ -458,75 +389,57 @@ fn parse_shape_tuple_iter_pair<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -
 
 // <shape_tuple_compr> ::= <shape_tuple> "|" <shape_tuple_iter_pair>
 fn parse_shape_tuple_compr<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let mut poisoned: bool = false;
-
     let start = tokens.get_position();
     let tuple = parse_shape_tuple_generic(tokens, diag);
 
-    if tuple.is_err() {
-        poisoned = true;
-    }
-
-    if consume_keyword(tokens, TokenKind::Pipe, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::Pipe, diag);
 
     let iter_pair = parse_shape_tuple_iter_pair(tokens, diag);
-
-    if iter_pair.iter().any(|s| s.is_err()) {
-        poisoned = true;
-    }
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    TupleComprehension::boxed(tuple, iter_pair, span, poisoned)
+    let tuple_compr = TupleComprehension::boxed(tuple, iter_pair, span);
+    tuple_compr.check(tokens, diag, span);
+
+    tuple_compr
 }
 
 // <object_call> ::= <id> <shape_tuple>
 fn parse_object_call<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let mut poisoned: bool = false;
-
     let start = tokens.get_position();
     let id = consume_identifier(tokens, diag);
 
-    if id.is_poisoned() {
-        poisoned = true;
-    }
-
-    match tokens.peek().get_kind() {
+    let (object, span) = match tokens.peek().get_kind() {
         TokenKind::LeftPar => {
             let tuple = parse_shape_tuple(tokens, diag);
-
-            if tuple.is_err() {
-                poisoned = true;
-            }
 
             let end = tokens.get_position();
             let span = Span::new(start, end);
 
-            let object = ObjectCall::boxed(id.to_string(), Some(tuple), span, poisoned);
-            object
+            let object = ObjectCall::boxed(id, Some(tuple), span);
+
+            (object, span)
         }
         _ => {
             let end = tokens.get_position();
             let span = Span::new(start, end);
 
-            let object = ObjectCall::boxed(id.to_string(), None, span, poisoned);
-            object
+            let object = ObjectCall::boxed(id, None, span);
+
+            (object, span)
         }
-    }
+    };
+
+    object.check(tokens, diag, span);
+    object
 }
 
 // <shape_tuple_generic> ::= "(" (<int_const> | <id>) "," (<int_const> | <id>) ")"
 fn parse_shape_tuple_generic<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let mut poisoned: bool = false;
-
     let start = tokens.get_position();
 
-    if consume_keyword(tokens, TokenKind::LeftPar, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::LeftPar, diag);
 
     let mut left: BoxAST = GenericTupleOption::boxed_none();
     let mut right: BoxAST = GenericTupleOption::boxed_none();
@@ -534,19 +447,11 @@ fn parse_shape_tuple_generic<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> 
     if match_next(tokens, TokenKind::Int) {
         let int_const = consume_int_const(tokens, diag);
 
-        if int_const.is_poisoned() {
-            poisoned = true;
-        }
-
-        left = GenericTupleOption::boxed_int(int_const.to_int(), poisoned);
+        left = GenericTupleOption::boxed_int(int_const);
     } else if match_next(tokens, TokenKind::Ident) {
         let id = consume_identifier(tokens, diag);
 
-        if id.is_poisoned() {
-            poisoned = true;
-        }
-
-        left = GenericTupleOption::boxed_id(id.to_string(), poisoned);
+        left = GenericTupleOption::boxed_id(id);
     }
 
     // <inner_stmt> ::= <object_decl>
@@ -555,64 +460,38 @@ fn parse_shape_tuple_generic<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> 
     if match_next(tokens, TokenKind::Int) {
         let int_const = consume_int_const(tokens, diag);
 
-        if int_const.is_poisoned() {
-            poisoned = true;
-        }
-
-        right = GenericTupleOption::boxed_int(int_const.to_int(), poisoned);
+        right = GenericTupleOption::boxed_int(int_const);
     } else if match_next(tokens, TokenKind::Ident) {
         let id = consume_identifier(tokens, diag);
 
-        if id.is_poisoned() {
-            poisoned = true;
-        }
-
-        right = GenericTupleOption::boxed_id(id.to_string(), poisoned);
+        right = GenericTupleOption::boxed_id(id);
     }
 
     consume_keyword(tokens, TokenKind::RightPar, diag);
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    GenericTuple::boxed(left, right, span, poisoned)
+    GenericTuple::boxed(left, right, span)
 }
 
 // <shape_tuple> ::= "(" <int_const> "," <int_const> ")"
 fn parse_shape_tuple<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let mut poisoned: bool = false;
-
     let span_start = tokens.get_position();
 
-    if consume_keyword(tokens, TokenKind::LeftPar, diag).is_poisoned() {
-        let diagnostic = create_diagnostic(CompilerPass::Parser, tokens, Code::E000X);
-        diag.add_diag(diagnostic);
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::LeftPar, diag);
 
     let left = consume_int_const(tokens, diag);
 
-    if left.is_poisoned() {
-        poisoned = true;
-    }
-
-    if consume_keyword(tokens, TokenKind::Comma, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::Comma, diag);
 
     let right = consume_int_const(tokens, diag);
 
-    if right.is_poisoned() {
-        poisoned = true;
-    }
-
-    if consume_keyword(tokens, TokenKind::RightPar, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::RightPar, diag);
 
     let span_end = tokens.get_position();
     let span = Span::new(span_start, span_end);
 
-    Tuple::boxed(left.to_int(), right.to_int(), span, poisoned)
+    Tuple::boxed(left, right, span)
 }
 
 // <shape> ::= <shape_tuple> | <shape_tuple_compr> | <object_call> | <id>
@@ -626,12 +505,6 @@ fn parse_shape<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
             if matches!(lookahead, TokenKind::Pipe) {
                 let compr = parse_shape_tuple_compr(tokens, diag);
 
-                if compr.is_err() {
-                    let note = format!("Expected 'TupleComprehension' AST Node but failed to parse Node with id: {:?}.", compr.get_ast_id());
-                    let mut diagnostic = create_diagnostic(CompilerPass::AST, tokens, Code::E0004);
-                    diagnostic.add_note(note);
-                    diag.add_diag(diagnostic);
-                }
                 return compr;
             }
 
@@ -643,7 +516,6 @@ fn parse_shape<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
             object
         }
         _ => {
-            create_diagnostic(CompilerPass::Parser, tokens, Code::E000X);
             let lookahead = tokens.lookahead_by(4);
 
             if matches!(lookahead, TokenKind::Pipe) {
@@ -659,27 +531,19 @@ fn parse_shape<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
 
 // <object_color> ::= "color" ":" <int_const>
 fn parse_object_color<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let mut poisoned: bool = false;
-
     let start = tokens.get_position();
-    if consume_keyword(tokens, TokenKind::ObjectColor, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::ObjectColor, diag);
 
-    if consume_keyword(tokens, TokenKind::Colon, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::Colon, diag);
 
     let int_const = consume_int_const(tokens, diag);
-
-    if int_const.is_poisoned() {
-        poisoned = true;
-    }
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let color = ObjectColor::boxed(int_const.to_int(), span, poisoned);
+    let color = ObjectColor::boxed(int_const, span);
+    color.check(tokens, diag, span);
+
     color
 }
 
@@ -700,39 +564,29 @@ fn parse_list_of_shapes<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Vec<B
 
 // <object_shape> ::= "shape" ":" <list_of_shapes>
 fn parse_object_shape<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let mut poisoned: bool = false;
-
     let start = tokens.get_position();
-    if consume_keyword(tokens, TokenKind::ObjectShape, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::ObjectShape, diag);
 
-    if consume_keyword(tokens, TokenKind::Colon, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::Colon, diag);
 
     let shapes = parse_list_of_shapes(tokens, diag);
-
-    if shapes.iter().any(|s| s.is_err()) {
-        poisoned = true;
-    }
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let object_shape = ObjectShape::boxed(shapes, span, poisoned);
+    let object_shape = ObjectShape::boxed(shapes, span);
+    object_shape.check(tokens, diag, span);
+
     object_shape
 }
 
 // <object_desc> ::= <object_shape> "," <object_color> | <object_color> "," <object_shape>
 fn parse_object_desc<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let mut poisoned: bool = false;
-
     let kind = tokens.peek().get_kind();
 
     let start = tokens.get_position();
 
-    match kind {
+    let (node, span) = match kind {
         TokenKind::ObjectShape => {
             let shape = parse_object_shape(tokens, diag);
             consume_keyword(tokens, TokenKind::Comma, diag);
@@ -740,8 +594,7 @@ fn parse_object_desc<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'
             let end = tokens.get_position();
             let span = Span::new(start, end);
 
-            let object_desc = ObjectDesc::boxed(shape, color, span, poisoned);
-            object_desc
+            (ObjectDesc::boxed(shape, color, span), span)
         }
         TokenKind::ObjectColor => {
             let color = parse_object_color(tokens, diag);
@@ -750,137 +603,97 @@ fn parse_object_desc<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'
             let end = tokens.get_position();
             let span = Span::new(start, end);
 
-            let object_desc = ObjectDesc::boxed(shape, color, span, poisoned);
-            object_desc
+            (ObjectDesc::boxed(shape, color, span), span)
         }
         _ => {
-            poisoned = true;
-            create_diagnostic(CompilerPass::Parser, tokens, Code::E000X);
             let shape = parse_object_shape(tokens, diag);
             consume_keyword(tokens, TokenKind::Comma, diag);
             let color = parse_object_color(tokens, diag);
             let end = tokens.get_position();
             let span = Span::new(start, end);
 
-            let object_desc = ObjectDesc::boxed(shape, color, span, poisoned);
-            object_desc
+            (ObjectDesc::boxed(shape, color, span), span)
         }
-    }
+    };
+
+    node.check(tokens, diag, span);
+
+    node
 }
 
 // <example_decl> ::= "example" <id> <inner_compound_stmt>
 fn parse_problem_example<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let mut poisoned: bool = false;
-
     let start = tokens.get_position();
 
-    if consume_keyword(tokens, TokenKind::ProblemExample, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::ProblemExample, diag);
 
     let id = consume_identifier(tokens, diag);
 
-    if id.is_poisoned() {
-        poisoned = true;
-    }
-
     let stmts = parse_inner_compound_stmt(tokens, diag);
-
-    if stmts.iter().any(|s| s.is_err()) {
-        poisoned = true;
-    }
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let example = ProblemExample::boxed(id.to_string(), stmts, span, poisoned);
+    let example = ProblemExample::boxed(id, stmts, span);
+    example.check(tokens, diag, span);
+
     example
 }
 
 // <problem_solution> ::= "solution" <id> <inner_compound_stmt>
 fn parse_problem_solution<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let mut poisoned: bool = false;
-
     let start = tokens.get_position();
 
-    if consume_keyword(tokens, TokenKind::ProblemSolution, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::ProblemSolution, diag);
 
     let id = consume_identifier(tokens, diag);
 
-    if id.is_poisoned() {
-        poisoned = true;
-    }
-
     let stmts = parse_inner_compound_stmt(tokens, diag);
-
-    if stmts.iter().any(|s| s.is_err()) {
-        poisoned = true;
-    }
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let solution = ProblemSolution::boxed(id.to_string(), stmts, span, poisoned);
+    let solution = ProblemSolution::boxed(id, stmts, span);
+    solution.check(tokens, diag, span);
+
     solution
 }
 
 // <problem_input> ::= "input" <id> <tuple> <inner_compound_stmt>
 fn parse_problem_input<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let mut poisoned: bool = false;
-
     let start = tokens.get_position();
 
-    if consume_keyword(tokens, TokenKind::ProblemInput, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::ProblemInput, diag);
 
     let id = consume_identifier(tokens, diag);
 
-    if id.is_poisoned() {
-        poisoned = true;
-    }
-
     let stmts = parse_inner_compound_stmt(tokens, diag);
-
-    if stmts.iter().any(|s| s.is_err()) {
-        poisoned = true;
-    }
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let input = ProblemInput::boxed(id.to_string(), stmts, span, poisoned);
+    let input = ProblemInput::boxed(id, stmts, span);
+    input.check(tokens, diag, span);
+
     input
 }
 
 // <problem_output> ::= "output" <id> <tuple> <inner_compound_stmt>
 fn parse_problem_output<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let mut poisoned: bool = false;
-
     let start = tokens.get_position();
 
-    if consume_keyword(tokens, TokenKind::ProblemOutput, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::ProblemOutput, diag);
 
     let id = consume_identifier(tokens, diag);
 
-    if id.is_poisoned() {
-        poisoned = true;
-    }
-
     let stmts = parse_inner_compound_stmt(tokens, diag);
-
-    if stmts.iter().any(|s| s.is_err()) {
-        poisoned = true;
-    }
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let output = ProblemOutput::boxed(id.to_string(), stmts, span, poisoned);
+    let output = ProblemOutput::boxed(id, stmts, span);
+    output.check(tokens, diag, span);
+
     output
 }
 
@@ -889,37 +702,17 @@ fn parse_problem_output<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAS
 fn parse_stmt<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
     let kind = tokens.peek().get_kind();
 
-    match kind {
-        TokenKind::Object => {
-            let object = parse_object_decl(tokens, diag);
-            object
-        }
-        TokenKind::ProblemExample => {
-            let example = parse_problem_example(tokens, diag);
-            example
-        }
-        TokenKind::ProblemSolution => {
-            let solution = parse_problem_solution(tokens, diag);
-            solution
-        }
-        TokenKind::ProblemInput => {
-            let input = parse_problem_input(tokens, diag);
-            input
-        }
-        TokenKind::ProblemOutput => {
-            let output = parse_problem_output(tokens, diag);
-            output
-        }
-        TokenKind::LetKwd => {
-            let var = parse_var_def(tokens, diag);
-            var
-        }
-        _ => {
-            create_diagnostic(CompilerPass::Parser, tokens, Code::E000X);
-            let object = parse_object_decl(tokens, diag);
-            object
-        }
-    }
+    let node = match kind {
+        TokenKind::Object => parse_object_decl(tokens, diag),
+        TokenKind::ProblemExample => parse_problem_example(tokens, diag),
+        TokenKind::ProblemSolution => parse_problem_solution(tokens, diag),
+        TokenKind::ProblemInput => parse_problem_input(tokens, diag),
+        TokenKind::ProblemOutput => parse_problem_output(tokens, diag),
+        TokenKind::LetKwd => parse_var_def(tokens, diag),
+        _ => parse_object_decl(tokens, diag),
+    };
+
+    node
 }
 
 // <stmts_list> ::= (<stmt>)*
@@ -944,34 +737,21 @@ fn parse_object_compound_desc<'a>(tokens: &mut Lexer, diag: &mut Accumulator) ->
 
 // <object_decl> ::= "object" <id> <object_compound_desc> ";"
 fn parse_object_decl<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let mut poisoned: bool = false;
-
     let start = tokens.get_position();
 
-    if consume_keyword(tokens, TokenKind::Object, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::Object, diag);
 
     let id = consume_identifier(tokens, diag);
 
-    if id.is_poisoned() {
-        poisoned = true;
-    }
-
     let object_desc = parse_object_compound_desc(tokens, diag);
 
-    if object_desc.is_err() {
-        poisoned = true;
-    }
-
-    if consume_keyword(tokens, TokenKind::SemiColon, diag).is_poisoned() {
-        poisoned = true;
-    }
+    consume_keyword(tokens, TokenKind::SemiColon, diag);
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let object_decl = ObjectDecl::boxed(id.to_string(), object_desc, span, poisoned);
+    let object_decl = ObjectDecl::boxed(id, object_desc, span);
+    object_decl.check(tokens, diag, span);
     object_decl
 }
 
@@ -985,46 +765,21 @@ fn parse_compound_stmt<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Vec<Bo
 
 // <problem_declaration> ::= "def" <id> "(" <int_const> ")" <compound_stmt>
 fn parse_problem_decl<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let mut poisoned: bool = false;
-
     let start = tokens.get_position();
-
-    if consume_keyword(tokens, TokenKind::ProblemDef, diag).is_poisoned() {
-        let diagnostic = create_diagnostic(CompilerPass::Parser, tokens, Code::E0001);
-        diag.add_diag(diagnostic);
-        poisoned = true;
-    }
 
     let id = consume_identifier(tokens, diag);
 
-    if id.is_poisoned() {
-        poisoned = true;
-    }
-
-    if consume_keyword(tokens, TokenKind::LeftPar, diag).is_poisoned() {
-        poisoned = true;
-    }
-
     let int_const = consume_int_const(tokens, diag);
 
-    if int_const.is_poisoned() {
-        poisoned = true;
-    }
-
-    if consume_keyword(tokens, TokenKind::RightPar, diag).is_poisoned() {
-        poisoned = true;
-    }
-
     let stmts = parse_compound_stmt(tokens, diag);
-
-    if stmts.iter().any(|s| s.is_err()) {
-        poisoned = true;
-    }
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    Program::boxed(id.to_string(), int_const.to_int(), stmts, span, poisoned)
+    let program = Program::boxed(id, int_const, stmts, span);
+    program.check(tokens, diag, span);
+
+    program
 }
 
 // <program> ::= <problem_declaration>
@@ -1083,7 +838,7 @@ mod test {
         if res.is_err() {
             println!("Error in parsing for input {:?}: \n {:?}", text, res);
             for d in diag.get(CompilerPass::Parser) {
-                println!("{}", d);
+                println!("This is the error: {}", d);
             }
         }
 
@@ -1183,7 +938,7 @@ mod test {
 
     #[test]
     fn test_parse_shape_tuple_compr() {
-        let text = "(x,y) | x <- [0..1], y <- [0..1]";
+        let text = "(x,y) | x <- [0..1}, y <- [0..1]";
 
         check_no_err_single_ast(text, parse_shape)
     }
@@ -1223,14 +978,6 @@ mod test {
         check_no_err_single_ast(text, parse_var_def)
     }
 
-    // TODO: Include when inference logic is added
-    // #[test]
-    // fn test_parse_var_def_default_no_object_type() {
-    //     let text = "let x = HA;";
-
-    //     check_type(text, ErminiaType::Object);
-    // }
-
     #[test]
     fn test_parse_example_decl() {
         let text = "example hello {
@@ -1242,18 +989,10 @@ mod test {
         check_no_err_single_ast(text, parse_stmt)
     }
 
-    // #[test]
-    // fn test_range() {
-    //     let text = "object Shape { shape : [(0,1), (1,1)], color: 1 };";
-    //
-    //     let mut lexer = Lexer::new(&text);
-    //
-    //     let _ = lexer.advance();
-    //
-    //     let res = parse_object_decl(&mut lexer);
-    //
-    //     println!("{:?}", res);
-    //
-    //     assert!(!res.is_err())
-    // }
+    #[test]
+    fn test_range() {
+        let text = "object Shape { shape : [(0,1), (1,1)], color: 1 };";
+
+        check_no_err_single_ast(text, parse_object_decl)
+    }
 }

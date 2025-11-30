@@ -19,6 +19,11 @@ fn main() -> io::Result<()> {
 
         let program = parser.parse();
 
+        if program.is_err() {
+            eprintln!("Error: {:?}", parser.get_diagnostics());
+            continue;
+        }
+
         println!("{:?}", program);
 
         // parse to AST Tree

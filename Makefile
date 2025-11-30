@@ -12,3 +12,16 @@ fmt:
 .PHONY: test
 test:
 	cargo test --all-features
+
+
+.PHONY: build
+build:
+	cargo build --all-features
+
+.PHONY: release
+release:
+	cargo build --release --all-features
+
+.PHONY: clean
+clean:
+	cargo clean

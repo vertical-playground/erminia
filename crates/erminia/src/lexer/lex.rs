@@ -1,8 +1,6 @@
 use std::fmt;
 use std::str::FromStr;
 
-use crate::config::CompilerPass;
-use crate::diagnostics::code::Code;
 use crate::diagnostics::location::*;
 use crate::lexer::token::*;
 
@@ -266,7 +264,6 @@ fn trim_starting_whitespace(text: &str, mut pos: PositionalOffset) -> Positional
 
 fn slice_from_position(text: &str, pos: PositionalOffset) -> &str {
     if pos.pos > text.len() {
-        create_diagnostic(CompilerPass::Lexer, &mut Lexer::new(text), Code::E000X);
         ""
     } else {
         &text[pos.pos..]
@@ -507,8 +504,6 @@ fn get_next_symbol(text: &str, mut pos: PositionalOffset) -> Option<(TokenKind, 
                 TokenKind::String
             } else {
                 // We got to the end of the text without closing the string
-                create_diagnostic(CompilerPass::Lexer, &mut Lexer::new(text), Code::E000X);
-
                 TokenKind::String
             }
         }

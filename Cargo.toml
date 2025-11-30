@@ -1,3 +1,10 @@
 [workspace]
 resolver = "1"
 members = ["crates/*"]
+
+[profile.dev]
+lints.rust = { warnings = "deny" }
+
+[profile.release]
+lints.rust = { warnings = "deny" }
+

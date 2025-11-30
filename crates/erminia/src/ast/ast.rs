@@ -1,8 +1,14 @@
 use crate::ast::expr::*;
 use crate::ast::stmt::*;
+use crate::diagnostics::code::Code;
+use crate::diagnostics::location::{Accumulator, Span};
+use crate::diagnostics::messages::{MessageKind, Note};
+use crate::lexer::lex::Lexer;
 
 pub type BoxAST<'a> = Box<dyn AST<'a> + 'a>;
 pub type ASTError = String;
+type DB = crate::diagnostics::DiagnosticBuilder;
+const AST_PASS: crate::config::CompilerPass = crate::config::CompilerPass::AST;
 
 #[derive(Debug)]
 pub enum ASTResult<'a> {
@@ -40,6 +46,8 @@ pub trait AST<'a>: 'a {
     fn is_ok(&self) -> bool;
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result;
     fn get_ast_id(&self) -> u32;
+    fn to_string(&self) -> String;
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span);
 }
 
 impl<'a> std::fmt::Debug for dyn AST<'a> {
@@ -49,14 +57,6 @@ impl<'a> std::fmt::Debug for dyn AST<'a> {
         Ok(())
     }
 }
-
-// pub struct ASTDefault<'a> {}
-//
-// impl<'a> ASTDefault<'a> {
-//     pub fn boxed() -> BoxAST<'a> {
-//         Box::new(ASTDefault {})
-//     }
-// }
 
 // ==================================================================================== //
 //  Implementations                                                                     //
@@ -68,27 +68,6 @@ fn print_tabs(f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
     }
     Ok(())
 }
-
-// impl<'a> AST<'a> for ASTDefault<'a> {
-//     fn sem(&self) -> Result<bool, ASTError> {
-//         Ok(true)
-//     }
-//
-//     fn is_err(&self) -> bool {
-//         false
-//     }
-//
-//     fn is_ok(&self) -> bool {
-//         true
-//     }
-//
-//     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
-//         depth += 1;
-//         print_tabs(f, depth)?;
-//         writeln!(f, "<ASTDefault>")?;
-//         Ok(())
-//     }
-// }
 
 impl<'a> AST<'a> for GenericTupleOption {
     fn sem(&self) -> Result<bool, ASTError> {
@@ -111,8 +90,26 @@ impl<'a> AST<'a> for GenericTupleOption {
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "GenericTupleOption".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         0
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -132,7 +129,7 @@ impl<'a> AST<'a> for ProblemExample<'a> {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
         depth += 1;
         print_tabs(f, depth)?;
-        let s = format!("<ProblemExample id: {:?}>", self.id);
+        let s = format!("<#{} ProblemExample id: {:?}>", self.unique_ast_id, self.id);
         writeln!(f, "{}", s)?;
         for stmt in &self.stmts {
             stmt.print_on(f, depth)?;
@@ -140,8 +137,26 @@ impl<'a> AST<'a> for ProblemExample<'a> {
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "ProblemExample".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -161,7 +176,10 @@ impl<'a> AST<'a> for ProblemSolution<'a> {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
         depth += 1;
         print_tabs(f, depth)?;
-        let s = format!("<ProblemSolution id: {:?}>", self.id);
+        let s = format!(
+            "<#{} ProblemSolution id: {:?}>",
+            self.unique_ast_id, self.id
+        );
         writeln!(f, "{}", s)?;
         for stmt in &self.stmts {
             stmt.print_on(f, depth)?;
@@ -169,8 +187,26 @@ impl<'a> AST<'a> for ProblemSolution<'a> {
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "ProblemSolution".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -190,7 +226,7 @@ impl<'a> AST<'a> for ProblemInput<'a> {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
         depth += 1;
         print_tabs(f, depth)?;
-        let s = format!("<ProblemInput id: {:?}>", self.id);
+        let s = format!("<#{} ProblemInput id: {:?}>", self.unique_ast_id, self.id);
         writeln!(f, "{}", s)?;
         for stmt in &self.stmts {
             stmt.print_on(f, depth)?;
@@ -198,8 +234,26 @@ impl<'a> AST<'a> for ProblemInput<'a> {
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "ProblemInput".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -219,7 +273,7 @@ impl<'a> AST<'a> for ProblemOutput<'a> {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
         depth += 1;
         print_tabs(f, depth)?;
-        let s = format!("<ProblemOutput id: {:?}>", self.id);
+        let s = format!("<#{} ProblemOutput id: {:?}>", self.unique_ast_id, self.id);
         writeln!(f, "{}", s)?;
         for stmt in &self.stmts {
             stmt.print_on(f, depth)?;
@@ -227,8 +281,26 @@ impl<'a> AST<'a> for ProblemOutput<'a> {
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "ProblemOutput".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -246,7 +318,10 @@ impl<'a> AST<'a> for Program<'a> {
     }
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
-        let s = format!("<Program id: {:?}, int_const: {}>", self.id, self.int_const);
+        let s = format!(
+            "<#{} Program id: {:?}, int_const: {}>",
+            self.unique_ast_id, self.id, self.int_const
+        );
         writeln!(f, "{}", s)?;
         for stmt in &self.stmts {
             stmt.print_on(f, depth)?;
@@ -254,8 +329,26 @@ impl<'a> AST<'a> for Program<'a> {
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "Program".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -276,15 +369,33 @@ impl<'a> AST<'a> for Range {
         depth += 1;
         print_tabs(f, depth)?;
         let s = format!(
-            "<Range left_inclusive: {}, right_inclusive: {}, left: {}, right: {}>",
-            self.left_inclusive, self.right_inclusive, self.left, self.right
+            "<#{} Range left_inclusive: {}, right_inclusive: {}, left: {}, right: {}>",
+            self.unique_ast_id, self.left_inclusive, self.right_inclusive, self.left, self.right
         );
         writeln!(f, "{}", s)?;
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "Range".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -304,14 +415,32 @@ impl<'a> AST<'a> for TupleIterator<'a> {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
         depth += 1;
         print_tabs(f, depth)?;
-        let s = format!("<TupleIterator id: {:?}>", self.id);
+        let s = format!("<#{} TupleIterator id: {:?}>", self.unique_ast_id, self.id);
         writeln!(f, "{}", s)?;
         let _ = &self.range.print_on(f, depth)?;
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "TupleIterator".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -331,7 +460,8 @@ impl<'a> AST<'a> for TupleComprehension<'a> {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
         depth += 1;
         print_tabs(f, depth)?;
-        writeln!(f, "<TupleComprehension>")?;
+        let s = format!("<#{} TupleComprehension>", self.unique_ast_id);
+        writeln!(f, "{}", s)?;
         let _ = &self.tuple.print_on(f, depth)?;
         for iter in &self.iter_pair {
             iter.print_on(f, depth)?;
@@ -339,8 +469,26 @@ impl<'a> AST<'a> for TupleComprehension<'a> {
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "TupleComprehension".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -360,14 +508,33 @@ impl<'a> AST<'a> for GenericTuple<'a> {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
         depth += 1;
         print_tabs(f, depth)?;
-        writeln!(f, "<GenericTuple>")?;
+        let s = format!("<#{} GenericTuple>", self.unique_ast_id);
+        writeln!(f, "{}", s)?;
         let _ = &self.left.print_on(f, depth)?;
         let _ = &self.right.print_on(f, depth)?;
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "GenericTuple".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -387,13 +554,34 @@ impl<'a> AST<'a> for Tuple {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
         depth += 1;
         print_tabs(f, depth)?;
-        let s = format!("<Tuple left: {}, right: {}>", self.left, self.right);
+        let s = format!(
+            "<#{} Tuple left: {}, right: {}>",
+            self.unique_ast_id, self.left, self.right
+        );
         writeln!(f, "{}", s)?;
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "Tuple".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -413,14 +601,35 @@ impl<'a> AST<'a> for Shape<'a> {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
         depth += 1;
         print_tabs(f, depth)?;
-        let s = format!("<Shape type: {:?}>", self.shape_type);
+        let s = format!(
+            "<#{} Shape type: {:?}>",
+            self.unique_ast_id, self.shape_type
+        );
         writeln!(f, "{}", s)?;
         let _ = &self.values.print_on(f, depth)?;
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "Shape".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -440,15 +649,34 @@ impl<'a> AST<'a> for ObjectShape<'a> {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
         depth += 1;
         print_tabs(f, depth)?;
-        writeln!(f, "<ObjectShape>")?;
+        let s = format!("<#{} ObjectShape>", self.unique_ast_id);
+        writeln!(f, "{}", s)?;
         for shape in &self.shape {
             shape.print_on(f, depth)?;
         }
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "ObjectShape".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -468,13 +696,34 @@ impl<'a> AST<'a> for ObjectColor {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
         depth += 1;
         print_tabs(f, depth)?;
-        let s = format!("<ObjectColor color: {}>", self.color);
+        let s = format!(
+            "<#{} ObjectColor color: {}>",
+            self.unique_ast_id, self.color
+        );
         writeln!(f, "{}", s)?;
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "ObjectColor".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -493,14 +742,33 @@ impl<'a> AST<'a> for ObjectDesc<'a> {
 
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result {
         print_tabs(f, depth)?;
-        writeln!(f, "<ObjectDesc>")?;
+        let s = format!("<#{} ObjectDesc>", self.unique_ast_id);
+        writeln!(f, "{}", s)?;
         let _ = &self.shape.print_on(f, depth)?;
         let _ = &self.color.print_on(f, depth)?;
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "ObjectDesc".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -520,14 +788,32 @@ impl<'a> AST<'a> for ObjectDecl<'a> {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
         depth += 1;
         print_tabs(f, depth)?;
-        let s = format!("<ObjectDecl id: {:?}>", self.id);
+        let s = format!("<#{} ObjectDecl id: {:?}>", self.unique_ast_id, self.id);
         writeln!(f, "{}", s)?;
         let _ = &self.desc.print_on(f, depth)?;
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "ObjectDecl".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -548,16 +834,34 @@ impl<'a> AST<'a> for VarDef<'a> {
         depth += 1;
         print_tabs(f, depth)?;
         let s = format!(
-            "<VarDef id: {:?}, data_type: {:?}>",
-            self.id, self.data_type
+            "<#{} VarDef id: {:?}, data_type: {:?}>",
+            self.unique_ast_id, self.id, self.data_type
         );
         writeln!(f, "{}", s)?;
         let _ = &self.expr.print_on(f, depth)?;
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "VarDef".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -577,7 +881,7 @@ impl<'a> AST<'a> for FuncCall<'a> {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
         depth += 1;
         print_tabs(f, depth)?;
-        let s = format!("<FuncCall id: {:?}>", self.id);
+        let s = format!("<#{} FuncCall id: {:?}>", self.unique_ast_id, self.id);
         writeln!(f, "{}", s)?;
         for expr in &self.exprs {
             expr.print_on(f, depth)?;
@@ -585,8 +889,26 @@ impl<'a> AST<'a> for FuncCall<'a> {
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "FuncCall".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -606,7 +928,7 @@ impl<'a> AST<'a> for ObjectCall<'a> {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
         depth += 1;
         print_tabs(f, depth)?;
-        let s = format!("<ObjectCall id: {:?}>", self.id);
+        let s = format!("<#{} ObjectCall id: {:?}>", self.unique_ast_id, self.id);
         writeln!(f, "{}", s)?;
         if let Some(t) = &self.tuple {
             t.print_on(f, depth)?;
@@ -614,8 +936,26 @@ impl<'a> AST<'a> for ObjectCall<'a> {
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "ObjectCall".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         self.unique_ast_id
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
 
@@ -640,7 +980,25 @@ impl<'a> AST<'a> for RValue {
         Ok(())
     }
 
+    fn to_string(&self) -> String {
+        "RValue".to_string()
+    }
+
     fn get_ast_id(&self) -> u32 {
         0
+    }
+
+    fn check(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+        if self.is_err() {
+            diag.add_diag(
+                DB::build(AST_PASS, Code::E0004)
+                    .with_note(Note::ExpectedASTNode)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![self.to_string(), self.get_ast_id().to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+        }
     }
 }
