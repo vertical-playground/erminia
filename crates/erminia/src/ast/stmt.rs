@@ -36,6 +36,13 @@ pub enum ShapeType {
 // ==================================================================================== //
 
 #[derive(Debug)]
+pub struct PoisonedStmt {
+    pub span: Span,
+    pub is_poisoned: bool,
+    pub unique_ast_id: u32,
+}
+
+#[derive(Debug)]
 pub struct VarDef<'a> {
     pub id: ErminiaType,
     pub data_type: ErminiaType,
@@ -43,6 +50,7 @@ pub struct VarDef<'a> {
     pub span: Span,
     pub is_poisoned: bool,
     pub unique_ast_id: u32,
+    pub syntax: Vec<ErminiaType>,
 }
 
 #[derive(Debug)]
@@ -52,6 +60,7 @@ pub struct GenericTuple<'a> {
     pub span: Span,
     pub is_poisoned: bool,
     pub unique_ast_id: u32,
+    pub syntax: Vec<ErminiaType>,
 }
 
 #[derive(Debug)]
@@ -61,6 +70,7 @@ pub struct Tuple {
     pub span: Span,
     pub is_poisoned: bool,
     pub unique_ast_id: u32,
+    pub syntax: Vec<ErminiaType>,
 }
 
 #[derive(Debug)]
@@ -72,6 +82,7 @@ pub struct Range {
     pub span: Span,
     pub is_poisoned: bool,
     pub unique_ast_id: u32,
+    pub syntax: Vec<ErminiaType>,
 }
 
 #[derive(Debug)]
@@ -81,6 +92,7 @@ pub struct TupleIterator<'a> {
     pub span: Span,
     pub is_poisoned: bool,
     pub unique_ast_id: u32,
+    pub syntax: Vec<ErminiaType>,
 }
 
 #[derive(Debug)]
@@ -90,6 +102,7 @@ pub struct TupleComprehension<'a> {
     pub span: Span,
     pub is_poisoned: bool,
     pub unique_ast_id: u32,
+    pub syntax: Vec<ErminiaType>,
 }
 
 #[derive(Debug)]
@@ -99,6 +112,7 @@ pub struct Shape<'a> {
     pub span: Span,
     pub is_poisoned: bool,
     pub unique_ast_id: u32,
+    pub syntax: Vec<ErminiaType>,
 }
 
 #[derive(Debug)]
@@ -107,6 +121,7 @@ pub struct ObjectShape<'a> {
     pub span: Span,
     pub is_poisoned: bool,
     pub unique_ast_id: u32,
+    pub syntax: Vec<ErminiaType>,
 }
 
 #[derive(Debug)]
@@ -115,6 +130,7 @@ pub struct ObjectColor {
     pub span: Span,
     pub is_poisoned: bool,
     pub unique_ast_id: u32,
+    pub syntax: Vec<ErminiaType>,
 }
 
 #[derive(Debug)]
@@ -124,6 +140,7 @@ pub struct ObjectDesc<'a> {
     pub span: Span,
     pub is_poisoned: bool,
     pub unique_ast_id: u32,
+    pub syntax: Vec<ErminiaType>,
 }
 
 #[derive(Debug)]
@@ -133,6 +150,7 @@ pub struct ObjectDecl<'a> {
     pub span: Span,
     pub is_poisoned: bool,
     pub unique_ast_id: u32,
+    pub syntax: Vec<ErminiaType>,
 }
 
 #[derive(Debug)]
@@ -142,6 +160,7 @@ pub struct ProblemExample<'a> {
     pub span: Span,
     pub is_poisoned: bool,
     pub unique_ast_id: u32,
+    pub syntax: Vec<ErminiaType>,
 }
 
 #[derive(Debug)]
@@ -151,6 +170,7 @@ pub struct ProblemSolution<'a> {
     pub span: Span,
     pub is_poisoned: bool,
     pub unique_ast_id: u32,
+    pub syntax: Vec<ErminiaType>,
 }
 
 #[derive(Debug)]
@@ -160,6 +180,7 @@ pub struct ProblemInput<'a> {
     pub span: Span,
     pub is_poisoned: bool,
     pub unique_ast_id: u32,
+    pub syntax: Vec<ErminiaType>,
 }
 
 #[derive(Debug)]
@@ -169,6 +190,7 @@ pub struct ProblemOutput<'a> {
     pub span: Span,
     pub is_poisoned: bool,
     pub unique_ast_id: u32,
+    pub syntax: Vec<ErminiaType>,
 }
 
 #[derive(Debug)]
@@ -179,6 +201,7 @@ pub struct Program<'a> {
     pub span: Span,
     pub is_poisoned: bool,
     pub unique_ast_id: u32,
+    pub syntax: Vec<ErminiaType>,
 }
 
 // ==================================================================================== //
@@ -216,9 +239,14 @@ impl<'a> Range {
         left: ErminiaType,
         right: ErminiaType,
         span: Span,
+        syntax: Vec<ErminiaType>,
     ) -> BoxAST<'a> {
         let unique_ast_id = 0;
         let mut is_poisoned = false;
+
+        if syntax.iter().any(|s| s.is_poisoned()) {
+            is_poisoned = true;
+        }
 
         if left_inclusive.is_poisoned()
             || right_inclusive.is_poisoned()
@@ -236,14 +264,24 @@ impl<'a> Range {
             span,
             is_poisoned,
             unique_ast_id,
+            syntax,
         })
     }
 }
 
 impl<'a> TupleIterator<'a> {
-    pub fn boxed(id: ErminiaType, range: BoxAST<'a>, span: Span) -> BoxAST<'a> {
+    pub fn boxed(
+        id: ErminiaType,
+        range: BoxAST<'a>,
+        span: Span,
+        syntax: Vec<ErminiaType>,
+    ) -> BoxAST<'a> {
         let unique_ast_id = 0;
         let mut is_poisoned = false;
+
+        if syntax.iter().any(|s| s.is_poisoned()) {
+            is_poisoned = true;
+        }
 
         if id.is_poisoned() || range.is_err() {
             is_poisoned = true;
@@ -255,14 +293,24 @@ impl<'a> TupleIterator<'a> {
             span,
             is_poisoned,
             unique_ast_id,
+            syntax,
         }) as BoxAST<'a>
     }
 }
 
 impl<'a> TupleComprehension<'a> {
-    pub fn boxed(tuple: BoxAST<'a>, iter_pair: Vec<BoxAST<'a>>, span: Span) -> BoxAST<'a> {
+    pub fn boxed(
+        tuple: BoxAST<'a>,
+        iter_pair: Vec<BoxAST<'a>>,
+        span: Span,
+        syntax: Vec<ErminiaType>,
+    ) -> BoxAST<'a> {
         let unique_ast_id = 0;
         let mut is_poisoned = false;
+
+        if iter_pair.iter().any(|s| s.is_err()) {
+            is_poisoned = true;
+        }
 
         if tuple.is_err() {
             is_poisoned = true;
@@ -274,14 +322,24 @@ impl<'a> TupleComprehension<'a> {
             span,
             is_poisoned,
             unique_ast_id,
+            syntax,
         }) as BoxAST<'a>
     }
 }
 
 impl<'a> GenericTuple<'a> {
-    pub fn boxed(left: BoxAST<'a>, right: BoxAST<'a>, span: Span) -> BoxAST<'a> {
+    pub fn boxed(
+        left: BoxAST<'a>,
+        right: BoxAST<'a>,
+        span: Span,
+        syntax: Vec<ErminiaType>,
+    ) -> BoxAST<'a> {
         let unique_ast_id = 0;
         let mut is_poisoned = false;
+
+        if syntax.iter().any(|s| s.is_poisoned()) {
+            is_poisoned = true;
+        }
 
         if left.is_err() || right.is_err() {
             is_poisoned = true;
@@ -293,14 +351,24 @@ impl<'a> GenericTuple<'a> {
             span,
             is_poisoned,
             unique_ast_id,
+            syntax,
         }) as BoxAST<'a>
     }
 }
 
 impl<'a> Tuple {
-    pub fn boxed(left: ErminiaType, right: ErminiaType, span: Span) -> BoxAST<'a> {
+    pub fn boxed(
+        left: ErminiaType,
+        right: ErminiaType,
+        span: Span,
+        syntax: Vec<ErminiaType>,
+    ) -> BoxAST<'a> {
         let unique_ast_id = 0;
         let mut is_poisoned = false;
+
+        if syntax.iter().any(|s| s.is_poisoned()) {
+            is_poisoned = true;
+        }
 
         if left.is_poisoned() || right.is_poisoned() {
             is_poisoned = true;
@@ -312,6 +380,7 @@ impl<'a> Tuple {
             span,
             is_poisoned,
             unique_ast_id,
+            syntax,
         }) as BoxAST<'a>
     }
 }
@@ -322,9 +391,14 @@ impl<'a> VarDef<'a> {
         data_type: ErminiaType,
         expr: BoxAST<'a>,
         span: Span,
+        syntax: Vec<ErminiaType>,
     ) -> BoxAST<'a> {
         let unique_ast_id = 0;
         let mut is_poisoned = false;
+
+        if syntax.iter().any(|s| s.is_poisoned()) {
+            is_poisoned = true;
+        }
 
         if id.is_poisoned() || data_type.is_poisoned() || expr.is_err() {
             is_poisoned = true;
@@ -337,12 +411,13 @@ impl<'a> VarDef<'a> {
             span,
             is_poisoned,
             unique_ast_id,
+            syntax,
         }) as BoxAST<'a>
     }
 }
 
 impl<'a> Shape<'a> {
-    pub fn boxed_none(span: Span) -> BoxAST<'a> {
+    pub fn boxed_none(span: Span, syntax: Vec<ErminiaType>) -> BoxAST<'a> {
         let unique_ast_id = 0;
 
         Box::new(Shape {
@@ -351,14 +426,19 @@ impl<'a> Shape<'a> {
             span,
             is_poisoned: false,
             unique_ast_id,
+            syntax,
         }) as BoxAST<'a>
     }
 }
 
 impl<'a> ObjectShape<'a> {
-    pub fn boxed(shape: Vec<BoxAST<'a>>, span: Span) -> BoxAST<'a> {
+    pub fn boxed(shape: Vec<BoxAST<'a>>, span: Span, syntax: Vec<ErminiaType>) -> BoxAST<'a> {
         let unique_ast_id = 0;
         let mut is_poisoned = false;
+
+        if syntax.iter().any(|s| s.is_poisoned()) {
+            is_poisoned = true;
+        }
 
         if shape.iter().any(|s| s.is_err()) {
             is_poisoned = true;
@@ -369,14 +449,19 @@ impl<'a> ObjectShape<'a> {
             span,
             is_poisoned,
             unique_ast_id,
+            syntax,
         }) as BoxAST<'a>
     }
 }
 
 impl<'a> ObjectColor {
-    pub fn boxed(color: ErminiaType, span: Span) -> BoxAST<'a> {
+    pub fn boxed(color: ErminiaType, span: Span, syntax: Vec<ErminiaType>) -> BoxAST<'a> {
         let unique_ast_id = 0;
         let mut is_poisoned = false;
+
+        if syntax.iter().any(|s| s.is_poisoned()) {
+            is_poisoned = true;
+        }
 
         if color.is_poisoned() {
             is_poisoned = true;
@@ -387,14 +472,24 @@ impl<'a> ObjectColor {
             span,
             is_poisoned,
             unique_ast_id,
+            syntax,
         })
     }
 }
 
 impl<'a> ObjectDesc<'a> {
-    pub fn boxed(shape: BoxAST<'a>, color: BoxAST<'a>, span: Span) -> BoxAST<'a> {
+    pub fn boxed(
+        shape: BoxAST<'a>,
+        color: BoxAST<'a>,
+        span: Span,
+        syntax: Vec<ErminiaType>,
+    ) -> BoxAST<'a> {
         let unique_ast_id = 0;
         let mut is_poisoned = false;
+
+        if syntax.iter().any(|s| s.is_poisoned()) {
+            is_poisoned = true;
+        }
 
         if shape.is_err() || color.is_err() {
             is_poisoned = true;
@@ -406,14 +501,24 @@ impl<'a> ObjectDesc<'a> {
             span,
             is_poisoned,
             unique_ast_id,
+            syntax,
         }) as BoxAST<'a>
     }
 }
 
 impl<'a> ObjectDecl<'a> {
-    pub fn boxed(id: ErminiaType, desc: BoxAST<'a>, span: Span) -> BoxAST<'a> {
+    pub fn boxed(
+        id: ErminiaType,
+        desc: BoxAST<'a>,
+        span: Span,
+        syntax: Vec<ErminiaType>,
+    ) -> BoxAST<'a> {
         let unique_ast_id = 0;
         let mut is_poisoned = false;
+
+        if syntax.iter().any(|s| s.is_poisoned()) {
+            is_poisoned = true;
+        }
 
         if id.is_poisoned() || desc.is_err() {
             is_poisoned = true;
@@ -425,14 +530,24 @@ impl<'a> ObjectDecl<'a> {
             span,
             is_poisoned,
             unique_ast_id,
+            syntax,
         }) as BoxAST<'a>
     }
 }
 
 impl<'a> ProblemExample<'a> {
-    pub fn boxed(id: ErminiaType, stmts: Vec<BoxAST<'a>>, span: Span) -> BoxAST<'a> {
+    pub fn boxed(
+        id: ErminiaType,
+        stmts: Vec<BoxAST<'a>>,
+        span: Span,
+        syntax: Vec<ErminiaType>,
+    ) -> BoxAST<'a> {
         let unique_ast_id = 0;
         let mut is_poisoned = false;
+
+        if syntax.iter().any(|s| s.is_poisoned()) {
+            is_poisoned = true;
+        }
 
         if stmts.iter().any(|s| s.is_err()) || id.is_poisoned() {
             is_poisoned = true;
@@ -444,14 +559,24 @@ impl<'a> ProblemExample<'a> {
             span,
             is_poisoned,
             unique_ast_id,
+            syntax,
         }) as BoxAST<'a>
     }
 }
 
 impl<'a> ProblemSolution<'a> {
-    pub fn boxed(id: ErminiaType, stmts: Vec<BoxAST<'a>>, span: Span) -> BoxAST<'a> {
+    pub fn boxed(
+        id: ErminiaType,
+        stmts: Vec<BoxAST<'a>>,
+        span: Span,
+        syntax: Vec<ErminiaType>,
+    ) -> BoxAST<'a> {
         let unique_ast_id = 0;
         let mut is_poisoned = false;
+
+        if syntax.iter().any(|s| s.is_poisoned()) {
+            is_poisoned = true;
+        }
 
         if stmts.iter().any(|s| s.is_err()) || id.is_poisoned() {
             is_poisoned = true;
@@ -463,14 +588,24 @@ impl<'a> ProblemSolution<'a> {
             span,
             is_poisoned,
             unique_ast_id,
+            syntax,
         }) as BoxAST<'a>
     }
 }
 
 impl<'a> ProblemInput<'a> {
-    pub fn boxed(id: ErminiaType, stmts: Vec<BoxAST<'a>>, span: Span) -> BoxAST<'a> {
+    pub fn boxed(
+        id: ErminiaType,
+        stmts: Vec<BoxAST<'a>>,
+        span: Span,
+        syntax: Vec<ErminiaType>,
+    ) -> BoxAST<'a> {
         let unique_ast_id = 0;
         let mut is_poisoned = false;
+
+        if syntax.iter().any(|s| s.is_poisoned()) {
+            is_poisoned = true;
+        }
 
         if stmts.iter().any(|s| s.is_err()) || id.is_poisoned() {
             is_poisoned = true;
@@ -482,14 +617,24 @@ impl<'a> ProblemInput<'a> {
             span,
             is_poisoned,
             unique_ast_id,
+            syntax,
         }) as BoxAST<'a>
     }
 }
 
 impl<'a> ProblemOutput<'a> {
-    pub fn boxed(id: ErminiaType, stmts: Vec<BoxAST<'a>>, span: Span) -> BoxAST<'a> {
+    pub fn boxed(
+        id: ErminiaType,
+        stmts: Vec<BoxAST<'a>>,
+        span: Span,
+        syntax: Vec<ErminiaType>,
+    ) -> BoxAST<'a> {
         let unique_ast_id = 0;
         let mut is_poisoned = false;
+
+        if syntax.iter().any(|s| s.is_poisoned()) {
+            is_poisoned = true;
+        }
 
         if stmts.iter().any(|s| s.is_err()) || id.is_poisoned() {
             is_poisoned = true;
@@ -501,6 +646,7 @@ impl<'a> ProblemOutput<'a> {
             span,
             is_poisoned,
             unique_ast_id,
+            syntax,
         }) as BoxAST<'a>
     }
 }
@@ -511,9 +657,14 @@ impl<'a> Program<'a> {
         int_const: ErminiaType,
         stmts: Vec<BoxAST<'a>>,
         span: Span,
+        syntax: Vec<ErminiaType>,
     ) -> BoxAST<'a> {
         let unique_ast_id = 0;
         let mut is_poisoned = false;
+
+        if syntax.iter().any(|s| s.is_poisoned()) {
+            is_poisoned = true;
+        }
 
         if stmts.iter().any(|s| s.is_err()) || id.is_poisoned() || int_const.is_poisoned() {
             is_poisoned = true;
@@ -525,6 +676,19 @@ impl<'a> Program<'a> {
             stmts,
             span,
             is_poisoned,
+            unique_ast_id,
+            syntax,
+        }) as BoxAST<'a>
+    }
+}
+
+impl<'a> PoisonedStmt {
+    pub fn boxed(span: Span) -> BoxAST<'a> {
+        let unique_ast_id = 0;
+
+        Box::new(PoisonedStmt {
+            span,
+            is_poisoned: true,
             unique_ast_id,
         }) as BoxAST<'a>
     }

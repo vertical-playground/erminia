@@ -14,7 +14,10 @@ pub enum Note {
     ExpectedIdentifier,
     ExpectedSomethingElse,
     ExpectedASTNode,
+    ExpectedStatement,
     ExpectedIDorInteger,
+    ExpectedShapeOrColor,
+    ExpectedTypeofTuple,
     #[default]
     None,
 }
@@ -52,6 +55,17 @@ impl Note {
                 "Expected an identifier or integer constant, but found '{}'.",
                 args[0]
             ),
+            Note::ExpectedStatement => {
+                format!("Expected a statement keyword, but found '{}'.", args[0])
+            }
+            Note::ExpectedShapeOrColor => format!(
+                "Expected a shape or color keyword, but found '{}'.",
+                args[0]
+            ),
+            Note::ExpectedTypeofTuple => format!(
+                "Expected a 'tuple' or 'object' type, but found '{}'.",
+                args[0]
+            ),
             Note::None => "".to_string(),
         }
     }
@@ -66,6 +80,9 @@ impl Note {
             Note::ExpectedSomethingElse => true,
             Note::ExpectedASTNode => true,
             Note::ExpectedIDorInteger => true,
+            Note::ExpectedStatement => true,
+            Note::ExpectedShapeOrColor => true,
+            Note::ExpectedTypeofTuple => true,
             Note::None => false,
         }
     }
@@ -75,6 +92,9 @@ impl Note {
 pub enum Help {
     ConsiderChangingToInclusive,
     DidYouMeanDataType,
+    DidYouMeanStmtKeyword,
+    DidYouMeanShapeOrColor,
+    DidYouMeanTupleorObject,
     #[default]
     None,
 }
@@ -93,6 +113,15 @@ impl Help {
             }
             Help::DidYouMeanDataType => {
                 "Did you mean to use 'int', 'string', or 'object' as data type?".to_string()
+            }
+            Help::DidYouMeanStmtKeyword => {
+                "Did you mean to use a statement keyword like 'object', 'input', 'output', 'example', or 'solution'?".to_string()
+            }
+            Help::DidYouMeanShapeOrColor => {
+                "Did you mean to use the 'shape' or 'color' keywords?".to_string()
+            }
+            Help::DidYouMeanTupleorObject => {
+                "Did you mean to use a 'tuple' or an 'object' type? You can create tuples by using this syntax: <tuple> ::= '(' <int> ',' <int> ')' or use a declared object instead.".to_string()
             }
             Help::None => "".to_string(),
         }

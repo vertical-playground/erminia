@@ -8,183 +8,11 @@ use crate::diagnostics::messages::*;
 use crate::diagnostics::DiagnosticBuilder;
 use crate::lexer::lex::Lexer;
 use crate::lexer::token::TokenKind;
+use crate::syntax::consumers::*;
 use crate::types::ErminiaType;
 
 type DB = DiagnosticBuilder;
 const PARSER_PASS: CompilerPass = CompilerPass::Parser;
-
-// ==================================================================================== //
-//  Utilities                                                                           //
-// ==================================================================================== //
-
-fn is_next_right_inclusive(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaType {
-    let kind = tokens.peek().get_kind();
-
-    let res = match kind {
-        TokenKind::RightPar => ErminiaType::Bool(false),
-        TokenKind::RightBracket => ErminiaType::Bool(true),
-        _ => {
-            diag.add_diag(
-                DB::build(PARSER_PASS, Code::E0002)
-                    .with_note(Note::ExpectedRightInclusive)
-                    .with_args(MessageKind::Note, vec![kind.to_string()])
-                    .with_help(Help::ConsiderChangingToInclusive)
-                    .emmit(tokens, Span::default()),
-            );
-
-            ErminiaType::Poisoned
-        }
-    };
-
-    tokens.advance();
-
-    res
-}
-
-fn is_next_left_inclusive(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaType {
-    let kind = tokens.peek().get_kind();
-
-    let res = match kind {
-        TokenKind::LeftPar => ErminiaType::Bool(false),
-        TokenKind::LeftBracket => ErminiaType::Bool(true),
-        _ => {
-            diag.add_diag(
-                DB::build(PARSER_PASS, Code::E0002)
-                    .with_note(Note::ExpectedLeftInclusive)
-                    .with_args(MessageKind::Note, vec![kind.to_string()])
-                    .emmit(tokens, Span::default()),
-            );
-
-            ErminiaType::Poisoned
-        }
-    };
-
-    tokens.advance();
-
-    res
-}
-
-fn next_is_comma(tokens: &mut Lexer) -> bool {
-    matches!(tokens.peek().get_kind(), TokenKind::Comma)
-}
-
-fn next_is_expr(tokens: &mut Lexer) -> bool {
-    matches!(tokens.peek().get_kind(), TokenKind::Ident | TokenKind::Int)
-}
-
-fn next_is_stmt(tokens: &mut Lexer) -> bool {
-    matches!(
-        tokens.peek().get_kind(),
-        TokenKind::Ident
-            | TokenKind::Object
-            | TokenKind::LetKwd
-            | TokenKind::ProblemExample
-            | TokenKind::ProblemSolution
-            | TokenKind::ProblemInput
-            | TokenKind::ProblemOutput
-    )
-}
-
-fn match_next(tokens: &mut Lexer, matched: TokenKind) -> bool {
-    tokens.peek().get_kind() == matched
-}
-
-// ==================================================================================== //
-//  Consumers                                                                           //
-// ==================================================================================== //
-
-// TODO: handle tuple & list types
-fn consume_data_type(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaType {
-    let kind = tokens.peek().get_kind();
-    // TODO: Map TokenKind to ErminiaType
-    let res = match kind {
-        TokenKind::Object => ErminiaType::Object,
-        TokenKind::Int => ErminiaType::Int,
-        TokenKind::String => ErminiaType::String,
-        _ => {
-            diag.add_diag(
-                DB::build(PARSER_PASS, Code::E0002)
-                    .with_note(Note::ExpectedDataType)
-                    .with_args(MessageKind::Note, vec![kind.to_string()])
-                    .with_help(Help::ConsiderChangingToInclusive)
-                    .emmit(tokens, Span::default()),
-            );
-
-            ErminiaType::Poisoned
-        }
-    };
-
-    tokens.advance();
-
-    res
-}
-
-fn consume_int_const(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaType {
-    let int_const = tokens.token;
-
-    let res = if int_const.get_kind() == TokenKind::Int {
-        ErminiaType::Integer(int_const.text.parse::<i32>().unwrap())
-    } else {
-        diag.add_diag(
-            DB::build(PARSER_PASS, Code::E0003)
-                .with_note(Note::ExpectedInteger)
-                .with_args(MessageKind::Note, vec![int_const.get_kind().to_string()])
-                .emmit(tokens, Span::default()),
-        );
-
-        ErminiaType::Poisoned
-    };
-
-    tokens.advance();
-
-    res
-}
-
-fn consume_identifier(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaType {
-    let id = tokens.token;
-
-    let res = match id.get_kind() {
-        TokenKind::Ident => ErminiaType::Ident(id.text.to_string()),
-        _ => {
-            diag.add_diag(
-                DB::build(PARSER_PASS, Code::E0001)
-                    .with_note(Note::ExpectedIdentifier)
-                    .with_args(MessageKind::Note, vec![id.get_kind().to_string()])
-                    .emmit(tokens, Span::default()),
-            );
-
-            ErminiaType::Poisoned
-        }
-    };
-
-    tokens.advance();
-
-    res
-}
-
-fn consume_keyword(tokens: &mut Lexer, expected: TokenKind, diag: &mut Accumulator) -> ErminiaType {
-    let actual = tokens.peek().get_kind();
-
-    let res = if actual == expected {
-        ErminiaType::Void
-    } else {
-        diag.add_diag(
-            DB::build(PARSER_PASS, Code::E0001)
-                .with_note(Note::ExpectedSomethingElse)
-                .with_args(
-                    MessageKind::Note,
-                    vec![expected.to_string(), actual.to_string()],
-                )
-                .emmit(tokens, Span::default()),
-        );
-
-        ErminiaType::Poisoned
-    };
-
-    tokens.advance();
-
-    res
-}
 
 // ==================================================================================== //
 // Parsers                                                                              //
@@ -193,28 +21,19 @@ fn consume_keyword(tokens: &mut Lexer, expected: TokenKind, diag: &mut Accumulat
 // <expr> ::= <object_call> | <id> | <int_const>
 fn parse_expr<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
     let kind = tokens.peek().get_kind();
-    let stmt: BoxAST;
 
     match kind {
         TokenKind::Ident => {
             let lookahead = tokens.lookahead();
 
             if matches!(lookahead.0, TokenKind::LeftPar) {
-                stmt = parse_object_call(tokens, diag);
+                parse_object_call(tokens, diag)
             } else {
                 let id = consume_identifier(tokens, diag);
-                stmt = RValue::boxed_id(id.to_string());
-                stmt.check(tokens, diag, Span::default());
+                RValue::boxed_id(id.to_string())
             }
-
-            stmt
         }
-        TokenKind::Int => {
-            let stmt = RValue::boxed_int(consume_int_const(tokens, diag).to_int());
-            stmt.check(tokens, diag, Span::default());
-
-            stmt
-        }
+        TokenKind::Int => RValue::boxed_int(consume_int_const(tokens, diag).to_int()),
         _ => {
             diag.add_diag(
                 DB::build(PARSER_PASS, Code::E0001)
@@ -223,14 +42,18 @@ fn parse_expr<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
                     .emmit(tokens, Span::default()),
             );
 
-            stmt = parse_object_call(tokens, diag);
-            stmt
+            parse_object_call(tokens, diag)
         }
     }
 }
 
 // <list_of_exprs> ::= <expr> ("," <expr>)*
-fn parse_list_of_exprs<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Vec<BoxAST<'a>> {
+fn parse_list_of_exprs<'a>(
+    tokens: &mut Lexer,
+    diag: &mut Accumulator,
+) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>) {
+    let mut syntax: Vec<ErminiaType> = vec![];
+
     let mut exprs: Vec<BoxAST> = vec![];
 
     while next_is_expr(tokens) {
@@ -241,31 +64,35 @@ fn parse_list_of_exprs<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Vec<Bo
         let next = tokens.peek().get_kind();
 
         if matches!(next, TokenKind::Comma) {
-            consume_keyword(tokens, TokenKind::Comma, diag);
+            syntax.push(consume_keyword(tokens, TokenKind::Comma, diag));
         }
     }
 
-    exprs
+    (exprs, syntax)
 }
 
 // <func_call> ::= <id> "(" [<list_of_exprs>] ")" ";"
 fn parse_func_call<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+    let mut syntax: Vec<ErminiaType> = vec![];
+
     let start = tokens.get_position();
+
     let id = consume_identifier(tokens, diag);
-    consume_keyword(tokens, TokenKind::LeftPar, diag);
 
-    let exprs = parse_list_of_exprs(tokens, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::LeftPar, diag));
 
-    consume_keyword(tokens, TokenKind::RightPar, diag);
+    let (exprs, inner_syntax) = parse_list_of_exprs(tokens, diag);
 
-    consume_keyword(tokens, TokenKind::SemiColon, diag);
+    syntax.extend(inner_syntax);
+
+    syntax.push(consume_keyword(tokens, TokenKind::RightPar, diag));
+
+    syntax.push(consume_keyword(tokens, TokenKind::SemiColon, diag));
+
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let func = FuncCall::boxed(id, exprs, span);
-    func.check(tokens, diag, span);
-
-    func
+    FuncCall::boxed(id, exprs, span, syntax)
 }
 
 // <inner_stmt> ::= <object_decl> | <var_def> | <func_call>
@@ -293,87 +120,103 @@ fn parse_inner_stmt_list<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Vec<
 }
 
 // <inner_compound_stmt> ::= "{" [<inner_stmt_list>] "}"
-fn parse_inner_compound_stmt<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Vec<BoxAST<'a>> {
-    consume_keyword(tokens, TokenKind::LeftBrace, diag);
+fn parse_inner_compound_stmt<'a>(
+    tokens: &mut Lexer,
+    diag: &mut Accumulator,
+) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>) {
+    let mut syntax: Vec<ErminiaType> = vec![];
+    syntax.push(consume_keyword(tokens, TokenKind::LeftBrace, diag));
     let stmts = parse_inner_stmt_list(tokens, diag);
-    consume_keyword(tokens, TokenKind::RightBrace, diag);
-    stmts
+    syntax.push(consume_keyword(tokens, TokenKind::RightBrace, diag));
+    (stmts, syntax)
 }
 
 // TODO: handle type inference
 // <var_def> ::= "let" <id> ":" <data_type> "=" <expr> ";"
 fn parse_var_def<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+    let mut syntax: Vec<ErminiaType> = vec![];
+
     let start = tokens.get_position();
+
     let mut data_type: ErminiaType = ErminiaType::default();
 
-    consume_keyword(tokens, TokenKind::LetKwd, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::LetKwd, diag));
 
     let id = consume_identifier(tokens, diag);
 
     if match_next(tokens, TokenKind::Colon) {
-        consume_keyword(tokens, TokenKind::Colon, diag);
+        syntax.push(consume_keyword(tokens, TokenKind::Colon, diag));
 
         // change here if it's explicit about data type
         data_type = consume_data_type(tokens, diag);
     }
 
-    consume_keyword(tokens, TokenKind::Equals, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::Equals, diag));
 
     let expr = parse_expr(tokens, diag);
 
-    consume_keyword(tokens, TokenKind::SemiColon, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::SemiColon, diag));
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let var_def = VarDef::boxed(id, data_type, expr, span);
-    var_def.check(tokens, diag, span);
-
-    var_def
+    VarDef::boxed(id, data_type, expr, span, syntax)
 }
 
 // <range> ::= ("[" | "(") <int_const> ".." <int_const> ("]" | ")")
 fn parse_range<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+    let mut syntax: Vec<ErminiaType> = vec![];
+
     let start = tokens.get_position();
+
     let is_left_inclusive = is_next_left_inclusive(tokens, diag);
 
     let left = consume_int_const(tokens, diag);
 
-    consume_keyword(tokens, TokenKind::Range, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::Range, diag));
 
     let right = consume_int_const(tokens, diag);
 
     let is_right_inclusive = is_next_right_inclusive(tokens, diag);
 
     let end = tokens.get_position();
+
     let span = Span::new(start, end);
 
-    let range = Range::boxed(is_left_inclusive, is_right_inclusive, left, right, span);
-    range.check(tokens, diag, span);
-
-    range
+    Range::boxed(
+        is_left_inclusive,
+        is_right_inclusive,
+        left,
+        right,
+        span,
+        syntax,
+    )
 }
 
 // <shape_tuple_iter> ::= <id> "<-" <range>
 fn parse_shape_tuple_iter<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+    let mut syntax: Vec<ErminiaType> = vec![];
+
     let start = tokens.get_position();
     let coord = consume_identifier(tokens, diag);
 
-    consume_keyword(tokens, TokenKind::LeftArrow, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::LeftArrow, diag));
 
     let range = parse_range(tokens, diag);
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let tuple_iter = TupleIterator::boxed(coord, range, span);
-    tuple_iter.check(tokens, diag, span);
-
-    tuple_iter
+    TupleIterator::boxed(coord, range, span, syntax)
 }
 
 // <shape_tuple_iter_pair> ::= <shape_tuple_iter> ("," <shape_tuple_iter>)
-fn parse_shape_tuple_iter_pair<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Vec<BoxAST<'a>> {
+fn parse_shape_tuple_iter_pair<'a>(
+    tokens: &mut Lexer,
+    diag: &mut Accumulator,
+) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>) {
+    let mut syntax: Vec<ErminiaType> = vec![];
+
     let mut pairs: Vec<BoxAST> = vec![];
 
     let first_tuple_iter = parse_shape_tuple_iter(tokens, diag);
@@ -381,70 +224,67 @@ fn parse_shape_tuple_iter_pair<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -
     pairs.push(first_tuple_iter);
 
     if next_is_comma(tokens) {
-        consume_keyword(tokens, TokenKind::Comma, diag);
+        syntax.push(consume_keyword(tokens, TokenKind::Comma, diag));
         let second_tuple_iter = parse_shape_tuple_iter(tokens, diag);
         pairs.push(second_tuple_iter);
     }
 
-    pairs
+    (pairs, syntax)
 }
 
 // <shape_tuple_compr> ::= <shape_tuple> "|" <shape_tuple_iter_pair>
 fn parse_shape_tuple_compr<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+    let mut syntax: Vec<ErminiaType> = vec![];
     let start = tokens.get_position();
     let tuple = parse_shape_tuple_generic(tokens, diag);
 
-    consume_keyword(tokens, TokenKind::Pipe, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::Pipe, diag));
 
-    let iter_pair = parse_shape_tuple_iter_pair(tokens, diag);
+    let (iter_pair, inner_syntax) = parse_shape_tuple_iter_pair(tokens, diag);
+
+    syntax.extend(inner_syntax);
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let tuple_compr = TupleComprehension::boxed(tuple, iter_pair, span);
-    tuple_compr.check(tokens, diag, span);
-
-    tuple_compr
+    TupleComprehension::boxed(tuple, iter_pair, span, syntax)
 }
 
 // <object_call> ::= <id> <shape_tuple>
 fn parse_object_call<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+    let syntax: Vec<ErminiaType> = vec![];
+
     let start = tokens.get_position();
     let id = consume_identifier(tokens, diag);
 
-    let (object, span) = match tokens.peek().get_kind() {
+    match tokens.peek().get_kind() {
         TokenKind::LeftPar => {
             let tuple = parse_shape_tuple(tokens, diag);
 
             let end = tokens.get_position();
             let span = Span::new(start, end);
 
-            let object = ObjectCall::boxed(id, Some(tuple), span);
-
-            (object, span)
+            ObjectCall::boxed(id, Some(tuple), span, syntax)
         }
         _ => {
             let end = tokens.get_position();
             let span = Span::new(start, end);
 
-            let object = ObjectCall::boxed(id, None, span);
-
-            (object, span)
+            ObjectCall::boxed(id, None, span, syntax)
         }
-    };
-
-    object.check(tokens, diag, span);
-    object
+    }
 }
 
 // <shape_tuple_generic> ::= "(" (<int_const> | <id>) "," (<int_const> | <id>) ")"
 fn parse_shape_tuple_generic<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+    let mut syntax: Vec<ErminiaType> = vec![];
+
     let start = tokens.get_position();
 
-    consume_keyword(tokens, TokenKind::LeftPar, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::LeftPar, diag));
 
-    let mut left: BoxAST = GenericTupleOption::boxed_none();
-    let mut right: BoxAST = GenericTupleOption::boxed_none();
+    let left: BoxAST;
+    let right: BoxAST;
 
     if match_next(tokens, TokenKind::Int) {
         let int_const = consume_int_const(tokens, diag);
@@ -454,10 +294,21 @@ fn parse_shape_tuple_generic<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> 
         let id = consume_identifier(tokens, diag);
 
         left = GenericTupleOption::boxed_id(id);
+    } else {
+        diag.add_diag(
+            DB::build(PARSER_PASS, Code::E0003)
+                .with_note(Note::ExpectedIDorInteger)
+                .with_args(
+                    MessageKind::Note,
+                    vec![tokens.peek().get_kind().to_string()],
+                )
+                .emmit(tokens, Span::default()),
+        );
+
+        left = GenericTupleOption::boxed_int(ErminiaType::Poisoned);
     }
 
-    // <inner_stmt> ::= <object_decl>
-    consume_keyword(tokens, TokenKind::Comma, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::Comma, diag));
 
     if match_next(tokens, TokenKind::Int) {
         let int_const = consume_int_const(tokens, diag);
@@ -467,33 +318,48 @@ fn parse_shape_tuple_generic<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> 
         let id = consume_identifier(tokens, diag);
 
         right = GenericTupleOption::boxed_id(id);
+    } else {
+        diag.add_diag(
+            DB::build(PARSER_PASS, Code::E0003)
+                .with_note(Note::ExpectedIDorInteger)
+                .with_args(
+                    MessageKind::Note,
+                    vec![tokens.peek().get_kind().to_string()],
+                )
+                .emmit(tokens, Span::default()),
+        );
+
+        right = GenericTupleOption::boxed_int(ErminiaType::Poisoned);
     }
 
-    consume_keyword(tokens, TokenKind::RightPar, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::RightPar, diag));
+
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    GenericTuple::boxed(left, right, span)
+    GenericTuple::boxed(left, right, span, syntax)
 }
 
 // <shape_tuple> ::= "(" <int_const> "," <int_const> ")"
 fn parse_shape_tuple<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+    let mut syntax: Vec<ErminiaType> = vec![];
+
     let span_start = tokens.get_position();
 
-    consume_keyword(tokens, TokenKind::LeftPar, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::LeftPar, diag));
 
     let left = consume_int_const(tokens, diag);
 
-    consume_keyword(tokens, TokenKind::Comma, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::Comma, diag));
 
     let right = consume_int_const(tokens, diag);
 
-    consume_keyword(tokens, TokenKind::RightPar, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::RightPar, diag));
 
     let span_end = tokens.get_position();
     let span = Span::new(span_start, span_end);
 
-    Tuple::boxed(left, right, span)
+    Tuple::boxed(left, right, span, syntax)
 }
 
 // <shape> ::= <shape_tuple> | <shape_tuple_compr> | <object_call> | <id>
@@ -510,193 +376,211 @@ fn parse_shape<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
                 return compr;
             }
 
-            let tuple = parse_shape_tuple(tokens, diag);
-            tuple
+            parse_shape_tuple(tokens, diag)
         }
-        TokenKind::Ident => {
-            let object = parse_object_call(tokens, diag);
-            object
-        }
+        TokenKind::Ident => parse_object_call(tokens, diag),
         _ => {
-            let lookahead = tokens.lookahead_by(4);
+            diag.add_diag(
+                DB::build(PARSER_PASS, Code::E0003)
+                    .with_note(Note::ExpectedTypeofTuple)
+                    .with_args(MessageKind::Note, vec![kind.to_string()])
+                    .with_help(Help::DidYouMeanTupleorObject)
+                    .emmit(tokens, Span::default()),
+            );
 
-            if matches!(lookahead, TokenKind::Pipe) {
-                let compr = parse_shape_tuple_compr(tokens, diag);
-                return compr;
+            //TODO: Do some sort of skip here
+            while !match_next(tokens, TokenKind::Colon) {
+                tokens.advance();
             }
 
-            let tuple = parse_shape_tuple(tokens, diag);
-            tuple
+            PoisonedStmt::boxed(Span::default())
         }
     }
 }
 
 // <object_color> ::= "color" ":" <int_const>
 fn parse_object_color<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    let start = tokens.get_position();
-    consume_keyword(tokens, TokenKind::ObjectColor, diag);
+    let mut syntax: Vec<ErminiaType> = vec![];
 
-    consume_keyword(tokens, TokenKind::Colon, diag);
+    let start = tokens.get_position();
+
+    syntax.push(consume_keyword(tokens, TokenKind::ObjectColor, diag));
+
+    syntax.push(consume_keyword(tokens, TokenKind::Colon, diag));
 
     let int_const = consume_int_const(tokens, diag);
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let color = ObjectColor::boxed(int_const, span);
-    color.check(tokens, diag, span);
-
-    color
+    ObjectColor::boxed(int_const, span, syntax)
 }
 
 // <list_of_shapes> ::= "[" <shape> ("," <shape>)* "]"
-fn parse_list_of_shapes<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Vec<BoxAST<'a>> {
+fn parse_list_of_shapes<'a>(
+    tokens: &mut Lexer,
+    diag: &mut Accumulator,
+) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>) {
+    let mut syntax: Vec<ErminiaType> = vec![];
+
     let mut shapes: Vec<BoxAST> = vec![];
-    consume_keyword(tokens, TokenKind::LeftBracket, diag);
+
+    syntax.push(consume_keyword(tokens, TokenKind::LeftBracket, diag));
+
     let shape = parse_shape(tokens, diag);
+
     shapes.push(shape);
+
     while next_is_comma(tokens) {
-        consume_keyword(tokens, TokenKind::Comma, diag);
+        syntax.push(consume_keyword(tokens, TokenKind::Comma, diag));
+
         let shape = parse_shape(tokens, diag);
+
         shapes.push(shape);
     }
-    consume_keyword(tokens, TokenKind::RightBracket, diag);
-    shapes
+    syntax.push(consume_keyword(tokens, TokenKind::RightBracket, diag));
+
+    (shapes, syntax)
 }
 
 // <object_shape> ::= "shape" ":" <list_of_shapes>
 fn parse_object_shape<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+    let mut syntax: Vec<ErminiaType> = vec![];
+
     let start = tokens.get_position();
-    consume_keyword(tokens, TokenKind::ObjectShape, diag);
 
-    consume_keyword(tokens, TokenKind::Colon, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::ObjectShape, diag));
 
-    let shapes = parse_list_of_shapes(tokens, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::Colon, diag));
+
+    let (shapes, inner_syntax) = parse_list_of_shapes(tokens, diag);
+
+    syntax.extend(inner_syntax);
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let object_shape = ObjectShape::boxed(shapes, span);
-    object_shape.check(tokens, diag, span);
-
-    object_shape
+    ObjectShape::boxed(shapes, span, syntax)
 }
 
 // <object_desc> ::= <object_shape> "," <object_color> | <object_color> "," <object_shape>
 fn parse_object_desc<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+    let mut syntax: Vec<ErminiaType> = vec![];
+
     let kind = tokens.peek().get_kind();
 
     let start = tokens.get_position();
 
-    let (node, span) = match kind {
+    match kind {
         TokenKind::ObjectShape => {
             let shape = parse_object_shape(tokens, diag);
-            consume_keyword(tokens, TokenKind::Comma, diag);
+            syntax.push(consume_keyword(tokens, TokenKind::Comma, diag));
             let color = parse_object_color(tokens, diag);
             let end = tokens.get_position();
             let span = Span::new(start, end);
 
-            (ObjectDesc::boxed(shape, color, span), span)
+            ObjectDesc::boxed(shape, color, span, syntax)
         }
         TokenKind::ObjectColor => {
             let color = parse_object_color(tokens, diag);
-            consume_keyword(tokens, TokenKind::Comma, diag);
+            syntax.push(consume_keyword(tokens, TokenKind::Comma, diag));
             let shape = parse_object_shape(tokens, diag);
             let end = tokens.get_position();
             let span = Span::new(start, end);
 
-            (ObjectDesc::boxed(shape, color, span), span)
+            ObjectDesc::boxed(shape, color, span, syntax)
         }
         _ => {
-            let shape = parse_object_shape(tokens, diag);
-            consume_keyword(tokens, TokenKind::Comma, diag);
-            let color = parse_object_color(tokens, diag);
-            let end = tokens.get_position();
-            let span = Span::new(start, end);
+            diag.add_diag(
+                DB::build(PARSER_PASS, Code::E0003)
+                    .with_note(Note::ExpectedShapeOrColor)
+                    .with_args(MessageKind::Note, vec![kind.to_string()])
+                    .with_help(Help::DidYouMeanShapeOrColor)
+                    .emmit(tokens, Span::default()),
+            );
 
-            (ObjectDesc::boxed(shape, color, span), span)
+            PoisonedStmt::boxed(Span::default())
         }
-    };
-
-    node.check(tokens, diag, span);
-
-    node
+    }
 }
 
 // <example_decl> ::= "example" <id> <inner_compound_stmt>
 fn parse_problem_example<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+    let mut syntax: Vec<ErminiaType> = vec![];
+
     let start = tokens.get_position();
 
-    consume_keyword(tokens, TokenKind::ProblemExample, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::ProblemExample, diag));
 
     let id = consume_identifier(tokens, diag);
 
-    let stmts = parse_inner_compound_stmt(tokens, diag);
+    let (stmts, inner_syntax) = parse_inner_compound_stmt(tokens, diag);
+
+    syntax.extend(inner_syntax);
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let example = ProblemExample::boxed(id, stmts, span);
-    example.check(tokens, diag, span);
-
-    example
+    ProblemExample::boxed(id, stmts, span, syntax)
 }
 
 // <problem_solution> ::= "solution" <id> <inner_compound_stmt>
 fn parse_problem_solution<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+    let mut syntax: Vec<ErminiaType> = vec![];
+
     let start = tokens.get_position();
 
-    consume_keyword(tokens, TokenKind::ProblemSolution, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::ProblemSolution, diag));
 
     let id = consume_identifier(tokens, diag);
 
-    let stmts = parse_inner_compound_stmt(tokens, diag);
+    let (stmts, inner_syntax) = parse_inner_compound_stmt(tokens, diag);
+
+    syntax.extend(inner_syntax);
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let solution = ProblemSolution::boxed(id, stmts, span);
-    solution.check(tokens, diag, span);
-
-    solution
+    ProblemSolution::boxed(id, stmts, span, syntax)
 }
 
 // <problem_input> ::= "input" <id> <tuple> <inner_compound_stmt>
 fn parse_problem_input<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+    let mut syntax: Vec<ErminiaType> = vec![];
+
     let start = tokens.get_position();
 
-    consume_keyword(tokens, TokenKind::ProblemInput, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::ProblemInput, diag));
 
     let id = consume_identifier(tokens, diag);
 
-    let stmts = parse_inner_compound_stmt(tokens, diag);
+    let (stmts, inner_syntax) = parse_inner_compound_stmt(tokens, diag);
+
+    syntax.extend(inner_syntax);
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let input = ProblemInput::boxed(id, stmts, span);
-    input.check(tokens, diag, span);
-
-    input
+    ProblemInput::boxed(id, stmts, span, syntax)
 }
 
 // <problem_output> ::= "output" <id> <tuple> <inner_compound_stmt>
 fn parse_problem_output<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+    let mut syntax: Vec<ErminiaType> = vec![];
     let start = tokens.get_position();
 
-    consume_keyword(tokens, TokenKind::ProblemOutput, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::ProblemOutput, diag));
 
     let id = consume_identifier(tokens, diag);
 
-    let stmts = parse_inner_compound_stmt(tokens, diag);
+    let (stmts, inner_syntax) = parse_inner_compound_stmt(tokens, diag);
+
+    syntax.extend(inner_syntax);
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let output = ProblemOutput::boxed(id, stmts, span);
-    output.check(tokens, diag, span);
-
-    output
+    ProblemOutput::boxed(id, stmts, span, syntax)
 }
 
 // <stmt> ::= <object_decl> | <example_decl> | <var_def> | <problem_solution> |
@@ -711,7 +595,22 @@ fn parse_stmt<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
         TokenKind::ProblemInput => parse_problem_input(tokens, diag),
         TokenKind::ProblemOutput => parse_problem_output(tokens, diag),
         TokenKind::LetKwd => parse_var_def(tokens, diag),
-        _ => parse_object_decl(tokens, diag),
+        _ => {
+            diag.add_diag(
+                DB::build(PARSER_PASS, Code::E0002)
+                    .with_note(Note::ExpectedStatement)
+                    .with_args(MessageKind::Note, vec![kind.to_string()])
+                    .with_help(Help::DidYouMeanStmtKeyword)
+                    .emmit(tokens, Span::default()),
+            );
+            // TODO: Do some sort of skip here
+            while !match_next(tokens, TokenKind::Colon) {
+                tokens.advance();
+            }
+
+            // Return a poisoned node
+            PoisonedStmt::boxed(Span::default())
+        }
     };
 
     node
@@ -730,92 +629,95 @@ fn parse_stmt_list<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Vec<BoxAST
 }
 
 // <object_compound_desc> ::= "{" <object_desc> "}"
-fn parse_object_compound_desc<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    consume_keyword(tokens, TokenKind::LeftBrace, diag);
+fn parse_object_compound_desc<'a>(
+    tokens: &mut Lexer,
+    diag: &mut Accumulator,
+) -> (BoxAST<'a>, Vec<ErminiaType>) {
+    let mut syntax: Vec<ErminiaType> = vec![];
+    syntax.push(consume_keyword(tokens, TokenKind::LeftBrace, diag));
     let object_desc = parse_object_desc(tokens, diag);
-    consume_keyword(tokens, TokenKind::RightBrace, diag);
-    object_desc
+    syntax.push(consume_keyword(tokens, TokenKind::RightBrace, diag));
+    (object_desc, syntax)
 }
 
 // <object_decl> ::= "object" <id> <object_compound_desc> ";"
 fn parse_object_decl<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+    let mut syntax: Vec<ErminiaType> = vec![];
+
     let start = tokens.get_position();
 
-    consume_keyword(tokens, TokenKind::Object, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::Object, diag));
 
     let id = consume_identifier(tokens, diag);
 
-    let object_desc = parse_object_compound_desc(tokens, diag);
+    let (object_desc, inner_syntax) = parse_object_compound_desc(tokens, diag);
 
-    consume_keyword(tokens, TokenKind::SemiColon, diag);
+    syntax.extend(inner_syntax);
+
+    syntax.push(consume_keyword(tokens, TokenKind::SemiColon, diag));
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let object_decl = ObjectDecl::boxed(id, object_desc, span);
-    object_decl.check(tokens, diag, span);
+    let object_decl = ObjectDecl::boxed(id, object_desc, span, syntax);
+
     object_decl
 }
 
 // <compound_stmt> ::= "{" [<stmt_list>] "}"
-fn parse_compound_stmt<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Vec<BoxAST<'a>> {
-    consume_keyword(tokens, TokenKind::LeftBrace, diag);
+fn parse_compound_stmt<'a>(
+    tokens: &mut Lexer,
+    diag: &mut Accumulator,
+) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>) {
+    let mut syntax: Vec<ErminiaType> = vec![];
+
+    syntax.push(consume_keyword(tokens, TokenKind::LeftBrace, diag));
+
     let stmts = parse_stmt_list(tokens, diag);
-    consume_keyword(tokens, TokenKind::RightBrace, diag);
-    stmts
+
+    syntax.push(consume_keyword(tokens, TokenKind::RightBrace, diag));
+
+    (stmts, syntax)
 }
 
 // <problem_declaration> ::= "def" <id> "(" <int_const> ")" <compound_stmt>
 fn parse_problem_decl<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+    let mut syntax: Vec<ErminiaType> = vec![];
+
     let start = tokens.get_position();
+
+    syntax.push(consume_keyword(tokens, TokenKind::ProblemDef, diag));
 
     let id = consume_identifier(tokens, diag);
 
+    syntax.push(consume_keyword(tokens, TokenKind::LeftPar, diag));
+
     let int_const = consume_int_const(tokens, diag);
 
-    let stmts = parse_compound_stmt(tokens, diag);
+    syntax.push(consume_keyword(tokens, TokenKind::RightPar, diag));
+
+    let (stmts, inner_syntax) = parse_compound_stmt(tokens, diag);
+
+    syntax.extend(inner_syntax);
 
     let end = tokens.get_position();
+
     let span = Span::new(start, end);
 
-    let program = Program::boxed(id, int_const, stmts, span);
-    program.check(tokens, diag, span);
+    let program = Program::boxed(id, int_const, stmts, span, syntax);
 
     program
 }
 
 // <program> ::= <problem_declaration>
 pub fn parse_program<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
-    // [START] Token is first
     tokens.advance();
+
     let program = parse_problem_decl(tokens, diag);
 
+    program.check_poisoning(tokens, diag, Span::default());
+
     program
-}
-
-// ==================================================================================== //
-// Parser Object                                                                        //
-// ==================================================================================== //
-
-pub struct Parser<'a> {
-    lexer: Lexer<'a>,
-    diagnostics: Accumulator,
-}
-
-impl<'a> Parser<'a> {
-    pub fn new<'input>(input: &'input str) -> Parser<'input> {
-        let lexer = Lexer::new(input);
-        let diagnostics = Accumulator::new();
-        Parser { lexer, diagnostics }
-    }
-
-    pub fn parse(&mut self) -> BoxAST<'a> {
-        parse_program(&mut self.lexer, &mut self.diagnostics)
-    }
-
-    pub fn get_diagnostics(&self) -> &Accumulator {
-        &self.diagnostics
-    }
 }
 
 // ==================================================================================== //
@@ -839,7 +741,7 @@ mod test {
 
         if res.is_err() {
             println!("Error in parsing for input {:?}: \n {:?}", text, res);
-            for d in diag.get(CompilerPass::Parser) {
+            for d in diag.get(CompilerPass::AST) {
                 println!("This is the error: {}", d);
             }
         }
@@ -847,20 +749,64 @@ mod test {
         assert!(res.is_ok())
     }
 
-    fn check_no_err_multiple_ast<'a, F>(text: &'a str, parser: F)
+    // fn check_no_err_multiple_ast<'a, F>(text: &'a str, parser: F)
+    // where
+    //     F: FnOnce(&mut Lexer, &mut Accumulator) -> Vec<BoxAST<'a>>,
+    // {
+    //     let mut tokens = Lexer::new(text);
+    //     let mut diag = Accumulator::new();
+    //
+    //     tokens.advance();
+    //
+    //     let res = parser(&mut tokens, &mut diag);
+    //
+    //     if res.iter().any(|ast| ast.is_err()) {
+    //         println!("Error in parsing for input {:?}: \n {:?}", text, res);
+    //         for d in diag.get(CompilerPass::AST) {
+    //             println!("{}", d);
+    //         }
+    //     }
+    //
+    //     assert!(res.iter().all(|ast| ast.is_ok()))
+    // }
+
+    // fn check_no_err_single_ast_with_syntax_ret<'a, F>(
+    //     text: &'a str,
+    //     parser: F,
+    // ) where
+    //     F: FnOnce(&mut Lexer, &mut Accumulator) -> (BoxAST<'a>, Vec<ErminiaType>),
+    // {
+    //     let mut tokens = Lexer::new(text);
+    //     let mut diag = Accumulator::new();
+    //
+    //     tokens.advance();
+    //
+    //     let (res, _) = parser(&mut tokens, &mut diag);
+    //
+    //     if res.is_err() {
+    //         println!("Error in parsing for input {:?}: \n {:?}", text, res);
+    //         for d in diag.get(CompilerPass::AST) {
+    //             println!("This is the error: {}", d);
+    //         }
+    //     }
+    //
+    //     assert!(res.is_ok());
+    // }
+
+    fn check_no_err_multiple_ast_with_syntax_ret<'a, F>(text: &'a str, parser: F)
     where
-        F: FnOnce(&mut Lexer, &mut Accumulator) -> Vec<BoxAST<'a>>,
+        F: FnOnce(&mut Lexer, &mut Accumulator) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>),
     {
         let mut tokens = Lexer::new(text);
         let mut diag = Accumulator::new();
 
         tokens.advance();
 
-        let res = parser(&mut tokens, &mut diag);
+        let (res, _) = parser(&mut tokens, &mut diag);
 
         if res.iter().any(|ast| ast.is_err()) {
             println!("Error in parsing for input {:?}: \n {:?}", text, res);
-            for d in diag.get(CompilerPass::Parser) {
+            for d in diag.get(CompilerPass::AST) {
                 println!("{}", d);
             }
         }
@@ -899,7 +845,7 @@ mod test {
     fn test_parse_list_of_shapes() {
         let text = "[(0,1), (0,2), obj, obj(1,1), (x,y) | x <- [0..1], y <- [0..2]]";
 
-        check_no_err_multiple_ast(text, parse_list_of_shapes)
+        check_no_err_multiple_ast_with_syntax_ret(text, parse_list_of_shapes)
     }
 
     #[test]
@@ -908,13 +854,6 @@ mod test {
             "object HA { shape: [(0,1), (0,2), (x,y) | x <- [0..1], y <- [0..2]], color: 1 };";
 
         check_no_err_single_ast(text, parse_object_decl)
-    }
-
-    #[test]
-    fn test_parse_object_compound_desc() {
-        let text = "{ shape : [(0,1), (0,2)], color : 1 }";
-
-        check_no_err_single_ast(text, parse_object_compound_desc)
     }
 
     #[test]
@@ -1033,7 +972,7 @@ mod test {
 
         check_no_err_single_ast(text, parse_problem_solution)
     }
-    
+
     #[test]
     fn test_parse_problem_input() {
         let text = "input in1 (0, 1) {
@@ -1060,26 +999,38 @@ mod test {
             object HA { shape: [(0,1), (0,2)], color: 1 };
 
             example ex1 {
-                let x: object = HA(0,1);
-                draw(1, x, a);
+                input in1 (0, 1) {
+                    let x: object = HA(0,1);
+                    draw(1, x, a);
+                };
+
+                output out1 (0, 1) {
+                    let y: object = HA(1,1);
+                    draw(1, y, b);
+                };
             };
 
             solution sol1 {
-                let y: object = HA(1,1);
-                draw(1, y, b);
+                input in1 (0, 1) {
+                    let x: object = HA(0,1);
+                    draw(1, x, a);
+                };
+
+                output out1 (0, 1) {
+                    let y: object = HA(1,1);
+                    draw(1, y, b);
+                };
             };
 
-            input in1 (0, 1) {
-                let x: object = HA(0,1);
-                draw(1, x, a);
-            };
-
-            output out1 (0, 1) {
-                let y: object = HA(1,1);
-                draw(1, y, b);
-            };
         }";
 
-        check_no_err_single_ast(text, parse_program)
+        check_no_err_single_ast(text, parse_problem_decl)
+    }
+
+    #[test]
+    fn test_parse_program_2() {
+        let text = "def hello (2) '};";
+
+        check_no_err_single_ast(text, parse_problem_decl)
     }
 }

@@ -1,4 +1,4 @@
-use erminia::syntax::parse::Parser;
+use erminia::syntax::Parser;
 use std::io::{self, Write};
 
 fn main() -> io::Result<()> {
