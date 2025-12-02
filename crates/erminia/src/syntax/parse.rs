@@ -504,7 +504,7 @@ fn parse_object_desc<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'
     }
 }
 
-// <example_decl> ::= "example" <id> <inner_compound_stmt>
+// <example_decl> ::= "example" <id> '(' <int_const> ')' <inner_compound_stmt> ';'
 fn parse_problem_example<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
@@ -514,17 +514,25 @@ fn parse_problem_example<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxA
 
     let id = consume_identifier(tokens, diag);
 
+    syntax.push(consume_keyword(tokens, TokenKind::LeftPar, diag));
+
+    let int_const = consume_int_const(tokens, diag);
+
+    syntax.push(consume_keyword(tokens, TokenKind::RightPar, diag));
+
     let (stmts, inner_syntax) = parse_inner_compound_stmt(tokens, diag);
 
     syntax.extend(inner_syntax);
 
+    syntax.push(consume_keyword(tokens, TokenKind::SemiColon, diag));
+
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    ProblemExample::boxed(id, stmts, span, syntax)
+    ProblemExample::boxed(id, int_const, stmts, span, syntax)
 }
 
-// <problem_solution> ::= "solution" <id> <inner_compound_stmt>
+// <problem_solution> ::= "solution" <id> '(' <int_const> ')' <inner_compound_stmt> ';'
 fn parse_problem_solution<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
@@ -534,17 +542,25 @@ fn parse_problem_solution<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Box
 
     let id = consume_identifier(tokens, diag);
 
+    syntax.push(consume_keyword(tokens, TokenKind::LeftPar, diag));
+
+    let int_const = consume_int_const(tokens, diag);
+
+    syntax.push(consume_keyword(tokens, TokenKind::RightPar, diag));
+
     let (stmts, inner_syntax) = parse_inner_compound_stmt(tokens, diag);
 
     syntax.extend(inner_syntax);
 
+    syntax.push(consume_keyword(tokens, TokenKind::SemiColon, diag));
+
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    ProblemSolution::boxed(id, stmts, span, syntax)
+    ProblemSolution::boxed(id, int_const, stmts, span, syntax)
 }
 
-// <problem_input> ::= "input" <id> <tuple> <inner_compound_stmt>
+// <problem_input> ::= "input" <id> <tuple> <inner_compound_stmt> ';'
 fn parse_problem_input<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
@@ -554,17 +570,21 @@ fn parse_problem_input<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST
 
     let id = consume_identifier(tokens, diag);
 
+    let tuple = parse_shape_tuple(tokens, diag);
+
     let (stmts, inner_syntax) = parse_inner_compound_stmt(tokens, diag);
 
     syntax.extend(inner_syntax);
 
+    syntax.push(consume_keyword(tokens, TokenKind::SemiColon, diag));
+
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    ProblemInput::boxed(id, stmts, span, syntax)
+    ProblemInput::boxed(id, tuple, stmts, span, syntax)
 }
 
-// <problem_output> ::= "output" <id> <tuple> <inner_compound_stmt>
+// <problem_output> ::= "output" <id> <tuple> <inner_compound_stmt> ';'
 fn parse_problem_output<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
     let start = tokens.get_position();
@@ -573,14 +593,18 @@ fn parse_problem_output<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAS
 
     let id = consume_identifier(tokens, diag);
 
+    let tuple = parse_shape_tuple(tokens, diag);
+
     let (stmts, inner_syntax) = parse_inner_compound_stmt(tokens, diag);
 
     syntax.extend(inner_syntax);
 
+    syntax.push(consume_keyword(tokens, TokenKind::SemiColon, diag));
+
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    ProblemOutput::boxed(id, stmts, span, syntax)
+    ProblemOutput::boxed(id, tuple, stmts, span, syntax)
 }
 
 // <stmt> ::= <object_decl> | <example_decl> | <var_def> | <problem_solution> |
@@ -706,6 +730,8 @@ fn parse_problem_decl<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<
 
     let program = Program::boxed(id, int_const, stmts, span, syntax);
 
+    program.check_poisoning(tokens, diag, span);
+
     program
 }
 
@@ -714,8 +740,6 @@ pub fn parse_program<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'
     tokens.advance();
 
     let program = parse_problem_decl(tokens, diag);
-
-    program.check_poisoning(tokens, diag, Span::default());
 
     program
 }
@@ -740,8 +764,8 @@ mod test {
         let res = parser(&mut tokens, &mut diag);
 
         if res.is_err() {
-            println!("Error in parsing for input {:?}: \n {:?}", text, res);
-            for d in diag.get(CompilerPass::AST) {
+            println!("{:?}", res);
+            for d in diag.get(CompilerPass::Parser) {
                 println!("This is the error: {}", d);
             }
         }
@@ -805,8 +829,8 @@ mod test {
         let (res, _) = parser(&mut tokens, &mut diag);
 
         if res.iter().any(|ast| ast.is_err()) {
-            println!("Error in parsing for input {:?}: \n {:?}", text, res);
-            for d in diag.get(CompilerPass::AST) {
+            println!("{:?}", res);
+            for d in diag.get(CompilerPass::Parser) {
                 println!("{}", d);
             }
         }
@@ -879,7 +903,7 @@ mod test {
 
     #[test]
     fn test_parse_shape_tuple_compr() {
-        let text = "(x,y) | x <- [0..1}, y <- [0..1]";
+        let text = "(x,y) | x <- [0..1], y <- [0..1]";
 
         check_no_err_single_ast(text, parse_shape)
     }
@@ -921,11 +945,9 @@ mod test {
 
     #[test]
     fn test_parse_example_decl() {
-        let text = "example hello {
-
-            draw(1, foo(0,1), a);
-
-        }";
+        let text = "example hello (1) {
+                        draw(1, foo(0,1), a);
+                    };";
 
         check_no_err_single_ast(text, parse_stmt)
     }
@@ -939,7 +961,7 @@ mod test {
 
     #[test]
     fn test_parse_problem_example() {
-        let text = "example sol1 {
+        let text = "example sol1 (2) {
 
             input i1 (0, 1) {
                 let x: object = HA(0,1);
@@ -950,14 +972,14 @@ mod test {
                 let y: object = HA(1,1);
                 draw(1, y, b);
             };
-        }";
+        };";
 
         check_no_err_single_ast(text, parse_problem_example)
     }
 
     #[test]
     fn test_parse_problem_solution() {
-        let text = "solution sol1 {
+        let text = "solution sol1 (1) {
 
             input i1 (0, 1) {
                 let x: object = HA(0,1);
@@ -968,7 +990,7 @@ mod test {
                 let y: object = HA(1,1);
                 draw(1, y, b);
             };
-        }";
+        };";
 
         check_no_err_single_ast(text, parse_problem_solution)
     }
@@ -978,7 +1000,7 @@ mod test {
         let text = "input in1 (0, 1) {
             let x: object = HA(0,1);
             draw(1, x, a);
-        }";
+        };";
 
         check_no_err_single_ast(text, parse_problem_input)
     }
@@ -988,7 +1010,7 @@ mod test {
         let text = "output out1 (0, 1) {
             let y: object = HA(1,1);
             draw(1, y, b);
-        }";
+        };";
 
         check_no_err_single_ast(text, parse_problem_output)
     }
@@ -998,7 +1020,7 @@ mod test {
         let text = "def problem1 (2) {
             object HA { shape: [(0,1), (0,2)], color: 1 };
 
-            example ex1 {
+            example ex1 (1) {
                 input in1 (0, 1) {
                     let x: object = HA(0,1);
                     draw(1, x, a);
@@ -1010,7 +1032,7 @@ mod test {
                 };
             };
 
-            solution sol1 {
+            solution sol1 (1) {
                 input in1 (0, 1) {
                     let x: object = HA(0,1);
                     draw(1, x, a);
@@ -1029,7 +1051,7 @@ mod test {
 
     #[test]
     fn test_parse_program_2() {
-        let text = "def hello (2) '};";
+        let text = "def hello (2) {};";
 
         check_no_err_single_ast(text, parse_problem_decl)
     }

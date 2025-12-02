@@ -156,6 +156,7 @@ pub struct ObjectDecl<'a> {
 #[derive(Debug)]
 pub struct ProblemExample<'a> {
     pub id: ErminiaType,
+    pub int_const: ErminiaType,
     pub stmts: Vec<BoxAST<'a>>,
     pub span: Span,
     pub is_poisoned: bool,
@@ -166,6 +167,7 @@ pub struct ProblemExample<'a> {
 #[derive(Debug)]
 pub struct ProblemSolution<'a> {
     pub id: ErminiaType,
+    pub int_const: ErminiaType,
     pub stmts: Vec<BoxAST<'a>>,
     pub span: Span,
     pub is_poisoned: bool,
@@ -176,6 +178,7 @@ pub struct ProblemSolution<'a> {
 #[derive(Debug)]
 pub struct ProblemInput<'a> {
     pub id: ErminiaType,
+    pub tuple: BoxAST<'a>,
     pub stmts: Vec<BoxAST<'a>>,
     pub span: Span,
     pub is_poisoned: bool,
@@ -186,6 +189,7 @@ pub struct ProblemInput<'a> {
 #[derive(Debug)]
 pub struct ProblemOutput<'a> {
     pub id: ErminiaType,
+    pub tuple: BoxAST<'a>,
     pub stmts: Vec<BoxAST<'a>>,
     pub span: Span,
     pub is_poisoned: bool,
@@ -538,6 +542,7 @@ impl<'a> ObjectDecl<'a> {
 impl<'a> ProblemExample<'a> {
     pub fn boxed(
         id: ErminiaType,
+        int_const: ErminiaType,
         stmts: Vec<BoxAST<'a>>,
         span: Span,
         syntax: Vec<ErminiaType>,
@@ -549,12 +554,13 @@ impl<'a> ProblemExample<'a> {
             is_poisoned = true;
         }
 
-        if stmts.iter().any(|s| s.is_err()) || id.is_poisoned() {
+        if stmts.iter().any(|s| s.is_err()) || int_const.is_poisoned() || id.is_poisoned() {
             is_poisoned = true;
         }
 
         Box::new(ProblemExample {
             id,
+            int_const,
             stmts,
             span,
             is_poisoned,
@@ -567,6 +573,7 @@ impl<'a> ProblemExample<'a> {
 impl<'a> ProblemSolution<'a> {
     pub fn boxed(
         id: ErminiaType,
+        int_const: ErminiaType,
         stmts: Vec<BoxAST<'a>>,
         span: Span,
         syntax: Vec<ErminiaType>,
@@ -578,12 +585,13 @@ impl<'a> ProblemSolution<'a> {
             is_poisoned = true;
         }
 
-        if stmts.iter().any(|s| s.is_err()) || id.is_poisoned() {
+        if stmts.iter().any(|s| s.is_err()) || int_const.is_poisoned() || id.is_poisoned() {
             is_poisoned = true;
         }
 
         Box::new(ProblemSolution {
             id,
+            int_const,
             stmts,
             span,
             is_poisoned,
@@ -596,6 +604,7 @@ impl<'a> ProblemSolution<'a> {
 impl<'a> ProblemInput<'a> {
     pub fn boxed(
         id: ErminiaType,
+        tuple: BoxAST<'a>,
         stmts: Vec<BoxAST<'a>>,
         span: Span,
         syntax: Vec<ErminiaType>,
@@ -607,12 +616,13 @@ impl<'a> ProblemInput<'a> {
             is_poisoned = true;
         }
 
-        if stmts.iter().any(|s| s.is_err()) || id.is_poisoned() {
+        if stmts.iter().any(|s| s.is_err()) || tuple.is_err() || id.is_poisoned() {
             is_poisoned = true;
         }
 
         Box::new(ProblemInput {
             id,
+            tuple,
             stmts,
             span,
             is_poisoned,
@@ -625,6 +635,7 @@ impl<'a> ProblemInput<'a> {
 impl<'a> ProblemOutput<'a> {
     pub fn boxed(
         id: ErminiaType,
+        tuple: BoxAST<'a>,
         stmts: Vec<BoxAST<'a>>,
         span: Span,
         syntax: Vec<ErminiaType>,
@@ -636,12 +647,13 @@ impl<'a> ProblemOutput<'a> {
             is_poisoned = true;
         }
 
-        if stmts.iter().any(|s| s.is_err()) || id.is_poisoned() {
+        if stmts.iter().any(|s| s.is_err()) || tuple.is_err() || id.is_poisoned() {
             is_poisoned = true;
         }
 
         Box::new(ProblemOutput {
             id,
+            tuple,
             stmts,
             span,
             is_poisoned,

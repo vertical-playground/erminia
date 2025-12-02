@@ -682,13 +682,12 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
     fn test_lex_unfinished_string() {
         let text = "\"hello";
 
         let expected: Vec<Token> = vec![
-            Token::new(TokenKind::String, "\"poustiiiii hliaaaa\"", 1, 0),
-            Token::new(TokenKind::EOF, "", 1, 20),
+            Token::new(TokenKind::String, "\"hello", 1, 0),
+            Token::new(TokenKind::EOF, "", 1, 6),
         ];
 
         check_lex(text, expected);

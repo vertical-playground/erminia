@@ -129,7 +129,10 @@ impl<'a> AST<'a> for ProblemExample<'a> {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, mut depth: i32) -> std::fmt::Result {
         depth += 1;
         print_tabs(f, depth)?;
-        let s = format!("<#{} ProblemExample id: {:?}>", self.unique_ast_id, self.id);
+        let s = format!(
+            "<#{} ProblemExample id: {:?}, num: {:?}>",
+            self.unique_ast_id, self.id, self.int_const
+        );
         writeln!(f, "{}", s)?;
         for stmt in &self.stmts {
             stmt.print_on(f, depth)?;
@@ -181,8 +184,8 @@ impl<'a> AST<'a> for ProblemSolution<'a> {
         depth += 1;
         print_tabs(f, depth)?;
         let s = format!(
-            "<#{} ProblemSolution id: {:?}>",
-            self.unique_ast_id, self.id
+            "<#{} ProblemSolution id: {:?}, num: {:?}>",
+            self.unique_ast_id, self.id, self.int_const
         );
         writeln!(f, "{}", s)?;
         for stmt in &self.stmts {
