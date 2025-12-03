@@ -13,6 +13,14 @@ fmt:
 test:
 	cargo test --all-features -- --nocapture
 
+.PHONY: cov
+cov:
+	cargo llvm-cov
+
+.PHONY: cov-html
+cov-html:
+	cargo llvm-cov --html
+	open target/llvm-cov/html/index.html
 
 .PHONY: build
 build:
