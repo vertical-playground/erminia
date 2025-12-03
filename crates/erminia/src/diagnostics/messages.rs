@@ -115,7 +115,7 @@ impl Help {
                 "Did you mean to use 'int', 'string', or 'object' as data type?".to_string()
             }
             Help::DidYouMeanStmtKeyword => {
-                "Did you mean to use a statement keyword like 'object', 'input', 'output', 'example', or 'solution'?".to_string()
+                "Did you mean to use a statement keyword like 'let', 'input', 'output', 'example', or 'solution'?".to_string()
             }
             Help::DidYouMeanShapeOrColor => {
                 "Did you mean to use the 'shape' or 'color' keywords?".to_string()

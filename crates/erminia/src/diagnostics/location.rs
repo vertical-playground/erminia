@@ -26,6 +26,7 @@ impl Span {
 pub struct DiagnosticWindow {
     pub span: Span,
     pub snippet: String,
+    pub extented_snippet: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -98,6 +99,9 @@ impl fmt::Display for Diagnostic {
         }
 
         writeln!(f, "  │")?;
+        for line in self.window.extented_snippet.lines() {
+            writeln!(f, "  │   {}", line.dimmed())?;
+        }
         for line in self.window.snippet.lines() {
             writeln!(f, "  │   {}", line)?;
         }
@@ -193,9 +197,11 @@ pub fn create_diagnostic(
     let level = DiagnosticLevel::from_code(&code);
     let message = String::from_code(&code);
     let snippet = tokens.get_snippet(span);
+    let extended_snippet = tokens.get_extended_snippet(span, 3, 3);
     let window = DiagnosticWindow {
         span,
         snippet: snippet.to_string(),
+        extented_snippet: extended_snippet.to_string(),
     };
 
     Diagnostic::new(level, code, pass, message, window)

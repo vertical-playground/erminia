@@ -4,6 +4,7 @@ use crate::diagnostics::location::*;
 use crate::diagnostics::messages::*;
 use crate::diagnostics::DiagnosticBuilder;
 use crate::lexer::lex::Lexer;
+use crate::lexer::lex::PositionalOffset;
 use crate::lexer::token::TokenKind;
 use crate::types::ErminiaType;
 
@@ -14,8 +15,15 @@ const PARSER_PASS: CompilerPass = CompilerPass::Parser;
 //  Utilities                                                                           //
 // ==================================================================================== //
 
-pub fn is_next_right_inclusive(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaType {
+pub fn is_next_right_inclusive(
+    tokens: &mut Lexer,
+    diag: &mut Accumulator,
+    start: PositionalOffset,
+) -> ErminiaType {
     let kind = tokens.peek().get_kind();
+
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
 
     let res = match kind {
         TokenKind::RightPar => ErminiaType::Bool(false),
@@ -26,7 +34,7 @@ pub fn is_next_right_inclusive(tokens: &mut Lexer, diag: &mut Accumulator) -> Er
                     .with_note(Note::ExpectedRightInclusive)
                     .with_args(MessageKind::Note, vec![kind.to_string()])
                     .with_help(Help::ConsiderChangingToInclusive)
-                    .emmit(tokens, Span::default()),
+                    .emmit(tokens, span),
             );
 
             ErminiaType::Poisoned
@@ -38,8 +46,15 @@ pub fn is_next_right_inclusive(tokens: &mut Lexer, diag: &mut Accumulator) -> Er
     res
 }
 
-pub fn is_next_left_inclusive(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaType {
+pub fn is_next_left_inclusive(
+    tokens: &mut Lexer,
+    diag: &mut Accumulator,
+    start: PositionalOffset,
+) -> ErminiaType {
     let kind = tokens.peek().get_kind();
+
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
 
     let res = match kind {
         TokenKind::LeftPar => ErminiaType::Bool(false),
@@ -49,7 +64,7 @@ pub fn is_next_left_inclusive(tokens: &mut Lexer, diag: &mut Accumulator) -> Erm
                 DB::build(PARSER_PASS, Code::E0002)
                     .with_note(Note::ExpectedLeftInclusive)
                     .with_args(MessageKind::Note, vec![kind.to_string()])
-                    .emmit(tokens, Span::default()),
+                    .emmit(tokens, span),
             );
 
             ErminiaType::Poisoned
@@ -91,8 +106,16 @@ pub fn match_next(tokens: &mut Lexer, matched: TokenKind) -> bool {
 // ==================================================================================== //
 
 // TODO: handle tuple & list types
-pub fn consume_data_type(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaType {
+pub fn consume_data_type(
+    tokens: &mut Lexer,
+    diag: &mut Accumulator,
+    start: PositionalOffset,
+) -> ErminiaType {
     let kind = tokens.peek().get_kind();
+
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
+
     // TODO: Map TokenKind to ErminiaType
     let res = match kind {
         TokenKind::Object => ErminiaType::Object,
@@ -104,7 +127,7 @@ pub fn consume_data_type(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaT
                     .with_note(Note::ExpectedDataType)
                     .with_args(MessageKind::Note, vec![kind.to_string()])
                     .with_help(Help::ConsiderChangingToInclusive)
-                    .emmit(tokens, Span::default()),
+                    .emmit(tokens, span),
             );
 
             ErminiaType::Poisoned
@@ -116,8 +139,15 @@ pub fn consume_data_type(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaT
     res
 }
 
-pub fn consume_int_const(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaType {
+pub fn consume_int_const(
+    tokens: &mut Lexer,
+    diag: &mut Accumulator,
+    start: PositionalOffset,
+) -> ErminiaType {
     let int_const = tokens.token;
+
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
 
     let res = if int_const.get_kind() == TokenKind::Int {
         ErminiaType::Integer(int_const.text.parse::<i32>().unwrap())
@@ -126,7 +156,7 @@ pub fn consume_int_const(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaT
             DB::build(PARSER_PASS, Code::E0003)
                 .with_note(Note::ExpectedInteger)
                 .with_args(MessageKind::Note, vec![int_const.get_kind().to_string()])
-                .emmit(tokens, Span::default()),
+                .emmit(tokens, span),
         );
 
         ErminiaType::Poisoned
@@ -137,8 +167,15 @@ pub fn consume_int_const(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaT
     res
 }
 
-pub fn consume_identifier(tokens: &mut Lexer, diag: &mut Accumulator) -> ErminiaType {
+pub fn consume_identifier(
+    tokens: &mut Lexer,
+    diag: &mut Accumulator,
+    start: PositionalOffset,
+) -> ErminiaType {
     let id = tokens.token;
+
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
 
     let res = match id.get_kind() {
         TokenKind::Ident => ErminiaType::Ident(id.text.to_string()),
@@ -147,7 +184,7 @@ pub fn consume_identifier(tokens: &mut Lexer, diag: &mut Accumulator) -> Erminia
                 DB::build(PARSER_PASS, Code::E0001)
                     .with_note(Note::ExpectedIdentifier)
                     .with_args(MessageKind::Note, vec![id.get_kind().to_string()])
-                    .emmit(tokens, Span::default()),
+                    .emmit(tokens, span),
             );
 
             ErminiaType::Poisoned
@@ -163,8 +200,12 @@ pub fn consume_keyword(
     tokens: &mut Lexer,
     expected: TokenKind,
     diag: &mut Accumulator,
+    start: PositionalOffset,
 ) -> ErminiaType {
     let actual = tokens.peek().get_kind();
+
+    let end = tokens.get_position();
+    let span = Span::new(start, end);
 
     let res = if actual == expected {
         ErminiaType::Void
@@ -176,7 +217,7 @@ pub fn consume_keyword(
                     MessageKind::Note,
                     vec![expected.to_string(), actual.to_string()],
                 )
-                .emmit(tokens, Span::default()),
+                .emmit(tokens, span),
         );
 
         ErminiaType::Poisoned

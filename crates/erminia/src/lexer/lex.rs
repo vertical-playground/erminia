@@ -88,7 +88,7 @@ impl PositionalOffset {
     //     self.line = 1;
     // }
 
-    fn get_cursor(&self) -> usize {
+    pub fn get_cursor(&self) -> usize {
         self.pos
     }
 
@@ -119,6 +119,7 @@ impl fmt::Display for PositionalOffset {
 pub struct Lexer<'input> {
     content: &'input str,
     start: PositionalOffset,
+    previous: PositionalOffset,
     pub token: Token<'input>,
 }
 
@@ -127,6 +128,7 @@ impl<'input> Lexer<'input> {
         Lexer {
             content,
             start: PositionalOffset::default(),
+            previous: PositionalOffset::default(),
             token: Token::default(),
         }
     }
@@ -145,6 +147,7 @@ impl<'input> Lexer<'input> {
         let token = Token::new(kind, lexeme, start_pos.get_line(), start_pos.get_cursor());
 
         self.start = end_pos;
+        self.previous = start_pos;
 
         self.token = token;
     }
@@ -209,12 +212,34 @@ impl<'input> Lexer<'input> {
         self.start
     }
 
+    pub fn get_previous_position(&self) -> PositionalOffset {
+        self.previous
+    }
+
     pub fn get_snippet(&self, span: Span) -> &str {
         self._return_content(span.start, span.end)
     }
 
+    pub fn get_extended_snippet(&self, span: Span, before: u8, after: u8) -> &str {
+        if span.start.pos < before as usize {
+            return &self.content[0..(span.end.pos + 1 + after as usize).min(self.content.len())];
+        }
+
+        if span.end.pos + 1 + after as usize >= self.content.len() {
+            return &self.content
+                [span.start.pos.saturating_sub(before as usize)..self.content.len()];
+        }
+
+        &self.content[span.start.pos.saturating_sub(before as usize)
+            ..(span.end.pos + 1 + after as usize).min(self.content.len())]
+    }
+
     fn _return_content(&self, start: PositionalOffset, end: PositionalOffset) -> &str {
-        &self.content[start.pos..end.pos]
+        if end.pos + 1 >= self.content.len() {
+            return &self.content[start.pos - 1..end.pos];
+        }
+
+        &self.content[start.pos..end.pos + 1]
     }
 }
 
