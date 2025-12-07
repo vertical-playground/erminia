@@ -59,6 +59,18 @@ impl DiagnosticBuilder {
     }
 
     pub fn with_args(mut self, norh: messages::MessageKind, args: Vec<String>) -> Self {
+        if args.len() != self.note.args_count() {
+            let diagnostic = _build_diagnostic(
+                CompilerPass::Internal,
+                code::Code::I0001,
+                &mut Lexer::default(),
+                location::Span::default(),
+                "Note message requires arguments, but not the right amount was provided.".to_string(),
+                "If you are seeing this, please raise an issue on Github at 'https://github.com/vertical-playground/erminia/issues'".to_string(),
+            );
+
+            panic!("{}", diagnostic);
+        }
         match norh {
             messages::MessageKind::Note => {
                 if self.note == messages::Note::default() {

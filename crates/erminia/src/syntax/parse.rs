@@ -1,4 +1,5 @@
 use crate::ast::ast::BoxAST;
+
 use crate::ast::expr::*;
 use crate::ast::stmt::*;
 use crate::config::CompilerPass;
@@ -163,6 +164,8 @@ fn parse_var_def<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
         // change here if it's explicit about data type
         data_type = consume_data_type(tokens, diag, start);
     }
+
+    println!("{}", tokens.token.get_kind());
 
     syntax.push(consume_keyword(tokens, TokenKind::Equals, diag, start));
 
@@ -826,8 +829,8 @@ mod test {
 
         if res.is_err() {
             println!("{:?}", res);
-            for d in diag.get(CompilerPass::Parser) {
-                println!("This is the error: {}", d);
+            for d in diag.get(CompilerPass::AST) {
+                println!("{}", d);
             }
         }
 
@@ -891,7 +894,7 @@ mod test {
 
         if res.iter().any(|ast| ast.is_err()) {
             println!("{:?}", res);
-            for d in diag.get(CompilerPass::Parser) {
+            for d in diag.get(CompilerPass::Lexer) {
                 println!("{}", d);
             }
         }
@@ -1104,10 +1107,29 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
     fn test_parse_program_2() {
-        let text = "def hello (2) '           };";
+        let text = "def hello (2) {};";
 
         check_no_err_single_ast(text, parse_problem_decl)
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_parse_with_unexpected_token() {
+        let text = "let x: ∂ = HA(0, 1);";
+
+        println!("{}", text);
+
+        check_no_err_single_ast(text, parse_var_def)
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_parse_with_other_unexpected_token() {
+        let text = "let x: @ = HA(0, 1);";
+
+        println!("{}", text);
+
+        check_no_err_single_ast(text, parse_object_decl)
     }
 }

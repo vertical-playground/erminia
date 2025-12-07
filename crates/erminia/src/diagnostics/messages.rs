@@ -86,6 +86,23 @@ impl Note {
             Note::None => false,
         }
     }
+
+    pub fn args_count(&self) -> usize {
+        match self {
+            Note::ExpectedLeftInclusive => 1,
+            Note::ExpectedRightInclusive => 1,
+            Note::ExpectedDataType => 1,
+            Note::ExpectedInteger => 1,
+            Note::ExpectedIdentifier => 1,
+            Note::ExpectedSomethingElse => 2,
+            Note::ExpectedASTNode => 2,
+            Note::ExpectedIDorInteger => 1,
+            Note::ExpectedStatement => 1,
+            Note::ExpectedShapeOrColor => 1,
+            Note::ExpectedTypeofTuple => 1,
+            Note::None => 0,
+        }
+    }
 }
 
 #[derive(Default, Clone, PartialEq, Eq)]

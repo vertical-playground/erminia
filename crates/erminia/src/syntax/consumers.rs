@@ -10,6 +10,7 @@ use crate::types::ErminiaType;
 
 type DB = DiagnosticBuilder;
 const PARSER_PASS: CompilerPass = CompilerPass::Parser;
+const LEXER_PASS: CompilerPass = CompilerPass::Lexer;
 
 // ==================================================================================== //
 //  Utilities                                                                           //
@@ -20,19 +21,30 @@ pub fn is_next_right_inclusive(
     diag: &mut Accumulator,
     start: PositionalOffset,
 ) -> ErminiaType {
-    let kind = tokens.peek().get_kind();
+    let token = tokens.token;
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let res = match kind {
+    let res = match token.get_kind() {
         TokenKind::RightPar => ErminiaType::Bool(false),
         TokenKind::RightBracket => ErminiaType::Bool(true),
+        TokenKind::Poisoned => {
+            diag.add_diag(
+                DB::build(LEXER_PASS, Code::E0002)
+                    .with_note(Note::ExpectedRightInclusive)
+                    .with_args(MessageKind::Note, vec![token.text.to_string()])
+                    .with_help(Help::ConsiderChangingToInclusive)
+                    .emmit(tokens, span),
+            );
+
+            ErminiaType::Poisoned
+        }
         _ => {
             diag.add_diag(
                 DB::build(PARSER_PASS, Code::E0002)
                     .with_note(Note::ExpectedRightInclusive)
-                    .with_args(MessageKind::Note, vec![kind.to_string()])
+                    .with_args(MessageKind::Note, vec![token.text.to_string()])
                     .with_help(Help::ConsiderChangingToInclusive)
                     .emmit(tokens, span),
             );
@@ -51,19 +63,29 @@ pub fn is_next_left_inclusive(
     diag: &mut Accumulator,
     start: PositionalOffset,
 ) -> ErminiaType {
-    let kind = tokens.peek().get_kind();
+    let token = tokens.token;
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let res = match kind {
+    let res = match token.get_kind() {
         TokenKind::LeftPar => ErminiaType::Bool(false),
         TokenKind::LeftBracket => ErminiaType::Bool(true),
+        TokenKind::Poisoned => {
+            diag.add_diag(
+                DB::build(LEXER_PASS, Code::E0002)
+                    .with_note(Note::ExpectedLeftInclusive)
+                    .with_args(MessageKind::Note, vec![token.text.to_string()])
+                    .emmit(tokens, span),
+            );
+
+            ErminiaType::Poisoned
+        }
         _ => {
             diag.add_diag(
                 DB::build(PARSER_PASS, Code::E0002)
                     .with_note(Note::ExpectedLeftInclusive)
-                    .with_args(MessageKind::Note, vec![kind.to_string()])
+                    .with_args(MessageKind::Note, vec![token.text.to_string()])
                     .emmit(tokens, span),
             );
 
@@ -111,22 +133,30 @@ pub fn consume_data_type(
     diag: &mut Accumulator,
     start: PositionalOffset,
 ) -> ErminiaType {
-    let kind = tokens.peek().get_kind();
+    let token = tokens.token;
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
     // TODO: Map TokenKind to ErminiaType
-    let res = match kind {
+    println!("Consuming data type: {:?}", token.get_kind());
+    let res = match token.get_kind() {
         TokenKind::Object => ErminiaType::Object,
-        TokenKind::Int => ErminiaType::Int,
-        TokenKind::String => ErminiaType::String,
+        TokenKind::Poisoned => {
+            diag.add_diag(
+                DB::build(LEXER_PASS, Code::E0002)
+                    .with_note(Note::ExpectedDataType)
+                    .with_args(MessageKind::Note, vec![token.text.to_string()])
+                    .emmit(tokens, span),
+            );
+
+            ErminiaType::Poisoned
+        }
         _ => {
             diag.add_diag(
                 DB::build(PARSER_PASS, Code::E0002)
                     .with_note(Note::ExpectedDataType)
-                    .with_args(MessageKind::Note, vec![kind.to_string()])
-                    .with_help(Help::ConsiderChangingToInclusive)
+                    .with_args(MessageKind::Note, vec![token.text.to_string()])
                     .emmit(tokens, span),
             );
 
@@ -155,7 +185,7 @@ pub fn consume_int_const(
         diag.add_diag(
             DB::build(PARSER_PASS, Code::E0003)
                 .with_note(Note::ExpectedInteger)
-                .with_args(MessageKind::Note, vec![int_const.get_kind().to_string()])
+                .with_args(MessageKind::Note, vec![int_const.text.to_string()])
                 .emmit(tokens, span),
         );
 
@@ -183,7 +213,7 @@ pub fn consume_identifier(
             diag.add_diag(
                 DB::build(PARSER_PASS, Code::E0001)
                     .with_note(Note::ExpectedIdentifier)
-                    .with_args(MessageKind::Note, vec![id.get_kind().to_string()])
+                    .with_args(MessageKind::Note, vec![id.text.to_string()])
                     .emmit(tokens, span),
             );
 
@@ -202,20 +232,33 @@ pub fn consume_keyword(
     diag: &mut Accumulator,
     start: PositionalOffset,
 ) -> ErminiaType {
-    let actual = tokens.peek().get_kind();
+    let token = tokens.token;
 
     let end = tokens.get_position();
     let span = Span::new(start, end);
 
-    let res = if actual == expected {
+    let res = if token.get_kind() == expected {
         ErminiaType::Void
     } else {
+        if let TokenKind::Poisoned = token.get_kind() {
+            diag.add_diag(
+                DB::build(LEXER_PASS, Code::E0001)
+                    .with_note(Note::ExpectedSomethingElse)
+                    .with_args(
+                        MessageKind::Note,
+                        vec![expected.to_string(), token.text.to_string()],
+                    )
+                    .emmit(tokens, span),
+            );
+
+            return ErminiaType::Poisoned;
+        }
         diag.add_diag(
             DB::build(PARSER_PASS, Code::E0001)
                 .with_note(Note::ExpectedSomethingElse)
                 .with_args(
                     MessageKind::Note,
-                    vec![expected.to_string(), actual.to_string()],
+                    vec![expected.to_string(), token.text.to_string()],
                 )
                 .emmit(tokens, span),
         );

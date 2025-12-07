@@ -221,25 +221,11 @@ impl<'input> Lexer<'input> {
     }
 
     pub fn get_extended_snippet(&self, span: Span, before: u8, after: u8) -> &str {
-        if span.start.pos < before as usize {
-            return &self.content[0..(span.end.pos + 1 + after as usize).min(self.content.len())];
-        }
-
-        if span.end.pos + 1 + after as usize >= self.content.len() {
-            return &self.content
-                [span.start.pos.saturating_sub(before as usize)..self.content.len()];
-        }
-
-        &self.content[span.start.pos.saturating_sub(before as usize)
-            ..(span.end.pos + 1 + after as usize).min(self.content.len())]
+        &self.content[span.start.pos - before as usize..span.end.pos + after as usize]
     }
 
     fn _return_content(&self, start: PositionalOffset, end: PositionalOffset) -> &str {
-        if end.pos + 1 >= self.content.len() {
-            return &self.content[start.pos - 1..end.pos];
-        }
-
-        &self.content[start.pos..end.pos + 1]
+        &self.content[start.pos..end.pos]
     }
 }
 
@@ -532,7 +518,29 @@ fn get_next_symbol(text: &str, mut pos: PositionalOffset) -> Option<(TokenKind, 
                 TokenKind::String
             }
         }
-        _ => TokenKind::EOF,
+        Some(' ') | Some('\t') | Some('\n') | Some('\r') => {
+            return None;
+        }
+        Some(c) if c.is_alphabetic() => {
+            return None;
+        }
+        Some(c) if c.is_numeric() => {
+            return None;
+        }
+        Some(c) if c.is_ascii() => {
+            pos.increment_pos(1);
+            pos.increment_cursor(1);
+            TokenKind::Poisoned
+        }
+        Some(c) if !c.is_ascii() => {
+            let size = c.len_utf8();
+            pos.increment_pos(size);
+            pos.increment_cursor(size);
+            TokenKind::Poisoned
+        }
+        _ => {
+            return None;
+        }
     };
 
     Some((token, pos))
@@ -776,6 +784,19 @@ mod test {
         let expected: Vec<Token> = vec![
             Token::new(TokenKind::LeftArrow, "<-", 1, 0),
             Token::new(TokenKind::EOF, "", 1, 2),
+        ];
+
+        check_lex(text, expected);
+    }
+
+    #[test]
+    fn test_poisoned_token() {
+        let text = "@   object";
+
+        let expected: Vec<Token> = vec![
+            Token::new(TokenKind::Poisoned, "@", 1, 0),
+            Token::new(TokenKind::Object, "object", 1, 4),
+            Token::new(TokenKind::EOF, "", 1, 10),
         ];
 
         check_lex(text, expected);

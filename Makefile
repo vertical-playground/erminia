@@ -11,7 +11,7 @@ fmt:
 
 .PHONY: test
 test:
-	cargo test --all-features -- --nocapture
+	cargo test --all-features
 
 .PHONY: cov
 cov:

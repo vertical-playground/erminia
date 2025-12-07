@@ -196,7 +196,7 @@ impl std::str::FromStr for TokenKind {
                 } else if s.is_valid_indentifier() {
                     TokenKind::Ident
                 } else {
-                    TokenKind::Poisoned
+                    return Err(format!("Unknown token kind: {}", s));
                 }
             }
         };

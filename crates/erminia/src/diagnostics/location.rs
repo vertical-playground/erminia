@@ -197,7 +197,7 @@ pub fn create_diagnostic(
     let level = DiagnosticLevel::from_code(&code);
     let message = String::from_code(&code);
     let snippet = tokens.get_snippet(span);
-    let extended_snippet = tokens.get_extended_snippet(span, 3, 3);
+    let extended_snippet = tokens.get_extended_snippet(span, 0, 0);
     let window = DiagnosticWindow {
         span,
         snippet: snippet.to_string(),
