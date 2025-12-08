@@ -1,11 +1,10 @@
 use crate::config::CompilerPass;
-use crate::diagnostics::code::Code;
-use crate::diagnostics::location::*;
-use crate::diagnostics::messages::*;
-use crate::diagnostics::DiagnosticBuilder;
+use crate::diagnostics::{Accumulator, Code, DiagnosticBuilder, Help, MessageKind, Note, Span};
 use crate::lexer::lex::Lexer;
 use crate::lexer::lex::PositionalOffset;
 use crate::lexer::token::TokenKind;
+use crate::lexer_diag;
+use crate::parser_diag;
 use crate::types::ErminiaType;
 
 type DB = DiagnosticBuilder;
@@ -21,6 +20,10 @@ pub fn is_next_right_inclusive(
     diag: &mut Accumulator,
     start: PositionalOffset,
 ) -> ErminiaType {
+    if tokens.is_poisoned() {
+        return ErminiaType::Poisoned;
+    }
+
     let token = tokens.token;
 
     let end = tokens.get_position();
@@ -30,24 +33,30 @@ pub fn is_next_right_inclusive(
         TokenKind::RightPar => ErminiaType::Bool(false),
         TokenKind::RightBracket => ErminiaType::Bool(true),
         TokenKind::Poisoned => {
-            diag.add_diag(
-                DB::build(LEXER_PASS, Code::E0002)
-                    .with_note(Note::ExpectedRightInclusive)
-                    .with_args(MessageKind::Note, vec![token.text.to_string()])
-                    .with_help(Help::ConsiderChangingToInclusive)
-                    .emmit(tokens, span),
+            lexer_diag!(
+                E0002,
+                ExpectedRightInclusive,
+                vec![token.text.to_string()],
+                ConsiderChangingToInclusive,
+                tokens,
+                diag,
+                span
             );
 
             ErminiaType::Poisoned
         }
         _ => {
-            diag.add_diag(
-                DB::build(PARSER_PASS, Code::E0002)
-                    .with_note(Note::ExpectedRightInclusive)
-                    .with_args(MessageKind::Note, vec![token.text.to_string()])
-                    .with_help(Help::ConsiderChangingToInclusive)
-                    .emmit(tokens, span),
+            parser_diag!(
+                E0002,
+                ExpectedRightInclusive,
+                vec![token.text.to_string()],
+                ConsiderChangingToInclusive,
+                tokens,
+                diag,
+                span
             );
+
+            tokens.set_poisoned(true);
 
             tokens.loop_to_kind(TokenKind::SemiColon);
 
@@ -65,6 +74,10 @@ pub fn is_next_left_inclusive(
     diag: &mut Accumulator,
     start: PositionalOffset,
 ) -> ErminiaType {
+    if tokens.is_poisoned() {
+        return ErminiaType::Poisoned;
+    }
+
     let token = tokens.token;
 
     let end = tokens.get_position();
@@ -74,22 +87,30 @@ pub fn is_next_left_inclusive(
         TokenKind::LeftPar => ErminiaType::Bool(false),
         TokenKind::LeftBracket => ErminiaType::Bool(true),
         TokenKind::Poisoned => {
-            diag.add_diag(
-                DB::build(LEXER_PASS, Code::E0002)
-                    .with_note(Note::ExpectedLeftInclusive)
-                    .with_args(MessageKind::Note, vec![token.text.to_string()])
-                    .emmit(tokens, span),
+            lexer_diag!(
+                E0002,
+                ExpectedLeftInclusive,
+                vec![token.text.to_string()],
+                ConsiderChangingToInclusive,
+                tokens,
+                diag,
+                span
             );
 
             ErminiaType::Poisoned
         }
         _ => {
-            diag.add_diag(
-                DB::build(PARSER_PASS, Code::E0002)
-                    .with_note(Note::ExpectedLeftInclusive)
-                    .with_args(MessageKind::Note, vec![token.text.to_string()])
-                    .emmit(tokens, span),
+            parser_diag!(
+                E0002,
+                ExpectedLeftInclusive,
+                vec![token.text.to_string()],
+                ConsiderChangingToInclusive,
+                tokens,
+                diag,
+                span
             );
+
+            tokens.set_poisoned(true);
 
             tokens.loop_to_kind(TokenKind::SemiColon);
 
@@ -137,6 +158,10 @@ pub fn consume_data_type(
     diag: &mut Accumulator,
     start: PositionalOffset,
 ) -> ErminiaType {
+    if tokens.is_poisoned() {
+        return ErminiaType::Poisoned;
+    }
+
     let token = tokens.token;
 
     let end = tokens.get_position();
@@ -147,22 +172,28 @@ pub fn consume_data_type(
     let res = match token.get_kind() {
         TokenKind::Object => ErminiaType::Object,
         TokenKind::Poisoned => {
-            diag.add_diag(
-                DB::build(LEXER_PASS, Code::E0002)
-                    .with_note(Note::ExpectedDataType)
-                    .with_args(MessageKind::Note, vec![token.text.to_string()])
-                    .emmit(tokens, span),
+            lexer_diag!(
+                E0002,
+                ExpectedDataType,
+                vec![token.text.to_string()],
+                tokens,
+                diag,
+                span
             );
 
             ErminiaType::Poisoned
         }
         _ => {
-            diag.add_diag(
-                DB::build(PARSER_PASS, Code::E0002)
-                    .with_note(Note::ExpectedDataType)
-                    .with_args(MessageKind::Note, vec![token.text.to_string()])
-                    .emmit(tokens, span),
+            parser_diag!(
+                E0002,
+                ExpectedDataType,
+                vec![token.text.to_string()],
+                tokens,
+                diag,
+                span
             );
+
+            tokens.set_poisoned(true);
 
             tokens.loop_to_kind(TokenKind::SemiColon);
 
@@ -180,6 +211,10 @@ pub fn consume_int_const(
     diag: &mut Accumulator,
     start: PositionalOffset,
 ) -> ErminiaType {
+    if tokens.is_poisoned() {
+        return ErminiaType::Poisoned;
+    }
+
     let int_const = tokens.token;
 
     let end = tokens.get_position();
@@ -188,12 +223,16 @@ pub fn consume_int_const(
     let res = if int_const.get_kind() == TokenKind::Int {
         ErminiaType::Integer(int_const.text.parse::<i32>().unwrap())
     } else {
-        diag.add_diag(
-            DB::build(PARSER_PASS, Code::E0003)
-                .with_note(Note::ExpectedInteger)
-                .with_args(MessageKind::Note, vec![int_const.text.to_string()])
-                .emmit(tokens, span),
+        parser_diag!(
+            E0003,
+            ExpectedInteger,
+            vec![int_const.text.to_string()],
+            tokens,
+            diag,
+            span
         );
+
+        tokens.set_poisoned(true);
 
         tokens.loop_to_kind(TokenKind::SemiColon);
 
@@ -210,6 +249,10 @@ pub fn consume_identifier(
     diag: &mut Accumulator,
     start: PositionalOffset,
 ) -> ErminiaType {
+    if tokens.is_poisoned() {
+        return ErminiaType::Poisoned;
+    }
+
     let id = tokens.token;
 
     let end = tokens.get_position();
@@ -218,12 +261,16 @@ pub fn consume_identifier(
     let res = match id.get_kind() {
         TokenKind::Ident => ErminiaType::Ident(id.text.to_string()),
         _ => {
-            diag.add_diag(
-                DB::build(PARSER_PASS, Code::E0001)
-                    .with_note(Note::ExpectedIdentifier)
-                    .with_args(MessageKind::Note, vec![id.text.to_string()])
-                    .emmit(tokens, span),
+            parser_diag!(
+                E0001,
+                ExpectedIdentifier,
+                vec![id.text.to_string()],
+                tokens,
+                diag,
+                span
             );
+
+            tokens.set_poisoned(true);
 
             tokens.loop_to_kind(TokenKind::SemiColon);
 
@@ -242,6 +289,10 @@ pub fn consume_keyword(
     diag: &mut Accumulator,
     start: PositionalOffset,
 ) -> ErminiaType {
+    if tokens.is_poisoned() {
+        return ErminiaType::Poisoned;
+    }
+
     let token = tokens.token;
 
     let end = tokens.get_position();
@@ -251,27 +302,27 @@ pub fn consume_keyword(
         ErminiaType::Void
     } else {
         if let TokenKind::Poisoned = token.get_kind() {
-            diag.add_diag(
-                DB::build(LEXER_PASS, Code::E0001)
-                    .with_note(Note::ExpectedSomethingElse)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![expected.to_string(), token.text.to_string()],
-                    )
-                    .emmit(tokens, span),
+            lexer_diag!(
+                E0001,
+                ExpectedSomethingElse,
+                vec![expected.to_string(), token.text.to_string()],
+                tokens,
+                diag,
+                span
             );
 
             return ErminiaType::Poisoned;
         }
-        diag.add_diag(
-            DB::build(PARSER_PASS, Code::E0001)
-                .with_note(Note::ExpectedSomethingElse)
-                .with_args(
-                    MessageKind::Note,
-                    vec![expected.to_string(), token.text.to_string()],
-                )
-                .emmit(tokens, span),
+        parser_diag!(
+            E0001,
+            ExpectedSomethingElse,
+            vec![expected.to_string(), token.text.to_string()],
+            tokens,
+            diag,
+            span
         );
+
+        tokens.set_poisoned(true);
 
         tokens.loop_to_kind(TokenKind::SemiColon);
 

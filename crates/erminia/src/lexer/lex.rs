@@ -121,6 +121,7 @@ pub struct Lexer<'input> {
     start: PositionalOffset,
     previous: PositionalOffset,
     pub token: Token<'input>,
+    poisoned: bool,
 }
 
 impl<'input> Lexer<'input> {
@@ -130,6 +131,7 @@ impl<'input> Lexer<'input> {
             start: PositionalOffset::default(),
             previous: PositionalOffset::default(),
             token: Token::default(),
+            poisoned: false,
         }
     }
 
@@ -225,13 +227,24 @@ impl<'input> Lexer<'input> {
     }
 
     pub fn loop_to_kind(&mut self, kind: TokenKind) {
-        while self.token.get_kind() != kind && self.token.get_kind() != TokenKind::EOF {
+        while self.is_poisoned()
+            && self.token.get_kind() != kind
+            && self.token.get_kind() != TokenKind::EOF
+        {
             self.advance();
         }
     }
 
     fn _return_content(&self, start: PositionalOffset, end: PositionalOffset) -> &str {
         &self.content[start.pos..end.pos]
+    }
+
+    pub fn is_poisoned(&self) -> bool {
+        self.poisoned
+    }
+
+    pub fn set_poisoned(&mut self, val: bool) {
+        self.poisoned = val;
     }
 }
 

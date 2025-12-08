@@ -3,13 +3,11 @@ use crate::ast::ast::BoxAST;
 use crate::ast::expr::*;
 use crate::ast::stmt::*;
 use crate::config::CompilerPass;
-use crate::diagnostics::code::Code;
-use crate::diagnostics::location::*;
-use crate::diagnostics::messages::*;
-use crate::diagnostics::DiagnosticBuilder;
+use crate::diagnostics::{Accumulator, Code, DiagnosticBuilder, Help, MessageKind, Note, Span};
 use crate::lexer::lex::Lexer;
 use crate::lexer::lex::PositionalOffset;
 use crate::lexer::token::TokenKind;
+use crate::parser_diag;
 use crate::syntax::consumers::*;
 use crate::types::ErminiaType;
 
@@ -44,11 +42,13 @@ fn parse_expr<'a>(
         }
         TokenKind::Int => RValue::boxed_int(consume_int_const(tokens, diag, start).to_int()),
         _ => {
-            diag.add_diag(
-                DB::build(PARSER_PASS, Code::E0001)
-                    .with_note(Note::ExpectedIDorInteger)
-                    .with_args(MessageKind::Note, vec![kind.to_string()])
-                    .emmit(tokens, span),
+            parser_diag!(
+                E0001,
+                ExpectedIDorInteger,
+                vec![kind.to_string()],
+                tokens,
+                diag,
+                span
             );
 
             parse_object_call(tokens, diag)
@@ -97,6 +97,8 @@ fn parse_func_call<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a>
     syntax.extend(inner_syntax);
 
     syntax.push(consume_keyword(tokens, TokenKind::RightPar, diag, start));
+
+    tokens.set_poisoned(false);
 
     syntax.push(consume_keyword(tokens, TokenKind::SemiColon, diag, start));
 
@@ -168,6 +170,8 @@ fn parse_var_def<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
     syntax.push(consume_keyword(tokens, TokenKind::Equals, diag, start));
 
     let expr = parse_expr(tokens, diag, start);
+
+    tokens.set_poisoned(false);
 
     syntax.push(consume_keyword(tokens, TokenKind::SemiColon, diag, start));
 
@@ -314,14 +318,13 @@ fn parse_shape_tuple_generic<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> 
 
         left = GenericTupleOption::boxed_id(id);
     } else {
-        diag.add_diag(
-            DB::build(PARSER_PASS, Code::E0003)
-                .with_note(Note::ExpectedIDorInteger)
-                .with_args(
-                    MessageKind::Note,
-                    vec![tokens.peek().get_kind().to_string()],
-                )
-                .emmit(tokens, Span::default()),
+        parser_diag!(
+            E0003,
+            ExpectedIDorInteger,
+            vec![tokens.peek().get_kind().to_string()],
+            tokens,
+            diag,
+            Span::default()
         );
 
         left = GenericTupleOption::boxed_int(ErminiaType::Poisoned);
@@ -338,14 +341,13 @@ fn parse_shape_tuple_generic<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> 
 
         right = GenericTupleOption::boxed_id(id);
     } else {
-        diag.add_diag(
-            DB::build(PARSER_PASS, Code::E0003)
-                .with_note(Note::ExpectedIDorInteger)
-                .with_args(
-                    MessageKind::Note,
-                    vec![tokens.peek().get_kind().to_string()],
-                )
-                .emmit(tokens, Span::default()),
+        parser_diag!(
+            E0003,
+            ExpectedIDorInteger,
+            vec![tokens.peek().get_kind().to_string()],
+            tokens,
+            diag,
+            Span::default()
         );
 
         right = GenericTupleOption::boxed_int(ErminiaType::Poisoned);
@@ -400,12 +402,13 @@ fn parse_shape<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
         }
         TokenKind::Ident => parse_object_call(tokens, diag),
         _ => {
-            diag.add_diag(
-                DB::build(PARSER_PASS, Code::E0003)
-                    .with_note(Note::ExpectedTypeofTuple)
-                    .with_args(MessageKind::Note, vec![kind.to_string()])
-                    .with_help(Help::DidYouMeanTupleorObject)
-                    .emmit(tokens, Span::default()),
+            parser_diag!(
+                E0003,
+                ExpectedTypeofTuple,
+                vec![kind.to_string()],
+                tokens,
+                diag,
+                Span::default()
             );
 
             //TODO: Do some sort of skip here
@@ -518,12 +521,13 @@ fn parse_object_desc<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'
             ObjectDesc::boxed(shape, color, span, syntax)
         }
         _ => {
-            diag.add_diag(
-                DB::build(PARSER_PASS, Code::E0003)
-                    .with_note(Note::ExpectedShapeOrColor)
-                    .with_args(MessageKind::Note, vec![kind.to_string()])
-                    .with_help(Help::DidYouMeanShapeOrColor)
-                    .emmit(tokens, Span::default()),
+            parser_diag!(
+                E0003,
+                ExpectedShapeOrColor,
+                vec![kind.to_string()],
+                tokens,
+                diag,
+                Span::default()
             );
 
             PoisonedStmt::boxed(Span::default())
@@ -555,6 +559,8 @@ fn parse_problem_example<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxA
     let (stmts, inner_syntax) = parse_inner_compound_stmt(tokens, diag);
 
     syntax.extend(inner_syntax);
+
+    tokens.set_poisoned(false);
 
     syntax.push(consume_keyword(tokens, TokenKind::SemiColon, diag, start));
 
@@ -589,6 +595,8 @@ fn parse_problem_solution<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Box
 
     syntax.extend(inner_syntax);
 
+    tokens.set_poisoned(false);
+
     syntax.push(consume_keyword(tokens, TokenKind::SemiColon, diag, start));
 
     let end = tokens.get_position();
@@ -618,6 +626,8 @@ fn parse_problem_input<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST
 
     syntax.extend(inner_syntax);
 
+    tokens.set_poisoned(false);
+
     syntax.push(consume_keyword(tokens, TokenKind::SemiColon, diag, start));
 
     let end = tokens.get_position();
@@ -645,6 +655,8 @@ fn parse_problem_output<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAS
     let (stmts, inner_syntax) = parse_inner_compound_stmt(tokens, diag);
 
     syntax.extend(inner_syntax);
+
+    tokens.set_poisoned(false);
 
     syntax.push(consume_keyword(tokens, TokenKind::SemiColon, diag, start));
 
@@ -675,13 +687,16 @@ fn parse_stmt<'a>(
         TokenKind::ProblemOutput => parse_problem_output(tokens, diag),
         TokenKind::LetKwd => parse_var_def(tokens, diag),
         _ => {
-            diag.add_diag(
-                DB::build(PARSER_PASS, Code::E0002)
-                    .with_note(Note::ExpectedStatement)
-                    .with_args(MessageKind::Note, vec![kind.to_string()])
-                    .with_help(Help::DidYouMeanStmtKeyword)
-                    .emmit(tokens, span),
+            parser_diag!(
+                E0002,
+                ExpectedStatement,
+                vec![kind.to_string()],
+                DidYouMeanStmtKeyword,
+                tokens,
+                diag,
+                span
             );
+
             // TODO: Do some sort of skip here
             while !match_next(tokens, TokenKind::Colon) {
                 tokens.advance();
@@ -738,6 +753,8 @@ fn parse_object_decl<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'
 
     syntax.extend(inner_syntax);
 
+    tokens.set_poisoned(false);
+
     syntax.push(consume_keyword(tokens, TokenKind::SemiColon, diag, start));
 
     let end = tokens.get_position();
@@ -792,7 +809,7 @@ fn parse_problem_decl<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<
 
     let program = Program::boxed(id, int_const, stmts, span, syntax);
 
-    program.check_poisoning(tokens, diag, span);
+    program.check_poisoning(tokens, diag);
 
     program
 }
@@ -827,7 +844,7 @@ mod test {
 
         if res.is_err() {
             println!("{:?}", res);
-            for d in diag.get(CompilerPass::AST) {
+            for d in diag.get(CompilerPass::Parser) {
                 println!("{}", d);
             }
         }
@@ -1136,7 +1153,7 @@ mod test {
     #[test]
     #[should_panic]
     fn test_parse_with_unexpected_token_parse_errors() {
-        let text = "def pr (2) { let x @ = HA(0, 1); let y = HA(1, 1); };";
+        let text = "def pr (2) { let x @ HA(0, 1); let y @ HA(1, 1); };";
 
         println!("{}", text);
 

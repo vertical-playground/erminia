@@ -4,8 +4,9 @@ use derive_more::Display;
 // Struct                                                                               //
 // ==================================================================================== //
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Display, PartialOrd, Ord)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Display, PartialOrd, Ord)]
 pub enum Code {
+    #[default]
     I0001, // Internal Compiler Error
     E0001, // Expected keyword token but found something else
     E0002, // Expected symbol token but found something else
@@ -17,8 +18,9 @@ pub enum Code {
     H000X,
 }
 
-#[derive(Display, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Default, Display, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DiagnosticLevel {
+    #[default]
     Internal,
     Error,
     Warning,

@@ -1,14 +1,14 @@
 use crate::ast::expr::*;
 use crate::ast::stmt::*;
-use crate::diagnostics::code::Code;
-use crate::diagnostics::location::{Accumulator, Span};
-use crate::diagnostics::messages::{MessageKind, Note};
+use crate::ast_diag;
+use crate::config::CompilerPass;
+use crate::diagnostics::{Accumulator, Code, DiagnosticBuilder, MessageKind, Note, Span};
 use crate::lexer::lex::Lexer;
 
 pub type BoxAST<'a> = Box<dyn AST<'a> + 'a>;
 pub type ASTError = String;
-type DB = crate::diagnostics::DiagnosticBuilder;
-const AST_PASS: crate::config::CompilerPass = crate::config::CompilerPass::AST;
+type DB = DiagnosticBuilder;
+const AST_PASS: CompilerPass = CompilerPass::AST;
 
 #[derive(Debug)]
 pub enum ASTResult<'a> {
@@ -47,7 +47,7 @@ pub trait AST<'a>: 'a {
     fn print_on(&self, f: &mut std::fmt::Formatter<'_>, depth: i32) -> std::fmt::Result;
     fn get_ast_id(&self) -> u32;
     fn to_string(&self) -> String;
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span);
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator);
 }
 
 impl<'a> std::fmt::Debug for dyn AST<'a> {
@@ -98,17 +98,9 @@ impl<'a> AST<'a> for GenericTupleOption {
         0
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, Span::default());
         }
     }
 }
@@ -148,21 +140,13 @@ impl<'a> AST<'a> for ProblemExample<'a> {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
 
         for stmt in &self.stmts {
-            stmt.check_poisoning(tokens, diag, span);
+            stmt.check_poisoning(tokens, diag);
         }
     }
 }
@@ -202,21 +186,13 @@ impl<'a> AST<'a> for ProblemSolution<'a> {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
 
         for stmt in &self.stmts {
-            stmt.check_poisoning(tokens, diag, span);
+            stmt.check_poisoning(tokens, diag);
         }
     }
 }
@@ -253,21 +229,13 @@ impl<'a> AST<'a> for ProblemInput<'a> {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
 
         for stmt in &self.stmts {
-            stmt.check_poisoning(tokens, diag, span);
+            stmt.check_poisoning(tokens, diag);
         }
     }
 }
@@ -304,21 +272,13 @@ impl<'a> AST<'a> for ProblemOutput<'a> {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
 
         for stmt in &self.stmts {
-            stmt.check_poisoning(tokens, diag, span);
+            stmt.check_poisoning(tokens, diag);
         }
     }
 }
@@ -356,21 +316,13 @@ impl<'a> AST<'a> for Program<'a> {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
 
         for stmt in &self.stmts {
-            stmt.check_poisoning(tokens, diag, span);
+            stmt.check_poisoning(tokens, diag);
         }
     }
 }
@@ -407,17 +359,9 @@ impl<'a> AST<'a> for Range {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
     }
 }
@@ -452,20 +396,12 @@ impl<'a> AST<'a> for TupleIterator<'a> {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
 
-        let _ = &self.range.check_poisoning(tokens, diag, span);
+        let _ = &self.range.check_poisoning(tokens, diag);
     }
 }
 
@@ -502,21 +438,13 @@ impl<'a> AST<'a> for TupleComprehension<'a> {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
 
         for iter in &self.iter_pair {
-            iter.check_poisoning(tokens, diag, span);
+            iter.check_poisoning(tokens, diag);
         }
     }
 }
@@ -552,21 +480,13 @@ impl<'a> AST<'a> for GenericTuple<'a> {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
 
-        let _ = &self.left.check_poisoning(tokens, diag, span);
-        let _ = &self.right.check_poisoning(tokens, diag, span);
+        let _ = &self.left.check_poisoning(tokens, diag);
+        let _ = &self.right.check_poisoning(tokens, diag);
     }
 }
 
@@ -602,17 +522,9 @@ impl<'a> AST<'a> for Tuple {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
     }
 }
@@ -650,20 +562,12 @@ impl<'a> AST<'a> for Shape<'a> {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
 
-        let _ = &self.values.check_poisoning(tokens, diag, span);
+        let _ = &self.values.check_poisoning(tokens, diag);
     }
 }
 
@@ -699,21 +603,13 @@ impl<'a> AST<'a> for ObjectShape<'a> {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
 
         for shape in &self.shape {
-            shape.check_poisoning(tokens, diag, span);
+            shape.check_poisoning(tokens, diag);
         }
     }
 }
@@ -750,17 +646,9 @@ impl<'a> AST<'a> for ObjectColor {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
     }
 }
@@ -795,21 +683,13 @@ impl<'a> AST<'a> for ObjectDesc<'a> {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
 
-        let _ = &self.shape.check_poisoning(tokens, diag, span);
-        let _ = &self.color.check_poisoning(tokens, diag, span);
+        let _ = &self.shape.check_poisoning(tokens, diag);
+        let _ = &self.color.check_poisoning(tokens, diag);
     }
 }
 
@@ -843,20 +723,12 @@ impl<'a> AST<'a> for ObjectDecl<'a> {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
 
-        let _ = &self.desc.check_poisoning(tokens, diag, span);
+        let _ = &self.desc.check_poisoning(tokens, diag);
     }
 }
 
@@ -893,20 +765,12 @@ impl<'a> AST<'a> for VarDef<'a> {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
 
-        let _ = &self.expr.check_poisoning(tokens, diag, span);
+        let _ = &self.expr.check_poisoning(tokens, diag);
     }
 }
 
@@ -942,21 +806,13 @@ impl<'a> AST<'a> for FuncCall<'a> {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
 
         for expr in &self.exprs {
-            expr.check_poisoning(tokens, diag, span);
+            expr.check_poisoning(tokens, diag);
         }
     }
 }
@@ -993,21 +849,13 @@ impl<'a> AST<'a> for ObjectCall<'a> {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, self.span);
         }
 
         if let Some(t) = &self.tuple {
-            t.check_poisoning(tokens, diag, span);
+            t.check_poisoning(tokens, diag);
         };
     }
 }
@@ -1041,17 +889,9 @@ impl<'a> AST<'a> for RValue {
         0
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
         if self.is_err() {
-            diag.add_diag(
-                DB::build(AST_PASS, Code::E0004)
-                    .with_note(Note::ExpectedASTNode)
-                    .with_args(
-                        MessageKind::Note,
-                        vec![self.to_string(), self.get_ast_id().to_string()],
-                    )
-                    .emmit(tokens, span),
-            );
+            ast_diag!(self, tokens, diag, Span::default());
         }
     }
 }
@@ -1085,15 +925,7 @@ impl<'a> AST<'a> for PoisonedStmt {
         self.unique_ast_id
     }
 
-    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator, span: Span) {
-        diag.add_diag(
-            DB::build(AST_PASS, Code::E0004)
-                .with_note(Note::ExpectedASTNode)
-                .with_args(
-                    MessageKind::Note,
-                    vec![self.to_string(), self.get_ast_id().to_string()],
-                )
-                .emmit(tokens, span),
-        );
+    fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut Accumulator) {
+        ast_diag!(self, tokens, diag, self.span);
     }
 }

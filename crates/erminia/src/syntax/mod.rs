@@ -1,5 +1,5 @@
 use crate::ast::ast::BoxAST;
-use crate::diagnostics::location::Accumulator;
+use crate::diagnostics::Accumulator;
 use crate::lexer::lex::Lexer;
 use crate::syntax::parse::parse_program;
 mod consumers;
@@ -27,5 +27,31 @@ impl<'a> Parser<'a> {
 
     pub fn get_diagnostics(&self) -> &Accumulator {
         &self.diagnostics
+    }
+}
+
+pub mod macros {
+    #[macro_export]
+    macro_rules! parser_diag {
+        ($code:ident, $note:ident, $args:expr, $help:ident, $tokens:expr, $diag:expr, $span:expr) => {{
+            if let Some(dgn) = DB::build(PARSER_PASS, Code::$code)
+                .with_note(Note::$note)
+                .with_args(MessageKind::Note, $args)
+                .with_help(Help::$help)
+                .emmit($tokens, $span)
+            {
+                $diag.add_diag(dgn)
+            }
+        }};
+
+        ($code:ident, $note:ident, $args:expr, $tokens:expr, $diag:expr, $span:expr) => {{
+            if let Some(dgn) = DB::build(PARSER_PASS, Code::$code)
+                .with_note(Note::$note)
+                .with_args(MessageKind::Note, $args)
+                .emmit($tokens, $span)
+            {
+                $diag.add_diag(dgn)
+            }
+        }};
     }
 }
