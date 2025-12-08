@@ -96,7 +96,7 @@ impl PositionalOffset {
     //     self.pos
     // }
 
-    fn get_line(&self) -> usize {
+    pub fn get_line(&self) -> usize {
         self.line
     }
 }
@@ -222,6 +222,12 @@ impl<'input> Lexer<'input> {
 
     pub fn get_extended_snippet(&self, span: Span, before: u8, after: u8) -> &str {
         &self.content[span.start.pos - before as usize..span.end.pos + after as usize]
+    }
+
+    pub fn loop_to_kind(&mut self, kind: TokenKind) {
+        while self.token.get_kind() != kind && self.token.get_kind() != TokenKind::EOF {
+            self.advance();
+        }
     }
 
     fn _return_content(&self, start: PositionalOffset, end: PositionalOffset) -> &str {
@@ -528,8 +534,9 @@ fn get_next_symbol(text: &str, mut pos: PositionalOffset) -> Option<(TokenKind, 
             return None;
         }
         Some(c) if c.is_ascii() => {
-            pos.increment_pos(1);
-            pos.increment_cursor(1);
+            let size = c.len_utf8();
+            pos.increment_pos(size);
+            pos.increment_cursor(size);
             TokenKind::Poisoned
         }
         Some(c) if !c.is_ascii() => {

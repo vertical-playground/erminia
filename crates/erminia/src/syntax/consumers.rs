@@ -49,7 +49,9 @@ pub fn is_next_right_inclusive(
                     .emmit(tokens, span),
             );
 
-            ErminiaType::Poisoned
+            tokens.loop_to_kind(TokenKind::SemiColon);
+
+            return ErminiaType::Poisoned;
         }
     };
 
@@ -89,7 +91,9 @@ pub fn is_next_left_inclusive(
                     .emmit(tokens, span),
             );
 
-            ErminiaType::Poisoned
+            tokens.loop_to_kind(TokenKind::SemiColon);
+
+            return ErminiaType::Poisoned;
         }
     };
 
@@ -160,7 +164,9 @@ pub fn consume_data_type(
                     .emmit(tokens, span),
             );
 
-            ErminiaType::Poisoned
+            tokens.loop_to_kind(TokenKind::SemiColon);
+
+            return ErminiaType::Poisoned;
         }
     };
 
@@ -189,7 +195,9 @@ pub fn consume_int_const(
                 .emmit(tokens, span),
         );
 
-        ErminiaType::Poisoned
+        tokens.loop_to_kind(TokenKind::SemiColon);
+
+        return ErminiaType::Poisoned;
     };
 
     tokens.advance();
@@ -217,7 +225,9 @@ pub fn consume_identifier(
                     .emmit(tokens, span),
             );
 
-            ErminiaType::Poisoned
+            tokens.loop_to_kind(TokenKind::SemiColon);
+
+            return ErminiaType::Poisoned;
         }
     };
 
@@ -263,7 +273,9 @@ pub fn consume_keyword(
                 .emmit(tokens, span),
         );
 
-        ErminiaType::Poisoned
+        tokens.loop_to_kind(TokenKind::SemiColon);
+
+        return ErminiaType::Poisoned;
     };
 
     tokens.advance();

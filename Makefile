@@ -13,6 +13,10 @@ fmt:
 test:
 	cargo test --all-features
 
+.PHONY: test-timeout
+test-timeout:
+	cargo test -- -Zunstable-options --ensure-time
+
 .PHONY: cov
 cov:
 	cargo llvm-cov

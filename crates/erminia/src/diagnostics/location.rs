@@ -26,7 +26,6 @@ impl Span {
 pub struct DiagnosticWindow {
     pub span: Span,
     pub snippet: String,
-    pub extented_snippet: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -81,9 +80,9 @@ impl fmt::Display for Diagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(
             f,
-            " {}[{}] {}",
-            self.level,
+            " [{}]{} {}",
             self.code.to_string().red().bold(),
+            self.level,
             self.message.bold()
         )?;
         writeln!(f, "  {} {:?}", "pass:".dimmed(), self.pass)?;
@@ -91,19 +90,22 @@ impl fmt::Display for Diagnostic {
         if self.pass != CompilerPass::Internal {
             writeln!(
                 f,
-                "  {} {}..{}",
+                "  {}{}:{}::{}",
                 "span:".dimmed(),
-                self.window.span.start,
-                self.window.span.end
+                self.window.span.start.get_line(),
+                self.window.span.start.get_cursor(),
+                self.window.span.end.get_cursor()
             )?;
         }
 
         writeln!(f, "  │")?;
-        for line in self.window.extented_snippet.lines() {
-            writeln!(f, "  │   {}", line.dimmed())?;
-        }
         for line in self.window.snippet.lines() {
-            writeln!(f, "  │   {}", line)?;
+            writeln!(
+                f,
+                "{} │   {}",
+                self.window.span.start.get_line().to_string().green().bold(),
+                line.dimmed()
+            )?;
         }
         writeln!(f, "  │")?;
 
@@ -197,11 +199,9 @@ pub fn create_diagnostic(
     let level = DiagnosticLevel::from_code(&code);
     let message = String::from_code(&code);
     let snippet = tokens.get_snippet(span);
-    let extended_snippet = tokens.get_extended_snippet(span, 0, 0);
     let window = DiagnosticWindow {
         span,
         snippet: snippet.to_string(),
-        extented_snippet: extended_snippet.to_string(),
     };
 
     Diagnostic::new(level, code, pass, message, window)
