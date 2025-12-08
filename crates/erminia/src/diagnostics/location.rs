@@ -1,18 +1,23 @@
-use crate::lexer::token::Position;
+use crate::lexer::lex::PositionalOffset;
 
 // ==================================================================================== //
-// Location Struct                                                                      //
+// Structs                                                                              //
 // ==================================================================================== //
 
-#[derive(Debug)]
-pub struct Location {
-    _position: Position,
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Span {
+    pub start: PositionalOffset,
+    pub end: PositionalOffset,
 }
 
-impl Location {
-    pub fn new(position: Position) -> Self {
-        Location {
-            _position: position,
-        }
+impl Span {
+    pub fn new(start: PositionalOffset, end: PositionalOffset) -> Self {
+        Span { start, end }
     }
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct DiagnosticWindow {
+    pub span: Span,
+    pub snippet: String,
 }

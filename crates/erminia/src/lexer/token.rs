@@ -1,5 +1,3 @@
-use crate::diagnostics::location::Location;
-use crate::error::lexer_error::LexerError;
 use std::fmt;
 
 // ==================================================================================== //
@@ -33,7 +31,6 @@ impl Identifier for &str {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenKind {
-    Error,
     Plus,
     Minus,
     Increment,
@@ -82,13 +79,13 @@ pub enum TokenKind {
     String,
     EOF,
     START,
+    Poisoned,
 }
 
 impl fmt::Display for TokenKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match *self {
             TokenKind::START => "[START]",
-            TokenKind::Error => "[ERROR]",
             TokenKind::ProblemDef => "def",
             TokenKind::LetKwd => "let",
             TokenKind::Object => "object",
@@ -136,6 +133,7 @@ impl fmt::Display for TokenKind {
             TokenKind::Ident => "[IDENT]",
             TokenKind::String => "[STRING]",
             TokenKind::EOF => "[EOF]",
+            TokenKind::Poisoned => "[POISONED]",
         };
 
         fmt::Display::fmt(s, f)
@@ -143,7 +141,7 @@ impl fmt::Display for TokenKind {
 }
 
 impl std::str::FromStr for TokenKind {
-    type Err = LexerError;
+    type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let token = match s {
@@ -198,7 +196,7 @@ impl std::str::FromStr for TokenKind {
                 } else if s.is_valid_indentifier() {
                     TokenKind::Ident
                 } else {
-                    return Err(LexerError::TokenError(Location::new(Position::default())));
+                    return Err(format!("Unknown token kind: {}", s));
                 }
             }
         };

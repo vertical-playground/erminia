@@ -1,8 +1,7 @@
 use std::fmt;
 use std::str::FromStr;
 
-use crate::diagnostics::location::Location;
-use crate::error::lexer_error::{LexerError, LexerResult};
+use crate::diagnostics::location::*;
 use crate::lexer::token::*;
 
 static KEYWORDS: [&str; 10] = [
@@ -27,7 +26,7 @@ static KEYWORDS: [&str; 10] = [
 // Positional Offset Struct                                                             //
 // ==================================================================================== //
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PositionalOffset {
     pos: usize,
     cursor: usize,
@@ -89,7 +88,7 @@ impl PositionalOffset {
     //     self.line = 1;
     // }
 
-    fn get_cursor(&self) -> usize {
+    pub fn get_cursor(&self) -> usize {
         self.pos
     }
 
@@ -97,7 +96,7 @@ impl PositionalOffset {
     //     self.pos
     // }
 
-    fn get_line(&self) -> usize {
+    pub fn get_line(&self) -> usize {
         self.line
     }
 }
@@ -120,7 +119,9 @@ impl fmt::Display for PositionalOffset {
 pub struct Lexer<'input> {
     content: &'input str,
     start: PositionalOffset,
+    previous: PositionalOffset,
     pub token: Token<'input>,
+    poisoned: bool,
 }
 
 impl<'input> Lexer<'input> {
@@ -128,7 +129,9 @@ impl<'input> Lexer<'input> {
         Lexer {
             content,
             start: PositionalOffset::default(),
+            previous: PositionalOffset::default(),
             token: Token::default(),
+            poisoned: false,
         }
     }
 
@@ -136,63 +139,60 @@ impl<'input> Lexer<'input> {
         self.token
     }
 
-    pub fn advance(&mut self) -> LexerResult<()> {
+    pub fn advance(&mut self) {
         let start_pos = trim_starting_whitespace(self.content, self.start);
 
-        let (kind, end_pos) = get_next_token_kind(self.content, start_pos)?;
+        let (kind, end_pos) = get_next_token_kind(self.content, start_pos);
 
         let lexeme = &self.content[start_pos.pos..end_pos.pos];
 
         let token = Token::new(kind, lexeme, start_pos.get_line(), start_pos.get_cursor());
 
         self.start = end_pos;
+        self.previous = start_pos;
 
         self.token = token;
-
-        Ok(())
     }
 
-    pub fn lookahead_by(&self, val: i8) -> LexerResult<TokenKind> {
+    pub fn lookahead_by(&self, val: i8) -> TokenKind {
         let mut next_start = trim_starting_whitespace(self.content, self.start);
         let mut kind;
-        (kind, next_start) = get_next_token_kind(self.content, next_start)?;
+        (kind, next_start) = get_next_token_kind(self.content, next_start);
 
         for _ in 0..val {
             next_start = trim_starting_whitespace(self.content, next_start);
 
-            (kind, next_start) = get_next_token_kind(self.content, next_start)?;
+            (kind, next_start) = get_next_token_kind(self.content, next_start);
         }
 
-        Ok(kind)
+        kind
     }
 
-    pub fn lookahead(&self) -> LexerResult<(TokenKind, PositionalOffset)> {
+    pub fn lookahead(&self) -> (TokenKind, PositionalOffset) {
         let start_pos = trim_starting_whitespace(self.content, self.start);
 
-        let (kind, end_pos) = get_next_token_kind(self.content, start_pos)?;
+        let (kind, end_pos) = get_next_token_kind(self.content, start_pos);
 
-        Ok((kind, end_pos))
+        (kind, end_pos)
     }
 
-    pub fn lookahead2(
-        &self,
-    ) -> LexerResult<(TokenKind, TokenKind, PositionalOffset, PositionalOffset)> {
+    pub fn lookahead2(&self) -> (TokenKind, TokenKind, PositionalOffset, PositionalOffset) {
         let first_start_pos = trim_starting_whitespace(self.content, self.start);
 
-        let (first, first_end_pos) = get_next_token_kind(self.content, first_start_pos)?;
+        let (first, first_end_pos) = get_next_token_kind(self.content, first_start_pos);
 
         let second_start_pos = trim_starting_whitespace(self.content, first_end_pos);
 
-        let (second, second_end_pos) = get_next_token_kind(self.content, second_start_pos)?;
+        let (second, second_end_pos) = get_next_token_kind(self.content, second_start_pos);
 
-        Ok((first, second, first_end_pos, second_end_pos))
+        (first, second, first_end_pos, second_end_pos)
     }
 
-    pub fn lex_with_separate_pass(&mut self) -> LexerResult<Vec<Token<'_>>> {
+    pub fn lex_with_separate_pass(&mut self) -> Vec<Token<'_>> {
         let mut tokens: Vec<Token> = Vec::new();
 
         loop {
-            let (token, pos) = &_advance(self.content, self.start)?;
+            let (token, pos) = &_advance(self.content, self.start);
 
             self.set_start(*pos);
 
@@ -203,11 +203,48 @@ impl<'input> Lexer<'input> {
             }
         }
 
-        Ok(tokens)
+        tokens
     }
 
     fn set_start(&mut self, pos: PositionalOffset) {
         self.start = pos
+    }
+
+    pub fn get_position(&self) -> PositionalOffset {
+        self.start
+    }
+
+    pub fn get_previous_position(&self) -> PositionalOffset {
+        self.previous
+    }
+
+    pub fn get_snippet(&self, span: Span) -> &str {
+        self._return_content(span.start, span.end)
+    }
+
+    pub fn get_extended_snippet(&self, span: Span, before: u8, after: u8) -> &str {
+        &self.content[span.start.pos - before as usize..span.end.pos + after as usize]
+    }
+
+    pub fn loop_to_kind(&mut self, kind: TokenKind) {
+        while self.is_poisoned()
+            && self.token.get_kind() != kind
+            && self.token.get_kind() != TokenKind::EOF
+        {
+            self.advance();
+        }
+    }
+
+    fn _return_content(&self, start: PositionalOffset, end: PositionalOffset) -> &str {
+        &self.content[start.pos..end.pos]
+    }
+
+    pub fn is_poisoned(&self) -> bool {
+        self.poisoned
+    }
+
+    pub fn set_poisoned(&mut self, val: bool) {
+        self.poisoned = val;
     }
 }
 
@@ -215,16 +252,16 @@ impl<'input> Lexer<'input> {
 // Lexer Utilities                                                                      //
 // ==================================================================================== //
 
-fn _advance(text: &str, po: PositionalOffset) -> LexerResult<(Token<'_>, PositionalOffset)> {
+fn _advance(text: &str, po: PositionalOffset) -> (Token<'_>, PositionalOffset) {
     let start_pos = trim_starting_whitespace(text, po);
 
-    let (kind, end_pos) = get_next_token_kind(text, start_pos)?;
+    let (kind, end_pos) = get_next_token_kind(text, start_pos);
 
     let lexeme = &text[start_pos.pos..end_pos.pos];
 
     let token = Token::new(kind, lexeme, start_pos.get_line(), start_pos.get_cursor());
 
-    Ok((token, end_pos))
+    (token, end_pos)
 }
 
 fn trim_starting_whitespace(text: &str, mut pos: PositionalOffset) -> PositionalOffset {
@@ -255,11 +292,11 @@ fn trim_starting_whitespace(text: &str, mut pos: PositionalOffset) -> Positional
     pos
 }
 
-fn slice_from_position(text: &str, pos: PositionalOffset) -> LexerResult<&str> {
+fn slice_from_position(text: &str, pos: PositionalOffset) -> &str {
     if pos.pos > text.len() {
-        Err(LexerError::TokenError(Location::new(Position::default())))
+        ""
     } else {
-        Ok(&text[pos.pos..])
+        &text[pos.pos..]
     }
 }
 
@@ -274,12 +311,7 @@ fn get_next_keyword(
         if starting_text.starts_with(kwd) {
             pos.increment_pos(kwd.len());
             pos.increment_cursor(kwd.len());
-            let next_text = match slice_from_position(text, pos) {
-                Ok(text) => text,
-                Err(_) => {
-                    return Some((TokenKind::from_str(kwd).expect(""), pos));
-                }
-            };
+            let next_text = slice_from_position(text, pos);
             let mut chars = next_text.chars();
             let c = chars.next();
 
@@ -302,10 +334,7 @@ fn get_next_keyword(
     None
 }
 
-fn get_next_symbol(
-    text: &str,
-    mut pos: PositionalOffset,
-) -> LexerResult<Option<(TokenKind, PositionalOffset)>> {
+fn get_next_symbol(text: &str, mut pos: PositionalOffset) -> Option<(TokenKind, PositionalOffset)> {
     let starting_text = &text[pos.pos..];
 
     let mut chars = starting_text.chars();
@@ -363,7 +392,7 @@ fn get_next_symbol(
         Some('<') => {
             let next = chars.next();
 
-            let token = if matches!(next, Some('<')) {
+            if matches!(next, Some('<')) {
                 pos.increment_pos(2);
                 pos.increment_cursor(2);
                 TokenKind::ShiftLeft
@@ -372,13 +401,10 @@ fn get_next_symbol(
                 pos.increment_cursor(2);
                 TokenKind::LeftArrow
             } else {
-                println!("{:?}", next);
                 pos.increment_pos(1);
                 pos.increment_cursor(1);
                 TokenKind::Lesser
-            };
-
-            token
+            }
         }
         Some('>') => {
             if matches!(chars.next(), Some('>')) {
@@ -507,15 +533,37 @@ fn get_next_symbol(
             if string_flag {
                 TokenKind::String
             } else {
-                return Err(LexerError::UnfinishedStringError(Location::new(
-                    Position::default(),
-                )));
+                // We got to the end of the text without closing the string
+                TokenKind::String
             }
         }
-        _ => TokenKind::EOF,
+        Some(' ') | Some('\t') | Some('\n') | Some('\r') => {
+            return None;
+        }
+        Some(c) if c.is_alphabetic() => {
+            return None;
+        }
+        Some(c) if c.is_numeric() => {
+            return None;
+        }
+        Some(c) if c.is_ascii() => {
+            let size = c.len_utf8();
+            pos.increment_pos(size);
+            pos.increment_cursor(size);
+            TokenKind::Poisoned
+        }
+        Some(c) if !c.is_ascii() => {
+            let size = c.len_utf8();
+            pos.increment_pos(size);
+            pos.increment_cursor(size);
+            TokenKind::Poisoned
+        }
+        _ => {
+            return None;
+        }
     };
 
-    Ok(Some((token, pos)))
+    Some((token, pos))
 }
 
 fn get_next_ident(text: &str, mut pos: PositionalOffset) -> Option<(TokenKind, PositionalOffset)> {
@@ -615,31 +663,28 @@ fn get_next_numeric(
     }
 }
 
-fn get_next_token_kind(
-    text: &str,
-    pos: PositionalOffset,
-) -> LexerResult<(TokenKind, PositionalOffset)> {
+fn get_next_token_kind(text: &str, pos: PositionalOffset) -> (TokenKind, PositionalOffset) {
     // it's a keywords
     if let Some((token, pos)) = get_next_keyword(text, &KEYWORDS, pos) {
-        return Ok((token, pos));
+        return (token, pos);
     }
 
     // it's a ident
     if let Some((token, pos)) = get_next_ident(text, pos) {
-        return Ok((token, pos));
+        return (token, pos);
     }
 
     // it's a numeric
     if let Some((token, pos)) = get_next_numeric(text, pos) {
-        return Ok((token, pos));
+        return (token, pos);
     }
 
     // it's a symbol
-    if let Some((token, pos)) = get_next_symbol(text, pos)? {
-        return Ok((token, pos));
+    if let Some((token, pos)) = get_next_symbol(text, pos) {
+        return (token, pos);
     }
 
-    Ok((TokenKind::EOF, pos))
+    (TokenKind::EOF, pos)
 }
 
 // ==================================================================================== //
@@ -652,7 +697,7 @@ mod test {
 
     fn check_lex(text: &str, expected: Vec<Token>) {
         let mut lexer = Lexer::new(text);
-        let actual = lexer.lex_with_separate_pass().expect("");
+        let actual = lexer.lex_with_separate_pass();
 
         assert_eq!(expected, actual);
     }
@@ -690,13 +735,12 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
     fn test_lex_unfinished_string() {
         let text = "\"hello";
 
         let expected: Vec<Token> = vec![
-            Token::new(TokenKind::String, "\"poustiiiii hliaaaa\"", 1, 0),
-            Token::new(TokenKind::EOF, "", 1, 20),
+            Token::new(TokenKind::String, "\"hello", 1, 0),
+            Token::new(TokenKind::EOF, "", 1, 6),
         ];
 
         check_lex(text, expected);
@@ -760,6 +804,19 @@ mod test {
         let expected: Vec<Token> = vec![
             Token::new(TokenKind::LeftArrow, "<-", 1, 0),
             Token::new(TokenKind::EOF, "", 1, 2),
+        ];
+
+        check_lex(text, expected);
+    }
+
+    #[test]
+    fn test_poisoned_token() {
+        let text = "@   object";
+
+        let expected: Vec<Token> = vec![
+            Token::new(TokenKind::Poisoned, "@", 1, 0),
+            Token::new(TokenKind::Object, "object", 1, 4),
+            Token::new(TokenKind::EOF, "", 1, 10),
         ];
 
         check_lex(text, expected);
