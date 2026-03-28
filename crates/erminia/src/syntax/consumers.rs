@@ -1,5 +1,7 @@
 use crate::config::CompilerPass;
-use crate::diagnostics::{Accumulator, Code, DiagnosticBuilder, Help, MessageKind, Note, Span};
+use crate::diagnostics::{
+    Code, DiagnosticAccumulator, DiagnosticBuilder, Help, MessageKind, Note, Span,
+};
 use crate::lexer::lex::Lexer;
 use crate::lexer::lex::PositionalOffset;
 use crate::lexer::token::TokenKind;
@@ -17,7 +19,7 @@ const LEXER_PASS: CompilerPass = CompilerPass::Lexer;
 
 pub fn is_next_right_inclusive(
     tokens: &mut Lexer,
-    diag: &mut Accumulator,
+    diag: &mut DiagnosticAccumulator,
     start: PositionalOffset,
 ) -> ErminiaType {
     if tokens.is_poisoned() {
@@ -71,7 +73,7 @@ pub fn is_next_right_inclusive(
 
 pub fn is_next_left_inclusive(
     tokens: &mut Lexer,
-    diag: &mut Accumulator,
+    diag: &mut DiagnosticAccumulator,
     start: PositionalOffset,
 ) -> ErminiaType {
     if tokens.is_poisoned() {
@@ -155,7 +157,7 @@ pub fn match_next(tokens: &mut Lexer, matched: TokenKind) -> bool {
 // TODO: handle tuple & list types
 pub fn consume_data_type(
     tokens: &mut Lexer,
-    diag: &mut Accumulator,
+    diag: &mut DiagnosticAccumulator,
     start: PositionalOffset,
 ) -> ErminiaType {
     if tokens.is_poisoned() {
@@ -208,7 +210,7 @@ pub fn consume_data_type(
 
 pub fn consume_int_const(
     tokens: &mut Lexer,
-    diag: &mut Accumulator,
+    diag: &mut DiagnosticAccumulator,
     start: PositionalOffset,
 ) -> ErminiaType {
     if tokens.is_poisoned() {
@@ -246,7 +248,7 @@ pub fn consume_int_const(
 
 pub fn consume_identifier(
     tokens: &mut Lexer,
-    diag: &mut Accumulator,
+    diag: &mut DiagnosticAccumulator,
     start: PositionalOffset,
 ) -> ErminiaType {
     if tokens.is_poisoned() {
@@ -286,7 +288,7 @@ pub fn consume_identifier(
 pub fn consume_keyword(
     tokens: &mut Lexer,
     expected: TokenKind,
-    diag: &mut Accumulator,
+    diag: &mut DiagnosticAccumulator,
     start: PositionalOffset,
 ) -> ErminiaType {
     if tokens.is_poisoned() {

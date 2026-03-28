@@ -16,7 +16,7 @@ pub mod macros {
         }};
 
         ($code:ident, $note:ident, $args:expr, $tokens:expr, $diag:expr, $span:expr) => {{
-            if let Some(dgn) = DB::build(PARSER_PASS, Code::$code)
+            if let Some(dgn) = DB::build(LEXER_PASS, Code::$code)
                 .with_note(Note::$note)
                 .with_args(MessageKind::Note, $args)
                 .emmit($tokens, $span)

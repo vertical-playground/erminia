@@ -18,7 +18,7 @@ pub struct Diagnostic {
 }
 
 #[derive(Debug, Clone)]
-pub struct Accumulator {
+pub struct DiagnosticAccumulator {
     pub diagnostics: Vec<Diagnostic>,
 }
 
@@ -54,12 +54,12 @@ impl fmt::Display for Diagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(
             f,
-            " [{}]{} {}",
+            " [{}] {} {}",
             self.code.to_string().red().bold(),
             self.level,
             self.message.bold()
         )?;
-        writeln!(f, "  {} {:?}", "pass:".dimmed(), self.pass)?;
+        writeln!(f, "  {} {}", "pass:".dimmed(), self.pass)?;
 
         if self.pass != CompilerPass::Internal {
             writeln!(
@@ -96,9 +96,9 @@ impl fmt::Display for Diagnostic {
     }
 }
 
-impl Accumulator {
+impl DiagnosticAccumulator {
     pub fn new() -> Self {
-        Accumulator {
+        DiagnosticAccumulator {
             diagnostics: Vec::new(),
         }
     }
@@ -140,7 +140,7 @@ impl Accumulator {
     }
 }
 
-impl fmt::Display for Accumulator {
+impl fmt::Display for DiagnosticAccumulator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for d in &self.diagnostics {
             writeln!(f, "{}", d)?;
@@ -150,7 +150,7 @@ impl fmt::Display for Accumulator {
     }
 }
 
-impl Default for Accumulator {
+impl Default for DiagnosticAccumulator {
     fn default() -> Self {
         Self::new()
     }

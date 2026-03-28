@@ -20,7 +20,12 @@ fn main() -> io::Result<()> {
         let program = parser.parse();
 
         if program.is_err() {
-            eprintln!("Error: {:?}", parser.get_diagnostics());
+            for diag in parser
+                .get_diagnostics()
+                .get(erminia::config::CompilerPass::Parser)
+            {
+                eprintln!("{}", diag);
+            }
             continue;
         }
 

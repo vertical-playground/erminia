@@ -6,6 +6,6 @@ pub mod messages;
 
 pub use builder::DiagnosticBuilder;
 pub use code::Code;
-pub use diagnostic::{create_diagnostic, Accumulator, Diagnostic};
+pub use diagnostic::{create_diagnostic, Diagnostic, DiagnosticAccumulator};
 pub use location::{DiagnosticWindow, Span};
 pub use messages::{Help, MessageKind, Note};

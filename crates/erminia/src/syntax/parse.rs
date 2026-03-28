@@ -3,7 +3,9 @@ use crate::ast::ast::BoxAST;
 use crate::ast::expr::*;
 use crate::ast::stmt::*;
 use crate::config::CompilerPass;
-use crate::diagnostics::{Accumulator, Code, DiagnosticBuilder, Help, MessageKind, Note, Span};
+use crate::diagnostics::{
+    Code, DiagnosticAccumulator, DiagnosticBuilder, Help, MessageKind, Note, Span,
+};
 use crate::lexer::lex::Lexer;
 use crate::lexer::lex::PositionalOffset;
 use crate::lexer::token::TokenKind;
@@ -21,7 +23,7 @@ const PARSER_PASS: CompilerPass = CompilerPass::Parser;
 // <expr> ::= <object_call> | <id> | <int_const>
 fn parse_expr<'a>(
     tokens: &mut Lexer,
-    diag: &mut Accumulator,
+    diag: &mut DiagnosticAccumulator,
     start: PositionalOffset,
 ) -> BoxAST<'a> {
     let kind = tokens.peek().get_kind();
@@ -59,7 +61,7 @@ fn parse_expr<'a>(
 // <list_of_exprs> ::= <expr> ("," <expr>)*
 fn parse_list_of_exprs<'a>(
     tokens: &mut Lexer,
-    diag: &mut Accumulator,
+    diag: &mut DiagnosticAccumulator,
 ) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>) {
     let mut syntax: Vec<ErminiaType> = vec![];
 
@@ -83,7 +85,7 @@ fn parse_list_of_exprs<'a>(
 }
 
 // <func_call> ::= <id> "(" [<list_of_exprs>] ")" ";"
-fn parse_func_call<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_func_call<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -109,7 +111,7 @@ fn parse_func_call<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a>
 }
 
 // <inner_stmt> ::= <object_decl> | <var_def> | <func_call>
-fn parse_inner_stmt<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_inner_stmt<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let kind = tokens.peek().get_kind();
 
     match kind {
@@ -123,7 +125,10 @@ fn parse_inner_stmt<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a
 }
 
 // <inner_stmt_list> ::= (<inner_stmt>)*
-fn parse_inner_stmt_list<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Vec<BoxAST<'a>> {
+fn parse_inner_stmt_list<'a>(
+    tokens: &mut Lexer,
+    diag: &mut DiagnosticAccumulator,
+) -> Vec<BoxAST<'a>> {
     let mut stmts: Vec<BoxAST> = vec![];
     while next_is_stmt(tokens) {
         let stmt = parse_inner_stmt(tokens, diag);
@@ -135,7 +140,7 @@ fn parse_inner_stmt_list<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Vec<
 // <inner_compound_stmt> ::= "{" [<inner_stmt_list>] "}"
 fn parse_inner_compound_stmt<'a>(
     tokens: &mut Lexer,
-    diag: &mut Accumulator,
+    diag: &mut DiagnosticAccumulator,
 ) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>) {
     let mut syntax: Vec<ErminiaType> = vec![];
 
@@ -149,7 +154,7 @@ fn parse_inner_compound_stmt<'a>(
 
 // TODO: handle type inference
 // <var_def> ::= "let" <id> ":" <data_type> "=" <expr> ";"
-fn parse_var_def<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_var_def<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -182,7 +187,7 @@ fn parse_var_def<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
 }
 
 // <range> ::= ("[" | "(") <int_const> ".." <int_const> ("]" | ")")
-fn parse_range<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_range<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -212,7 +217,7 @@ fn parse_range<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
 }
 
 // <shape_tuple_iter> ::= <id> "<-" <range>
-fn parse_shape_tuple_iter<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_shape_tuple_iter<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -231,7 +236,7 @@ fn parse_shape_tuple_iter<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Box
 // <shape_tuple_iter_pair> ::= <shape_tuple_iter> ("," <shape_tuple_iter>)
 fn parse_shape_tuple_iter_pair<'a>(
     tokens: &mut Lexer,
-    diag: &mut Accumulator,
+    diag: &mut DiagnosticAccumulator,
 ) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>) {
     let mut syntax: Vec<ErminiaType> = vec![];
 
@@ -253,7 +258,7 @@ fn parse_shape_tuple_iter_pair<'a>(
 }
 
 // <shape_tuple_compr> ::= <shape_tuple> "|" <shape_tuple_iter_pair>
-fn parse_shape_tuple_compr<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_shape_tuple_compr<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -273,7 +278,7 @@ fn parse_shape_tuple_compr<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Bo
 }
 
 // <object_call> ::= <id> <shape_tuple>
-fn parse_object_call<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_object_call<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -299,7 +304,10 @@ fn parse_object_call<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'
 }
 
 // <shape_tuple_generic> ::= "(" (<int_const> | <id>) "," (<int_const> | <id>) ")"
-fn parse_shape_tuple_generic<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_shape_tuple_generic<'a>(
+    tokens: &mut Lexer,
+    diag: &mut DiagnosticAccumulator,
+) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -362,7 +370,7 @@ fn parse_shape_tuple_generic<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> 
 }
 
 // <shape_tuple> ::= "(" <int_const> "," <int_const> ")"
-fn parse_shape_tuple<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_shape_tuple<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -385,7 +393,7 @@ fn parse_shape_tuple<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'
 }
 
 // <shape> ::= <shape_tuple> | <shape_tuple_compr> | <object_call> | <id>
-fn parse_shape<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_shape<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let kind = tokens.peek().get_kind();
 
     match kind {
@@ -422,7 +430,7 @@ fn parse_shape<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
 }
 
 // <object_color> ::= "color" ":" <int_const>
-fn parse_object_color<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_object_color<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -442,7 +450,7 @@ fn parse_object_color<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<
 // <list_of_shapes> ::= "[" <shape> ("," <shape>)* "]"
 fn parse_list_of_shapes<'a>(
     tokens: &mut Lexer,
-    diag: &mut Accumulator,
+    diag: &mut DiagnosticAccumulator,
 ) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>) {
     let mut syntax: Vec<ErminiaType> = vec![];
 
@@ -474,7 +482,7 @@ fn parse_list_of_shapes<'a>(
 }
 
 // <object_shape> ::= "shape" ":" <list_of_shapes>
-fn parse_object_shape<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_object_shape<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -494,7 +502,7 @@ fn parse_object_shape<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<
 }
 
 // <object_desc> ::= <object_shape> "," <object_color> | <object_color> "," <object_shape>
-fn parse_object_desc<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_object_desc<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let kind = tokens.peek().get_kind();
@@ -536,7 +544,7 @@ fn parse_object_desc<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'
 }
 
 // <example_decl> ::= "example" <id> '(' <int_const> ')' <inner_compound_stmt> ';'
-fn parse_problem_example<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_problem_example<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -571,7 +579,7 @@ fn parse_problem_example<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxA
 }
 
 // <problem_solution> ::= "solution" <id> '(' <int_const> ')' <inner_compound_stmt> ';'
-fn parse_problem_solution<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_problem_solution<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -606,7 +614,7 @@ fn parse_problem_solution<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Box
 }
 
 // <problem_input> ::= "input" <id> <tuple> <inner_compound_stmt> ';'
-fn parse_problem_input<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_problem_input<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -637,7 +645,7 @@ fn parse_problem_input<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST
 }
 
 // <problem_output> ::= "output" <id> <tuple> <inner_compound_stmt> ';'
-fn parse_problem_output<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_problem_output<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
     let start = tokens.get_previous_position();
 
@@ -670,7 +678,7 @@ fn parse_problem_output<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAS
 // <problem_input> | <problem_output>
 fn parse_stmt<'a>(
     tokens: &mut Lexer,
-    diag: &mut Accumulator,
+    diag: &mut DiagnosticAccumulator,
     start: PositionalOffset,
 ) -> BoxAST<'a> {
     let kind = tokens.peek().get_kind();
@@ -711,7 +719,7 @@ fn parse_stmt<'a>(
 }
 
 // <stmts_list> ::= (<stmt>)*
-fn parse_stmt_list<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Vec<BoxAST<'a>> {
+fn parse_stmt_list<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> Vec<BoxAST<'a>> {
     let mut stmts: Vec<BoxAST> = vec![];
 
     let start = tokens.get_previous_position();
@@ -727,7 +735,7 @@ fn parse_stmt_list<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> Vec<BoxAST
 // <object_compound_desc> ::= "{" <object_desc> "}"
 fn parse_object_compound_desc<'a>(
     tokens: &mut Lexer,
-    diag: &mut Accumulator,
+    diag: &mut DiagnosticAccumulator,
 ) -> (BoxAST<'a>, Vec<ErminiaType>) {
     let mut syntax: Vec<ErminiaType> = vec![];
 
@@ -740,7 +748,7 @@ fn parse_object_compound_desc<'a>(
 }
 
 // <object_decl> ::= "object" <id> <object_compound_desc> ";"
-fn parse_object_decl<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_object_decl<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -768,7 +776,7 @@ fn parse_object_decl<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'
 // <compound_stmt> ::= "{" [<stmt_list>] "}"
 fn parse_compound_stmt<'a>(
     tokens: &mut Lexer,
-    diag: &mut Accumulator,
+    diag: &mut DiagnosticAccumulator,
 ) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>) {
     let mut syntax: Vec<ErminiaType> = vec![];
 
@@ -784,7 +792,7 @@ fn parse_compound_stmt<'a>(
 }
 
 // <problem_declaration> ::= "def" <id> "(" <int_const> ")" <compound_stmt>
-fn parse_problem_decl<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+fn parse_problem_decl<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -815,7 +823,7 @@ fn parse_problem_decl<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<
 }
 
 // <program> ::= <problem_declaration>
-pub fn parse_program<'a>(tokens: &mut Lexer, diag: &mut Accumulator) -> BoxAST<'a> {
+pub fn parse_program<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     tokens.advance();
 
     let program = parse_problem_decl(tokens, diag);
@@ -833,10 +841,10 @@ mod test {
 
     fn check_no_err_single_ast<'a, F>(text: &'a str, parser: F)
     where
-        F: FnOnce(&mut Lexer, &mut Accumulator) -> BoxAST<'a>,
+        F: FnOnce(&mut Lexer, &mut DiagnosticAccumulator) -> BoxAST<'a>,
     {
         let mut tokens = Lexer::new(text);
-        let mut diag = Accumulator::new();
+        let mut diag = DiagnosticAccumulator::new();
 
         tokens.advance();
 
@@ -854,10 +862,10 @@ mod test {
 
     // fn check_no_err_multiple_ast<'a, F>(text: &'a str, parser: F)
     // where
-    //     F: FnOnce(&mut Lexer, &mut Accumulator) -> Vec<BoxAST<'a>>,
+    //     F: FnOnce(&mut Lexer, &mut DiagnosticAccumulator) -> Vec<BoxAST<'a>>,
     // {
     //     let mut tokens = Lexer::new(text);
-    //     let mut diag = Accumulator::new();
+    //     let mut diag = DiagnosticAccumulator::new();
     //
     //     tokens.advance();
     //
@@ -879,10 +887,10 @@ mod test {
     //     text: &'a str,
     //     parser: F,
     // ) where
-    //     F: FnOnce(&mut Lexer, &mut Accumulator) -> (BoxAST<'a>, Vec<ErminiaType>),
+    //     F: FnOnce(&mut Lexer, &mut DiagnosticAccumulator) -> (BoxAST<'a>, Vec<ErminiaType>),
     // {
     //     let mut tokens = Lexer::new(text);
-    //     let mut diag = Accumulator::new();
+    //     let mut diag = DiagnosticAccumulator::new();
     //
     //     tokens.advance();
     //
@@ -900,10 +908,10 @@ mod test {
 
     fn check_no_err_multiple_ast_with_syntax_ret<'a, F>(text: &'a str, parser: F)
     where
-        F: FnOnce(&mut Lexer, &mut Accumulator) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>),
+        F: FnOnce(&mut Lexer, &mut DiagnosticAccumulator) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>),
     {
         let mut tokens = Lexer::new(text);
-        let mut diag = Accumulator::new();
+        let mut diag = DiagnosticAccumulator::new();
 
         tokens.advance();
 
@@ -921,7 +929,7 @@ mod test {
 
     fn check_type(text: &str, expected_type: ErminiaType) {
         let mut tokens = Lexer::new(text);
-        let mut diag = Accumulator::new();
+        let mut diag = DiagnosticAccumulator::new();
 
         let start = tokens.get_previous_position();
 
