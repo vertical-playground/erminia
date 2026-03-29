@@ -101,7 +101,6 @@ impl<'a> AST<'a> for GenericTupleOption {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -151,7 +150,6 @@ impl<'a> AST<'a> for ProblemExample<'a> {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -205,7 +203,6 @@ impl<'a> AST<'a> for ProblemSolution<'a> {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -256,7 +253,6 @@ impl<'a> AST<'a> for ProblemInput<'a> {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -307,7 +303,6 @@ impl<'a> AST<'a> for ProblemOutput<'a> {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -359,7 +354,6 @@ impl<'a> AST<'a> for Program<'a> {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -410,7 +404,6 @@ impl<'a> AST<'a> for Range {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -455,7 +448,6 @@ impl<'a> AST<'a> for TupleIterator<'a> {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -505,7 +497,6 @@ impl<'a> AST<'a> for TupleComprehension<'a> {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -555,7 +546,6 @@ impl<'a> AST<'a> for GenericTuple<'a> {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -605,7 +595,6 @@ impl<'a> AST<'a> for Tuple {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -653,7 +642,6 @@ impl<'a> AST<'a> for Shape<'a> {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -702,7 +690,6 @@ impl<'a> AST<'a> for ObjectShape<'a> {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -753,7 +740,6 @@ impl<'a> AST<'a> for ObjectColor {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -798,7 +784,6 @@ impl<'a> AST<'a> for ObjectDesc<'a> {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -846,7 +831,6 @@ impl<'a> AST<'a> for ObjectDecl<'a> {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -896,7 +880,6 @@ impl<'a> AST<'a> for VarDef<'a> {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -945,7 +928,6 @@ impl<'a> AST<'a> for FuncCall<'a> {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -996,7 +978,6 @@ impl<'a> AST<'a> for ObjectCall<'a> {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -1044,7 +1025,6 @@ impl<'a> AST<'a> for RValue {
                 AST,
                 E0004,
                 ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -1087,7 +1067,6 @@ impl<'a> AST<'a> for PoisonedStmt {
             AST,
             E0004,
             ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
-            None,
             tokens,
             diag,
             Span::default()

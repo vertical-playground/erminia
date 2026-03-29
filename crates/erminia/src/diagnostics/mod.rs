@@ -18,10 +18,21 @@ pub mod macros {
                     $crate::config::CompilerPass::$pass,
                     $crate::diagnostics::Code::$code,
                 )
-                .with_note($crate::diagnostics::Note::$note($($args),*))
-                .with_args($crate::diagnostics::MessageKind::Note)
-                .with_help($crate::diagnostics::Help::$help)
-                .emmit($tokens, $span)
+                .with_note(Some($crate::diagnostics::Note::$note($($args),*)))
+                .with_help(Some($crate::diagnostics::Help::$help))
+                .emit($tokens, $span)
+            {
+                $diag.add_diag(dgn)
+            }
+        }};
+
+        ($pass:ident, $code:ident, $note:ident($($args:expr), *), $tokens:expr, $diag:expr, $span:expr) => {{
+            if let Some(dgn) = $crate::diagnostics::DiagnosticBuilder::build(
+                    $crate::config::CompilerPass::$pass,
+                    $crate::diagnostics::Code::$code,
+                )
+                .with_note(Some($crate::diagnostics::Note::$note($($args),*)))
+                .emit($tokens, $span)
             {
                 $diag.add_diag(dgn)
             }

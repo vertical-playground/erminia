@@ -170,7 +170,6 @@ pub fn consume_data_type(
                 Lexer,
                 E0002,
                 ExpectedDataType(token.text.to_string()),
-                None,
                 tokens,
                 diag,
                 span
@@ -183,7 +182,6 @@ pub fn consume_data_type(
                 Parser,
                 E0002,
                 ExpectedDataType(token.text.to_string()),
-                None,
                 tokens,
                 diag,
                 span
@@ -223,7 +221,6 @@ pub fn consume_int_const(
             Parser,
             E0003,
             ExpectedInteger(int_const.text.to_string()),
-            None,
             tokens,
             diag,
             span
@@ -262,7 +259,6 @@ pub fn consume_identifier(
                 Parser,
                 E0001,
                 ExpectedIdentifier(id.text.to_string()),
-                None,
                 tokens,
                 diag,
                 span
@@ -304,7 +300,6 @@ pub fn consume_keyword(
                 Lexer,
                 E0001,
                 ExpectedSomethingElse(expected.to_string(), token.text.to_string()),
-                None,
                 tokens,
                 diag,
                 span
@@ -317,7 +312,6 @@ pub fn consume_keyword(
             Parser,
             E0001,
             ExpectedSomethingElse(expected.to_string(), token.text.to_string()),
-            None,
             tokens,
             diag,
             span

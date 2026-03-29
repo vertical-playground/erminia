@@ -1,5 +1,5 @@
 use crate::config::CompilerPass;
-use crate::diagnostics::{create_diagnostic, Code, Diagnostic, Help, MessageKind, Note, Span};
+use crate::diagnostics::{create_diagnostic, Code, Diagnostic, Help, Note, Span};
 use crate::lexer::lex::Lexer;
 
 fn _build_diagnostic(
@@ -26,11 +26,8 @@ fn _build_diagnostic(
 pub struct DiagnosticBuilder {
     pass: CompilerPass,
     code: Code,
-    note: Note,
-    note_str: String,
-    help: Help,
-    help_str: String,
-    with_args: bool,
+    note: Option<Note>,
+    help: Option<Help>,
 }
 
 impl DiagnosticBuilder {
@@ -38,11 +35,8 @@ impl DiagnosticBuilder {
         Self {
             pass,
             code,
-            note: Note::default(),
-            help: Help::default(),
-            note_str: String::new(),
-            help_str: String::new(),
-            with_args: false,
+            note: None,
+            help: None,
         }
     }
 
@@ -50,62 +44,34 @@ impl DiagnosticBuilder {
         Self::new(pass, code)
     }
 
-    pub fn with_note(mut self, note: Note) -> Self {
+    pub fn with_note(mut self, note: Option<Note>) -> Self {
         self.note = note;
         self
     }
 
-    pub fn with_args(mut self, norh: MessageKind) -> Self {
-        match norh {
-            MessageKind::Note => {
-                if self.note == Note::default() {
-                    return self;
-                }
-
-                self.note_str = self.note.stringify();
-            }
-            MessageKind::Help => {
-                if self.help == Help::default() {
-                    return self;
-                }
-
-                self.help_str = self.help.stringify();
-            }
-        };
-
-        self
-    }
-
-    pub fn with_help(mut self, help: Help) -> Self {
+    pub fn with_help(mut self, help: Option<Help>) -> Self {
         self.help = help;
         self
     }
 
-    pub fn emmit(self, tokens: &mut Lexer, span: Span) -> Option<Diagnostic> {
+    pub fn emit(self, tokens: &mut Lexer, span: Span) -> Option<Diagnostic> {
         if tokens.is_poisoned() {
             return None;
         }
 
-        if self.note.args_required() && !self.with_args {
-            let diagnostic = _build_diagnostic(
-                CompilerPass::Internal,
-                Code::I0001,
-                tokens,
-                Span::default(),
-                "Note message requires arguments, but none were provided.".to_string(),
-                "If you are seeing this, please raise an issue on Github at 'https://github.com/vertical-playground/erminia/issues'".to_string(),
-            );
+        let mut note_str: String = String::default();
+        let mut help_str: String = String::default();
 
-            panic!("{}", diagnostic);
+        if let Some(ref nt) = self.note {
+            note_str = nt.stringify();
+        }
+
+        if let Some(ref hp) = self.help {
+            help_str = hp.stringify();
         }
 
         Some(_build_diagnostic(
-            self.pass,
-            self.code,
-            tokens,
-            span,
-            self.note_str,
-            self.help_str,
+            self.pass, self.code, tokens, span, note_str, help_str,
         ))
     }
 }

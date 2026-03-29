@@ -42,7 +42,6 @@ fn parse_expr<'a>(
                 Parser,
                 E0001,
                 ExpectedIDorInteger(kind.to_string()),
-                None,
                 tokens,
                 diag,
                 span
@@ -325,7 +324,6 @@ fn parse_shape_tuple_generic<'a>(
             Parser,
             E0003,
             ExpectedIDorInteger(tokens.peek().get_kind().to_string()),
-            None,
             tokens,
             diag,
             Span::default()
@@ -349,7 +347,6 @@ fn parse_shape_tuple_generic<'a>(
             Parser,
             E0003,
             ExpectedIDorInteger(tokens.peek().get_kind().to_string()),
-            None,
             tokens,
             diag,
             Span::default()
@@ -411,7 +408,6 @@ fn parse_shape<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxA
                 Parser,
                 E0003,
                 ExpectedTypeofTuple(kind.to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()
@@ -531,7 +527,6 @@ fn parse_object_desc<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -
                 Parser,
                 E0003,
                 ExpectedShapeOrColor(kind.to_string()),
-                None,
                 tokens,
                 diag,
                 Span::default()

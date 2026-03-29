@@ -5,7 +5,7 @@ pub enum MessageKind {
     Help,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Note {
     ExpectedLeftInclusive(String),
     ExpectedRightInclusive(String),
@@ -18,8 +18,6 @@ pub enum Note {
     ExpectedIDorInteger(String),
     ExpectedShapeOrColor(String),
     ExpectedTypeofTuple(String),
-    #[default]
-    None,
 }
 
 impl fmt::Display for Note {
@@ -66,7 +64,6 @@ impl Note {
             Note::ExpectedTypeofTuple(str1) => {
                 format!("Expected a 'tuple' or 'object' type, but found '{}'.", str1)
             }
-            Note::None => "".to_string(),
         }
     }
 
@@ -83,7 +80,6 @@ impl Note {
             | Note::ExpectedStatement(_)
             | Note::ExpectedShapeOrColor(_)
             | Note::ExpectedTypeofTuple(_) => true,
-            Note::None => false,
         }
     }
 
@@ -99,20 +95,17 @@ impl Note {
             | Note::ExpectedTypeofTuple(_)
             | Note::ExpectedIdentifier(_) => 1,
             Note::ExpectedSomethingElse(_, _) | Note::ExpectedASTNode(_, _) => 2,
-            Note::None => 0,
         }
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Help {
     ConsiderChangingToInclusive,
     DidYouMeanDataType,
     DidYouMeanStmtKeyword,
     DidYouMeanShapeOrColor,
     DidYouMeanTupleorObject,
-    #[default]
-    None,
 }
 
 impl fmt::Display for Help {
@@ -139,7 +132,6 @@ impl Help {
             Help::DidYouMeanTupleorObject => {
                 "Did you mean to use a 'tuple' or an 'object' type? You can create tuples by using this syntax: <tuple> ::= '(' <int> ',' <int> ')' or use a declared object instead.".to_string()
             }
-            Help::None => "".to_string(),
         }
     }
 }
