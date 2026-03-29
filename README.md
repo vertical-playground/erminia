@@ -1,5 +1,11 @@
 # Erminia
 
+![Build & Test](https://github.com/vertical-playground/erminia/actions/workflows/ci.yml/badge.svg)
+![Clippy](https://github.com/vertical-playground/erminia/actions/workflows/clippy.yml/badge.svg)
+![Format](https://github.com/vertical-playground/erminia/actions/workflows/fmt.yml/badge.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Rust](https://img.shields.io/badge/rust-2021-orange.svg)
+
 *“Erminia” — Greek for **Interpretation***  
 
 > **Disclaimer:**  
