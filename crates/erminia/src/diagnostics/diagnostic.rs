@@ -156,6 +156,7 @@ impl Default for DiagnosticAccumulator {
     }
 }
 
+#[allow(unused)]
 pub trait ToSnippet {
     fn to_snippet(&self) -> String;
 }
