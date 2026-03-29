@@ -2,19 +2,13 @@ use crate::ast::ast::BoxAST;
 
 use crate::ast::expr::*;
 use crate::ast::stmt::*;
-use crate::config::CompilerPass;
-use crate::diagnostics::{
-    Code, DiagnosticAccumulator, DiagnosticBuilder, Help, MessageKind, Note, Span,
-};
+use crate::diag;
+use crate::diagnostics::{DiagnosticAccumulator, Span};
 use crate::lexer::lex::Lexer;
 use crate::lexer::lex::PositionalOffset;
 use crate::lexer::token::TokenKind;
-use crate::parser_diag;
 use crate::syntax::consumers::*;
 use crate::types::ErminiaType;
-
-type DB = DiagnosticBuilder;
-const PARSER_PASS: CompilerPass = CompilerPass::Parser;
 
 // ==================================================================================== //
 // Parsers                                                                              //
@@ -44,10 +38,11 @@ fn parse_expr<'a>(
         }
         TokenKind::Int => RValue::boxed_int(consume_int_const(tokens, diag, start).to_int()),
         _ => {
-            parser_diag!(
+            diag!(
+                Parser,
                 E0001,
-                ExpectedIDorInteger,
-                vec![kind.to_string()],
+                ExpectedIDorInteger(kind.to_string()),
+                None,
                 tokens,
                 diag,
                 span
@@ -326,10 +321,11 @@ fn parse_shape_tuple_generic<'a>(
 
         left = GenericTupleOption::boxed_id(id);
     } else {
-        parser_diag!(
+        diag!(
+            Parser,
             E0003,
-            ExpectedIDorInteger,
-            vec![tokens.peek().get_kind().to_string()],
+            ExpectedIDorInteger(tokens.peek().get_kind().to_string()),
+            None,
             tokens,
             diag,
             Span::default()
@@ -349,10 +345,11 @@ fn parse_shape_tuple_generic<'a>(
 
         right = GenericTupleOption::boxed_id(id);
     } else {
-        parser_diag!(
+        diag!(
+            Parser,
             E0003,
-            ExpectedIDorInteger,
-            vec![tokens.peek().get_kind().to_string()],
+            ExpectedIDorInteger(tokens.peek().get_kind().to_string()),
+            None,
             tokens,
             diag,
             Span::default()
@@ -410,10 +407,11 @@ fn parse_shape<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxA
         }
         TokenKind::Ident => parse_object_call(tokens, diag),
         _ => {
-            parser_diag!(
+            diag!(
+                Parser,
                 E0003,
-                ExpectedTypeofTuple,
-                vec![kind.to_string()],
+                ExpectedTypeofTuple(kind.to_string()),
+                None,
                 tokens,
                 diag,
                 Span::default()
@@ -529,10 +527,11 @@ fn parse_object_desc<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -
             ObjectDesc::boxed(shape, color, span, syntax)
         }
         _ => {
-            parser_diag!(
+            diag!(
+                Parser,
                 E0003,
-                ExpectedShapeOrColor,
-                vec![kind.to_string()],
+                ExpectedShapeOrColor(kind.to_string()),
+                None,
                 tokens,
                 diag,
                 Span::default()
@@ -695,10 +694,10 @@ fn parse_stmt<'a>(
         TokenKind::ProblemOutput => parse_problem_output(tokens, diag),
         TokenKind::LetKwd => parse_var_def(tokens, diag),
         _ => {
-            parser_diag!(
+            diag!(
+                Parser,
                 E0002,
-                ExpectedStatement,
-                vec![kind.to_string()],
+                ExpectedStatement(kind.to_string()),
                 DidYouMeanStmtKeyword,
                 tokens,
                 diag,
@@ -838,6 +837,8 @@ pub fn parse_program<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -
 #[cfg(test)]
 mod test {
     use super::*;
+
+    use crate::config::CompilerPass;
 
     fn check_no_err_single_ast<'a, F>(text: &'a str, parser: F)
     where

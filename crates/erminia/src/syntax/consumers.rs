@@ -1,17 +1,9 @@
-use crate::config::CompilerPass;
-use crate::diagnostics::{
-    Code, DiagnosticAccumulator, DiagnosticBuilder, Help, MessageKind, Note, Span,
-};
+use crate::diag;
+use crate::diagnostics::{DiagnosticAccumulator, Span};
 use crate::lexer::lex::Lexer;
 use crate::lexer::lex::PositionalOffset;
 use crate::lexer::token::TokenKind;
-use crate::lexer_diag;
-use crate::parser_diag;
 use crate::types::ErminiaType;
-
-type DB = DiagnosticBuilder;
-const PARSER_PASS: CompilerPass = CompilerPass::Parser;
-const LEXER_PASS: CompilerPass = CompilerPass::Lexer;
 
 // ==================================================================================== //
 //  Utilities                                                                           //
@@ -35,10 +27,10 @@ pub fn is_next_right_inclusive(
         TokenKind::RightPar => ErminiaType::Bool(false),
         TokenKind::RightBracket => ErminiaType::Bool(true),
         TokenKind::Poisoned => {
-            lexer_diag!(
+            diag!(
+                Lexer,
                 E0002,
-                ExpectedRightInclusive,
-                vec![token.text.to_string()],
+                ExpectedRightInclusive(token.text.to_string()),
                 ConsiderChangingToInclusive,
                 tokens,
                 diag,
@@ -48,10 +40,10 @@ pub fn is_next_right_inclusive(
             ErminiaType::Poisoned
         }
         _ => {
-            parser_diag!(
+            diag!(
+                Parser,
                 E0002,
-                ExpectedRightInclusive,
-                vec![token.text.to_string()],
+                ExpectedRightInclusive(token.text.to_string()),
                 ConsiderChangingToInclusive,
                 tokens,
                 diag,
@@ -89,10 +81,10 @@ pub fn is_next_left_inclusive(
         TokenKind::LeftPar => ErminiaType::Bool(false),
         TokenKind::LeftBracket => ErminiaType::Bool(true),
         TokenKind::Poisoned => {
-            lexer_diag!(
+            diag!(
+                Lexer,
                 E0002,
-                ExpectedLeftInclusive,
-                vec![token.text.to_string()],
+                ExpectedLeftInclusive(token.text.to_string()),
                 ConsiderChangingToInclusive,
                 tokens,
                 diag,
@@ -102,10 +94,10 @@ pub fn is_next_left_inclusive(
             ErminiaType::Poisoned
         }
         _ => {
-            parser_diag!(
+            diag!(
+                Parser,
                 E0002,
-                ExpectedLeftInclusive,
-                vec![token.text.to_string()],
+                ExpectedLeftInclusive(token.text.to_string()),
                 ConsiderChangingToInclusive,
                 tokens,
                 diag,
@@ -174,10 +166,11 @@ pub fn consume_data_type(
     let res = match token.get_kind() {
         TokenKind::Object => ErminiaType::Object,
         TokenKind::Poisoned => {
-            lexer_diag!(
+            diag!(
+                Lexer,
                 E0002,
-                ExpectedDataType,
-                vec![token.text.to_string()],
+                ExpectedDataType(token.text.to_string()),
+                None,
                 tokens,
                 diag,
                 span
@@ -186,10 +179,11 @@ pub fn consume_data_type(
             ErminiaType::Poisoned
         }
         _ => {
-            parser_diag!(
+            diag!(
+                Parser,
                 E0002,
-                ExpectedDataType,
-                vec![token.text.to_string()],
+                ExpectedDataType(token.text.to_string()),
+                None,
                 tokens,
                 diag,
                 span
@@ -225,10 +219,11 @@ pub fn consume_int_const(
     let res = if int_const.get_kind() == TokenKind::Int {
         ErminiaType::Integer(int_const.text.parse::<i32>().unwrap())
     } else {
-        parser_diag!(
+        diag!(
+            Parser,
             E0003,
-            ExpectedInteger,
-            vec![int_const.text.to_string()],
+            ExpectedInteger(int_const.text.to_string()),
+            None,
             tokens,
             diag,
             span
@@ -263,10 +258,11 @@ pub fn consume_identifier(
     let res = match id.get_kind() {
         TokenKind::Ident => ErminiaType::Ident(id.text.to_string()),
         _ => {
-            parser_diag!(
+            diag!(
+                Parser,
                 E0001,
-                ExpectedIdentifier,
-                vec![id.text.to_string()],
+                ExpectedIdentifier(id.text.to_string()),
+                None,
                 tokens,
                 diag,
                 span
@@ -304,10 +300,11 @@ pub fn consume_keyword(
         ErminiaType::Void
     } else {
         if let TokenKind::Poisoned = token.get_kind() {
-            lexer_diag!(
+            diag!(
+                Lexer,
                 E0001,
-                ExpectedSomethingElse,
-                vec![expected.to_string(), token.text.to_string()],
+                ExpectedSomethingElse(expected.to_string(), token.text.to_string()),
+                None,
                 tokens,
                 diag,
                 span
@@ -315,10 +312,12 @@ pub fn consume_keyword(
 
             return ErminiaType::Poisoned;
         }
-        parser_diag!(
+
+        diag!(
+            Parser,
             E0001,
-            ExpectedSomethingElse,
-            vec![expected.to_string(), token.text.to_string()],
+            ExpectedSomethingElse(expected.to_string(), token.text.to_string()),
+            None,
             tokens,
             diag,
             span

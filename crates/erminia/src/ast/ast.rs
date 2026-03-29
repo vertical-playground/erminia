@@ -1,14 +1,11 @@
 use crate::ast::expr::*;
 use crate::ast::stmt::*;
-use crate::ast_diag;
-use crate::config::CompilerPass;
-use crate::diagnostics::{Code, DiagnosticAccumulator, DiagnosticBuilder, MessageKind, Note, Span};
+use crate::diag;
+use crate::diagnostics::{DiagnosticAccumulator, Span};
 use crate::lexer::lex::Lexer;
 
 pub type BoxAST<'a> = Box<dyn AST<'a> + 'a>;
 pub type ASTError = String;
-type DB = DiagnosticBuilder;
-const AST_PASS: CompilerPass = CompilerPass::AST;
 
 #[derive(Debug)]
 pub enum ASTResult<'a> {
@@ -100,7 +97,15 @@ impl<'a> AST<'a> for GenericTupleOption {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, Span::default());
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
     }
 }
@@ -142,7 +147,15 @@ impl<'a> AST<'a> for ProblemExample<'a> {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
 
         for stmt in &self.stmts {
@@ -188,7 +201,15 @@ impl<'a> AST<'a> for ProblemSolution<'a> {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
 
         for stmt in &self.stmts {
@@ -231,7 +252,15 @@ impl<'a> AST<'a> for ProblemInput<'a> {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
 
         for stmt in &self.stmts {
@@ -274,7 +303,15 @@ impl<'a> AST<'a> for ProblemOutput<'a> {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
 
         for stmt in &self.stmts {
@@ -318,7 +355,15 @@ impl<'a> AST<'a> for Program<'a> {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
 
         for stmt in &self.stmts {
@@ -361,7 +406,15 @@ impl<'a> AST<'a> for Range {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
     }
 }
@@ -398,7 +451,15 @@ impl<'a> AST<'a> for TupleIterator<'a> {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
 
         let _ = &self.range.check_poisoning(tokens, diag);
@@ -440,7 +501,15 @@ impl<'a> AST<'a> for TupleComprehension<'a> {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
 
         for iter in &self.iter_pair {
@@ -482,7 +551,15 @@ impl<'a> AST<'a> for GenericTuple<'a> {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
 
         let _ = &self.left.check_poisoning(tokens, diag);
@@ -524,7 +601,15 @@ impl<'a> AST<'a> for Tuple {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
     }
 }
@@ -564,7 +649,15 @@ impl<'a> AST<'a> for Shape<'a> {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
 
         let _ = &self.values.check_poisoning(tokens, diag);
@@ -605,7 +698,15 @@ impl<'a> AST<'a> for ObjectShape<'a> {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
 
         for shape in &self.shape {
@@ -648,7 +749,15 @@ impl<'a> AST<'a> for ObjectColor {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
     }
 }
@@ -685,7 +794,15 @@ impl<'a> AST<'a> for ObjectDesc<'a> {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
 
         let _ = &self.shape.check_poisoning(tokens, diag);
@@ -725,7 +842,15 @@ impl<'a> AST<'a> for ObjectDecl<'a> {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
 
         let _ = &self.desc.check_poisoning(tokens, diag);
@@ -767,7 +892,15 @@ impl<'a> AST<'a> for VarDef<'a> {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
 
         let _ = &self.expr.check_poisoning(tokens, diag);
@@ -808,7 +941,15 @@ impl<'a> AST<'a> for FuncCall<'a> {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
 
         for expr in &self.exprs {
@@ -851,7 +992,15 @@ impl<'a> AST<'a> for ObjectCall<'a> {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, self.span);
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
 
         if let Some(t) = &self.tuple {
@@ -891,7 +1040,15 @@ impl<'a> AST<'a> for RValue {
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
         if self.is_err() {
-            ast_diag!(self, tokens, diag, Span::default());
+            diag!(
+                AST,
+                E0004,
+                ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+                None,
+                tokens,
+                diag,
+                Span::default()
+            );
         }
     }
 }
@@ -926,6 +1083,14 @@ impl<'a> AST<'a> for PoisonedStmt {
     }
 
     fn check_poisoning(&self, tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) {
-        ast_diag!(self, tokens, diag, self.span);
+        diag!(
+            AST,
+            E0004,
+            ExpectedASTNode(self.to_string(), self.get_ast_id().to_string()),
+            None,
+            tokens,
+            diag,
+            Span::default()
+        );
     }
 }
