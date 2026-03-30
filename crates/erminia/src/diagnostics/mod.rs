@@ -1,8 +1,8 @@
-pub(crate) mod builder;
-pub(crate) mod code;
-pub(crate) mod diagnostic;
-pub(crate) mod location;
-pub(crate) mod messages;
+pub mod builder;
+pub mod code;
+pub mod diagnostic;
+pub mod location;
+pub mod messages;
 
 pub use builder::DiagnosticBuilder;
 pub use code::Code;
