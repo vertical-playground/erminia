@@ -1,10 +1,13 @@
-use erminia::syntax::Parser;
+use erminia::{diagnostics::DiagnosticAccumulator, syntax::Parser};
 use std::io::{self, Write};
+
+mod file;
 
 fn main() -> io::Result<()> {
     let stdin = io::stdin();
 
     let mut stdout = io::stdout();
+    let mut diag: DiagnosticAccumulator = DiagnosticAccumulator::new();
 
     let mut input = String::new();
 
@@ -14,6 +17,22 @@ fn main() -> io::Result<()> {
 
         input.clear();
         stdin.read_line(&mut input)?;
+
+        if input == "exit\n" {
+            std::process::exit(0);
+        }
+
+        if input == "clear\n" {
+            println!("\033[H\033[2J");
+            continue;
+        }
+
+        if input.starts_with("from ") {
+            input = file::io::from_file(
+                input.to_string().drain(0..4).as_str().to_string(),
+                &mut diag,
+            );
+        }
 
         let mut parser = Parser::new(&input);
 
