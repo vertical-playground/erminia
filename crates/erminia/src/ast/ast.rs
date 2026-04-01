@@ -49,8 +49,8 @@ pub trait AST<'a>: 'a + PrettyPrinting {
 
 impl<'a> std::fmt::Debug for dyn AST<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let depth: i32 = 0;
-        self.print_on(f, depth)?;
+        let mut opts = PrintOpt::new(f, 0);
+        self.print_on(&mut opts)?;
         Ok(())
     }
 }
