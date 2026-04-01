@@ -15,7 +15,7 @@ use crate::types::ErminiaType;
 // ==================================================================================== //
 
 // <expr> ::= <object_call> | <id> | <int_const>
-fn parse_expr<'a>(
+pub fn parse_expr<'a>(
     tokens: &mut Lexer,
     diag: &mut DiagnosticAccumulator,
     start: PositionalOffset,
@@ -53,7 +53,7 @@ fn parse_expr<'a>(
 }
 
 // <list_of_exprs> ::= <expr> ("," <expr>)*
-fn parse_list_of_exprs<'a>(
+pub fn parse_list_of_exprs<'a>(
     tokens: &mut Lexer,
     diag: &mut DiagnosticAccumulator,
 ) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>) {
@@ -79,7 +79,7 @@ fn parse_list_of_exprs<'a>(
 }
 
 // <func_call> ::= <id> "(" [<list_of_exprs>] ")" ";"
-fn parse_func_call<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_func_call<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -105,7 +105,7 @@ fn parse_func_call<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> 
 }
 
 // <inner_stmt> ::= <object_decl> | <var_def> | <func_call>
-fn parse_inner_stmt<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_inner_stmt<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let kind = tokens.peek().get_kind();
 
     match kind {
@@ -119,7 +119,7 @@ fn parse_inner_stmt<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) ->
 }
 
 // <inner_stmt_list> ::= (<inner_stmt>)*
-fn parse_inner_stmt_list<'a>(
+pub fn parse_inner_stmt_list<'a>(
     tokens: &mut Lexer,
     diag: &mut DiagnosticAccumulator,
 ) -> Vec<BoxAST<'a>> {
@@ -132,7 +132,7 @@ fn parse_inner_stmt_list<'a>(
 }
 
 // <inner_compound_stmt> ::= "{" [<inner_stmt_list>] "}"
-fn parse_inner_compound_stmt<'a>(
+pub fn parse_inner_compound_stmt<'a>(
     tokens: &mut Lexer,
     diag: &mut DiagnosticAccumulator,
 ) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>) {
@@ -148,7 +148,7 @@ fn parse_inner_compound_stmt<'a>(
 
 // TODO: handle type inference
 // <var_def> ::= "let" <id> ":" <data_type> "=" <expr> ";"
-fn parse_var_def<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_var_def<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -181,7 +181,7 @@ fn parse_var_def<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> Bo
 }
 
 // <range> ::= ("[" | "(") <int_const> ".." <int_const> ("]" | ")")
-fn parse_range<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_range<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -211,7 +211,10 @@ fn parse_range<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxA
 }
 
 // <shape_tuple_iter> ::= <id> "<-" <range>
-fn parse_shape_tuple_iter<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_shape_tuple_iter<'a>(
+    tokens: &mut Lexer,
+    diag: &mut DiagnosticAccumulator,
+) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -228,7 +231,7 @@ fn parse_shape_tuple_iter<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulat
 }
 
 // <shape_tuple_iter_pair> ::= <shape_tuple_iter> ("," <shape_tuple_iter>)
-fn parse_shape_tuple_iter_pair<'a>(
+pub fn parse_shape_tuple_iter_pair<'a>(
     tokens: &mut Lexer,
     diag: &mut DiagnosticAccumulator,
 ) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>) {
@@ -252,7 +255,10 @@ fn parse_shape_tuple_iter_pair<'a>(
 }
 
 // <shape_tuple_compr> ::= <shape_tuple> "|" <shape_tuple_iter_pair>
-fn parse_shape_tuple_compr<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_shape_tuple_compr<'a>(
+    tokens: &mut Lexer,
+    diag: &mut DiagnosticAccumulator,
+) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -272,7 +278,7 @@ fn parse_shape_tuple_compr<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumula
 }
 
 // <object_call> ::= <id> <shape_tuple>
-fn parse_object_call<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_object_call<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -298,7 +304,7 @@ fn parse_object_call<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -
 }
 
 // <shape_tuple_generic> ::= "(" (<int_const> | <id>) "," (<int_const> | <id>) ")"
-fn parse_shape_tuple_generic<'a>(
+pub fn parse_shape_tuple_generic<'a>(
     tokens: &mut Lexer,
     diag: &mut DiagnosticAccumulator,
 ) -> BoxAST<'a> {
@@ -364,7 +370,7 @@ fn parse_shape_tuple_generic<'a>(
 }
 
 // <shape_tuple> ::= "(" <int_const> "," <int_const> ")"
-fn parse_shape_tuple<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_shape_tuple<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -387,7 +393,7 @@ fn parse_shape_tuple<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -
 }
 
 // <shape> ::= <shape_tuple> | <shape_tuple_compr> | <object_call> | <id>
-fn parse_shape<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_shape<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let kind = tokens.peek().get_kind();
 
     match kind {
@@ -424,7 +430,7 @@ fn parse_shape<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxA
 }
 
 // <object_color> ::= "color" ":" <int_const>
-fn parse_object_color<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_object_color<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -442,7 +448,7 @@ fn parse_object_color<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) 
 }
 
 // <list_of_shapes> ::= "[" <shape> ("," <shape>)* "]"
-fn parse_list_of_shapes<'a>(
+pub fn parse_list_of_shapes<'a>(
     tokens: &mut Lexer,
     diag: &mut DiagnosticAccumulator,
 ) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>) {
@@ -476,7 +482,7 @@ fn parse_list_of_shapes<'a>(
 }
 
 // <object_shape> ::= "shape" ":" <list_of_shapes>
-fn parse_object_shape<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_object_shape<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -496,7 +502,7 @@ fn parse_object_shape<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) 
 }
 
 // <object_desc> ::= <object_shape> "," <object_color> | <object_color> "," <object_shape>
-fn parse_object_desc<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_object_desc<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let kind = tokens.peek().get_kind();
@@ -538,7 +544,10 @@ fn parse_object_desc<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -
 }
 
 // <example_decl> ::= "example" <id> '(' <int_const> ')' <inner_compound_stmt> ';'
-fn parse_problem_example<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_problem_example<'a>(
+    tokens: &mut Lexer,
+    diag: &mut DiagnosticAccumulator,
+) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -573,7 +582,10 @@ fn parse_problem_example<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulato
 }
 
 // <problem_solution> ::= "solution" <id> '(' <int_const> ')' <inner_compound_stmt> ';'
-fn parse_problem_solution<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_problem_solution<'a>(
+    tokens: &mut Lexer,
+    diag: &mut DiagnosticAccumulator,
+) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -608,7 +620,7 @@ fn parse_problem_solution<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulat
 }
 
 // <problem_input> ::= "input" <id> <tuple> <inner_compound_stmt> ';'
-fn parse_problem_input<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_problem_input<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -639,7 +651,10 @@ fn parse_problem_input<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator)
 }
 
 // <problem_output> ::= "output" <id> <tuple> <inner_compound_stmt> ';'
-fn parse_problem_output<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_problem_output<'a>(
+    tokens: &mut Lexer,
+    diag: &mut DiagnosticAccumulator,
+) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
     let start = tokens.get_previous_position();
 
@@ -670,7 +685,7 @@ fn parse_problem_output<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator
 
 // <stmt> ::= <object_decl> | <example_decl> | <var_def> | <problem_solution> |
 // <problem_input> | <problem_output>
-fn parse_stmt<'a>(
+pub fn parse_stmt<'a>(
     tokens: &mut Lexer,
     diag: &mut DiagnosticAccumulator,
     start: PositionalOffset,
@@ -713,7 +728,10 @@ fn parse_stmt<'a>(
 }
 
 // <stmts_list> ::= (<stmt>)*
-fn parse_stmt_list<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> Vec<BoxAST<'a>> {
+pub fn parse_stmt_list<'a>(
+    tokens: &mut Lexer,
+    diag: &mut DiagnosticAccumulator,
+) -> Vec<BoxAST<'a>> {
     let mut stmts: Vec<BoxAST> = vec![];
 
     let start = tokens.get_previous_position();
@@ -727,7 +745,7 @@ fn parse_stmt_list<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> 
 }
 
 // <object_compound_desc> ::= "{" <object_desc> "}"
-fn parse_object_compound_desc<'a>(
+pub fn parse_object_compound_desc<'a>(
     tokens: &mut Lexer,
     diag: &mut DiagnosticAccumulator,
 ) -> (BoxAST<'a>, Vec<ErminiaType>) {
@@ -742,7 +760,7 @@ fn parse_object_compound_desc<'a>(
 }
 
 // <object_decl> ::= "object" <id> <object_compound_desc> ";"
-fn parse_object_decl<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_object_decl<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -768,7 +786,7 @@ fn parse_object_decl<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -
 }
 
 // <compound_stmt> ::= "{" [<stmt_list>] "}"
-fn parse_compound_stmt<'a>(
+pub fn parse_compound_stmt<'a>(
     tokens: &mut Lexer,
     diag: &mut DiagnosticAccumulator,
 ) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>) {
@@ -786,7 +804,7 @@ fn parse_compound_stmt<'a>(
 }
 
 // <problem_declaration> ::= "def" <id> "(" <int_const> ")" <compound_stmt>
-fn parse_problem_decl<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
+pub fn parse_problem_decl<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> BoxAST<'a> {
     let mut syntax: Vec<ErminiaType> = vec![];
 
     let start = tokens.get_previous_position();
@@ -823,344 +841,4 @@ pub fn parse_program<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -
     let program = parse_problem_decl(tokens, diag);
 
     program
-}
-
-// ==================================================================================== //
-// Parser Test Suite                                                                    //
-// ==================================================================================== //
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    use crate::config::CompilerPass;
-
-    fn check_no_err_single_ast<'a, F>(text: &'a str, parser: F)
-    where
-        F: FnOnce(&mut Lexer, &mut DiagnosticAccumulator) -> BoxAST<'a>,
-    {
-        let mut tokens = Lexer::new(text);
-        let mut diag = DiagnosticAccumulator::new();
-
-        tokens.advance();
-
-        let res = parser(&mut tokens, &mut diag);
-
-        if res.is_err() {
-            println!("{:?}", res);
-            for d in diag.get(CompilerPass::Parser) {
-                println!("{}", d);
-            }
-        }
-
-        assert!(res.is_ok())
-    }
-
-    // fn check_no_err_multiple_ast<'a, F>(text: &'a str, parser: F)
-    // where
-    //     F: FnOnce(&mut Lexer, &mut DiagnosticAccumulator) -> Vec<BoxAST<'a>>,
-    // {
-    //     let mut tokens = Lexer::new(text);
-    //     let mut diag = DiagnosticAccumulator::new();
-    //
-    //     tokens.advance();
-    //
-    //     let res = parser(&mut tokens, &mut diag);
-    //
-    //     println!("{:?}", res);
-    //
-    //     if res.iter().any(|ast| ast.is_err()) {
-    //         println!("{:?}: \n {:?}", text, res);
-    //         for d in diag.get(CompilerPass::AST) {
-    //             println!("{}", d);
-    //         }
-    //     }
-    //
-    //     assert!(res.iter().all(|ast| ast.is_ok()))
-    // }
-
-    // fn check_no_err_single_ast_with_syntax_ret<'a, F>(
-    //     text: &'a str,
-    //     parser: F,
-    // ) where
-    //     F: FnOnce(&mut Lexer, &mut DiagnosticAccumulator) -> (BoxAST<'a>, Vec<ErminiaType>),
-    // {
-    //     let mut tokens = Lexer::new(text);
-    //     let mut diag = DiagnosticAccumulator::new();
-    //
-    //     tokens.advance();
-    //
-    //     let (res, _) = parser(&mut tokens, &mut diag);
-    //
-    //     if res.is_err() {
-    //         println!("Error in parsing for input {:?}: \n {:?}", text, res);
-    //         for d in diag.get(CompilerPass::AST) {
-    //             println!("This is the error: {}", d);
-    //         }
-    //     }
-    //
-    //     assert!(res.is_ok());
-    // }
-
-    fn check_no_err_multiple_ast_with_syntax_ret<'a, F>(text: &'a str, parser: F)
-    where
-        F: FnOnce(&mut Lexer, &mut DiagnosticAccumulator) -> (Vec<BoxAST<'a>>, Vec<ErminiaType>),
-    {
-        let mut tokens = Lexer::new(text);
-        let mut diag = DiagnosticAccumulator::new();
-
-        tokens.advance();
-
-        let (res, _) = parser(&mut tokens, &mut diag);
-
-        if res.iter().any(|ast| ast.is_err()) {
-            println!("{:?}", res);
-            for d in diag.get(CompilerPass::Lexer) {
-                println!("{}", d);
-            }
-        }
-
-        assert!(res.iter().all(|ast| ast.is_ok()))
-    }
-
-    fn check_type(text: &str, expected_type: ErminiaType) {
-        let mut tokens = Lexer::new(text);
-        let mut diag = DiagnosticAccumulator::new();
-
-        let start = tokens.get_previous_position();
-
-        tokens.advance();
-
-        let _ = consume_keyword(&mut tokens, TokenKind::LetKwd, &mut diag, start);
-        let _ = consume_identifier(&mut tokens, &mut diag, start);
-
-        let actual_type = if match_next(&mut tokens, TokenKind::Colon) {
-            let _ = consume_keyword(&mut tokens, TokenKind::Colon, &mut diag, start);
-            consume_data_type(&mut tokens, &mut diag, start)
-        // TODO: Add logic for type inference
-        } else {
-            ErminiaType::default()
-        };
-
-        assert_eq!(actual_type, expected_type);
-    }
-
-    #[test]
-    fn test_parse_object_decl() {
-        let text = "object HA { shape: [(0,1), (0,2)], color: 1 };";
-
-        check_no_err_single_ast(text, parse_object_decl)
-    }
-
-    #[test]
-    fn test_parse_list_of_shapes() {
-        let text = "[(0,1), (0,2), obj, obj(1,1), (x,y) | x <- [0..1], y <- [0..2]]";
-
-        check_no_err_multiple_ast_with_syntax_ret(text, parse_list_of_shapes)
-    }
-
-    #[test]
-    fn test_parse_object_decl2() {
-        let text =
-            "object HA { shape: [(0,1), (0,2), (x,y) | x <- [0..1], y <- [0..2]], color: 1 };";
-
-        check_no_err_single_ast(text, parse_object_decl)
-    }
-
-    #[test]
-    fn test_parse_object_desc() {
-        let text = "shape : [(0,1), (0,2)], color : 1";
-
-        check_no_err_single_ast(text, parse_object_desc)
-    }
-
-    #[test]
-    fn test_parse_shape() {
-        let text = "shape : [(0,1), (0,2)]";
-
-        check_no_err_single_ast(text, parse_object_shape)
-    }
-
-    #[test]
-    fn test_parse_color() {
-        let text = "color : 1";
-
-        check_no_err_single_ast(text, parse_object_color)
-    }
-
-    #[test]
-    fn test_parse_shape_tuple_compr() {
-        let text = "(x,y) | x <- [0..1], y <- [0..1]";
-
-        check_no_err_single_ast(text, parse_shape)
-    }
-
-    #[test]
-    fn test_parse_var_def() {
-        let text = "let x: object = HA(0,1);";
-
-        check_no_err_single_ast(text, parse_var_def)
-    }
-
-    #[test]
-    fn test_parse_var_def_explicit_object_type() {
-        let text = "let x: object = HA(0,1);";
-
-        check_type(text, ErminiaType::Object);
-    }
-
-    #[test]
-    fn test_parse_var_def_default_object() {
-        let text = "let x: object = HA;";
-
-        check_no_err_single_ast(text, parse_var_def)
-    }
-
-    #[test]
-    fn test_parse_var_def_default_explicit_object_type() {
-        let text = "let x: object = HA;";
-
-        check_type(text, ErminiaType::Object);
-    }
-
-    #[test]
-    fn test_parse_var_def_default_object_no_type() {
-        let text = "let x = HA;";
-
-        check_no_err_single_ast(text, parse_var_def)
-    }
-
-    #[test]
-    fn test_range() {
-        let text = "object Shape { shape : [(0,1), (1,1)], color: 1 };";
-
-        check_no_err_single_ast(text, parse_object_decl)
-    }
-
-    #[test]
-    fn test_parse_problem_example() {
-        let text = "example sol1 (2) {
-
-            input i1 (0, 1) {
-                let x: object = HA(0,1);
-                draw(1, x, a);
-            };
-
-            output o1 (0, 1) {
-                let y: object = HA(1,1);
-                draw(1, y, b);
-            };
-        };";
-
-        check_no_err_single_ast(text, parse_problem_example)
-    }
-
-    #[test]
-    fn test_parse_problem_solution() {
-        let text = "solution sol1 (1) {
-
-            input i1 (0, 1) {
-                let x: object = HA(0,1);
-                draw(1, x, a);
-            };
-
-            output o1 (0, 1) {
-                let y: object = HA(1,1);
-                draw(1, y, b);
-            };
-        };";
-
-        check_no_err_single_ast(text, parse_problem_solution)
-    }
-
-    #[test]
-    fn test_parse_problem_input() {
-        let text = "input in1 (0, 1) {
-            let x: object = HA(0,1);
-            draw(1, x, a);
-        };";
-
-        check_no_err_single_ast(text, parse_problem_input)
-    }
-
-    #[test]
-    fn test_parse_problem_output() {
-        let text = "output out1 (0, 1) {
-            let y: object = HA(1,1);
-            draw(1, y, b);
-        };";
-
-        check_no_err_single_ast(text, parse_problem_output)
-    }
-
-    #[test]
-    fn test_parse_program() {
-        let text = "def problem1 (2) {
-            object HA { shape: [(0,1), (0,2)], color: 1 };
-
-            example ex1 (1) {
-                input in1 (0, 1) {
-                    let x: object = HA(0,1);
-                    draw(1, x, a);
-                };
-
-                output out1 (0, 1) {
-                    let y: object = HA(1,1);
-                    draw(1, y, b);
-                };
-            };
-
-            solution sol1 (1) {
-                input in1 (0, 1) {
-                    let x: object = HA(0,1);
-                    draw(1, x, a);
-                };
-
-                output out1 (0, 1) {
-                    let y: object = HA(1,1);
-                    draw(1, y, b);
-                };
-            };
-
-        }";
-
-        check_no_err_single_ast(text, parse_problem_decl)
-    }
-
-    #[test]
-    fn test_parse_program_2() {
-        let text = "def hello (2) {};";
-
-        check_no_err_single_ast(text, parse_problem_decl)
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_parse_with_unexpected_token() {
-        let text = "let x: ∂ = HA(0, 1);";
-
-        println!("{}", text);
-
-        check_no_err_single_ast(text, parse_var_def)
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_parse_with_other_unexpected_token() {
-        let text = "let x: @ = HA(0, 1);";
-
-        println!("{}", text);
-
-        check_no_err_single_ast(text, parse_object_decl)
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_parse_with_unexpected_token_parse_errors() {
-        let text = "def pr (2) { let x @ HA(0, 1); let y @ HA(1, 1); };";
-
-        println!("{}", text);
-
-        check_no_err_single_ast(text, parse_problem_decl)
-    }
 }

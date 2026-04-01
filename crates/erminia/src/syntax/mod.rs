@@ -2,8 +2,8 @@ use crate::ast::ast::BoxAST;
 use crate::diagnostics::DiagnosticAccumulator;
 use crate::lexer::lex::Lexer;
 use crate::syntax::parse::parse_program;
-mod consumers;
-mod parse;
+pub mod consumers;
+pub mod parse;
 
 // ==================================================================================== //
 // Parser Object                                                                        //
