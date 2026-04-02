@@ -27,9 +27,7 @@ fn get_file_from_path(path: &Path, diag: &mut DiagnosticAccumulator) -> File {
 fn get_string_from_file(path: &Path, file: &mut File, diag: &mut DiagnosticAccumulator) -> String {
     let mut content: String = String::new();
 
-    if file.read_to_string(&mut content).is_ok() {
-        content
-    } else {
+    if file.read_to_string(&mut content).is_err() {
         diag!(
             Internal,
             I0002,
@@ -38,14 +36,13 @@ fn get_string_from_file(path: &Path, file: &mut File, diag: &mut DiagnosticAccum
             diag,
             Span::default()
         );
+    };
 
-        println!("{}", diag);
-        std::process::exit(1);
-    }
+    content
 }
 
 fn validate_path(path: &Path, diag: &mut DiagnosticAccumulator) {
-    if path.extension().is_some_and(|ext| ext == "erm") {
+    if path.extension().is_none_or(|ext| ext == "erm") {
         diag!(
             Internal,
             I0002,
@@ -54,15 +51,14 @@ fn validate_path(path: &Path, diag: &mut DiagnosticAccumulator) {
             diag,
             Span::default()
         );
-
-        println!("{}", diag);
-        std::process::exit(1);
     }
 }
 
 pub fn from_file(path_str: String, diag: &mut DiagnosticAccumulator) -> String {
     let path: &Path = Path::new(&path_str);
+
     validate_path(path, diag);
     let mut file: File = get_file_from_path(path, diag);
+
     get_string_from_file(path, &mut file, diag)
 }

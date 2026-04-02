@@ -23,15 +23,14 @@ fn main() -> io::Result<()> {
         }
 
         if input == "clear\n" {
-            println!("\033[H\033[2J");
+            print!("\x1B[H\x1B[2J");
+            std::io::stdout().flush().unwrap();
             continue;
         }
 
-        if input.starts_with("from ") {
-            input = file::io::from_file(
-                input.to_string().drain(0..4).as_str().to_string(),
-                &mut diag,
-            );
+        if let Some(filename) = input.strip_prefix("from ") {
+            let filename = filename.trim_end_matches('\n');
+            input = file::io::from_file(filename.to_string(), &mut diag);
         }
 
         let mut parser = Parser::new(&input);
