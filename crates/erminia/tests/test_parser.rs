@@ -103,16 +103,14 @@ mod test_parser {
         let mut tokens = Lexer::new(text);
         let mut diag = DiagnosticAccumulator::new();
 
-        let start = tokens.get_previous_position();
-
         tokens.advance();
 
-        let _ = consume_keyword(&mut tokens, TokenKind::LetKwd, &mut diag, start);
-        let _ = consume_identifier(&mut tokens, &mut diag, start);
+        let _ = consume_keyword(&mut tokens, TokenKind::LetKwd, &mut diag);
+        let _ = consume_identifier(&mut tokens, &mut diag);
 
         let actual_type = if match_next(&mut tokens, TokenKind::Colon) {
-            let _ = consume_keyword(&mut tokens, TokenKind::Colon, &mut diag, start);
-            consume_data_type(&mut tokens, &mut diag, start)
+            let _ = consume_keyword(&mut tokens, TokenKind::Colon, &mut diag);
+            consume_data_type(&mut tokens, &mut diag)
         // TODO: Add logic for type inference
         } else {
             ErminiaType::default()

@@ -147,19 +147,15 @@ pub fn match_next(tokens: &mut Lexer, matched: TokenKind) -> bool {
 // ==================================================================================== //
 
 // TODO: handle tuple & list types
-pub fn consume_data_type(
-    tokens: &mut Lexer,
-    diag: &mut DiagnosticAccumulator,
-    start: PositionalOffset,
-) -> ErminiaType {
+pub fn consume_data_type(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> ErminiaType {
     if tokens.is_poisoned() {
         return ErminiaType::Poisoned;
     }
 
     let token = tokens.token;
 
-    let end = tokens.get_position();
-    let span = Span::new(start, end);
+    let pos = tokens.get_position();
+    let span = tokens.get_line_span(pos.get_line());
 
     // TODO: Map TokenKind to ErminiaType
     println!("Consuming data type: {:?}", token.get_kind());
@@ -200,19 +196,15 @@ pub fn consume_data_type(
     res
 }
 
-pub fn consume_int_const(
-    tokens: &mut Lexer,
-    diag: &mut DiagnosticAccumulator,
-    start: PositionalOffset,
-) -> ErminiaType {
+pub fn consume_int_const(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> ErminiaType {
     if tokens.is_poisoned() {
         return ErminiaType::Poisoned;
     }
 
     let int_const = tokens.token;
 
-    let end = tokens.get_position();
-    let span = Span::new(start, end);
+    let pos = tokens.get_position();
+    let span = tokens.get_line_span(pos.get_line());
 
     let res = if int_const.get_kind() == TokenKind::Int {
         ErminiaType::Integer(int_const.text.parse::<i32>().unwrap())
@@ -238,19 +230,15 @@ pub fn consume_int_const(
     res
 }
 
-pub fn consume_identifier(
-    tokens: &mut Lexer,
-    diag: &mut DiagnosticAccumulator,
-    start: PositionalOffset,
-) -> ErminiaType {
+pub fn consume_identifier(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> ErminiaType {
     if tokens.is_poisoned() {
         return ErminiaType::Poisoned;
     }
 
     let id = tokens.token;
 
-    let end = tokens.get_position();
-    let span = Span::new(start, end);
+    let pos = tokens.get_position();
+    let span = tokens.get_line_span(pos.get_line());
 
     let res = match id.get_kind() {
         TokenKind::Ident => ErminiaType::Ident(id.text.to_string()),
@@ -281,7 +269,6 @@ pub fn consume_keyword(
     tokens: &mut Lexer,
     expected: TokenKind,
     diag: &mut DiagnosticAccumulator,
-    start: PositionalOffset,
 ) -> ErminiaType {
     if tokens.is_poisoned() {
         return ErminiaType::Poisoned;
@@ -289,8 +276,8 @@ pub fn consume_keyword(
 
     let token = tokens.token;
 
-    let end = tokens.get_position();
-    let span = Span::new(start, end);
+    let pos = tokens.get_position();
+    let span = tokens.get_line_span(pos.get_line());
 
     let res = if token.get_kind() == expected {
         ErminiaType::Void

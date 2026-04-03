@@ -12,7 +12,7 @@ fn main() -> io::Result<()> {
     let mut input = String::new();
 
     loop {
-        write!(stdout, "-> ")?;
+        write!(stdout, ">> ")?;
         stdout.flush()?;
 
         input.clear();
