@@ -64,7 +64,7 @@ impl fmt::Display for Diagnostic {
         if self.pass != CompilerPass::Internal {
             writeln!(
                 f,
-                "  {}{}:{}::{}",
+                "  {} {}:{}::{}",
                 "span:".dimmed(),
                 self.window.span.start.get_line(),
                 self.window.span.start.get_cursor(),
@@ -160,10 +160,6 @@ impl Default for DiagnosticAccumulator {
 pub trait ToSnippet {
     fn to_snippet(&self) -> String;
 }
-
-// ==================================================================================== //
-// Macros                                                                               //
-// ==================================================================================== //
 
 pub fn create_diagnostic(
     pass: CompilerPass,

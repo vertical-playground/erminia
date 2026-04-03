@@ -22,9 +22,6 @@ pub fn parse_expr<'a>(
 ) -> BoxAST<'a> {
     let kind = tokens.peek().get_kind();
 
-    let end = tokens.get_position();
-    let span = Span::new(start, end);
-
     match kind {
         TokenKind::Ident => {
             let lookahead = tokens.lookahead();
@@ -38,6 +35,9 @@ pub fn parse_expr<'a>(
         }
         TokenKind::Int => RValue::boxed_int(consume_int_const(tokens, diag, start).to_int()),
         _ => {
+            let line = tokens.get_position().get_line();
+            let span = tokens.get_line_span(line);
+
             diag!(
                 Parser,
                 E0001,
@@ -420,7 +420,7 @@ pub fn parse_shape<'a>(tokens: &mut Lexer, diag: &mut DiagnosticAccumulator) -> 
             );
 
             //TODO: Do some sort of skip here
-            while !match_next(tokens, TokenKind::Colon) {
+            while !match_next(tokens, TokenKind::SemiColon) {
                 tokens.advance();
             }
 
@@ -688,13 +688,9 @@ pub fn parse_problem_output<'a>(
 pub fn parse_stmt<'a>(
     tokens: &mut Lexer,
     diag: &mut DiagnosticAccumulator,
-    start: PositionalOffset,
+    _start: PositionalOffset,
 ) -> BoxAST<'a> {
     let kind = tokens.peek().get_kind();
-
-    let end = tokens.get_previous_position();
-
-    let span = Span::new(start, end);
 
     let node = match kind {
         TokenKind::Object => parse_object_decl(tokens, diag),
@@ -704,10 +700,12 @@ pub fn parse_stmt<'a>(
         TokenKind::ProblemOutput => parse_problem_output(tokens, diag),
         TokenKind::LetKwd => parse_var_def(tokens, diag),
         _ => {
+            let span = tokens.get_line_span(tokens.get_position().get_line());
+
             diag!(
                 Parser,
                 E0002,
-                ExpectedStatement(kind.to_string()),
+                ExpectedStatement(tokens.peek().get_text().to_string()),
                 DidYouMeanStmtKeyword,
                 tokens,
                 diag,
@@ -715,7 +713,7 @@ pub fn parse_stmt<'a>(
             );
 
             // TODO: Do some sort of skip here
-            while !match_next(tokens, TokenKind::Colon) {
+            while !match_next(tokens, TokenKind::SemiColon) {
                 tokens.advance();
             }
 

@@ -43,6 +43,10 @@ fn main() -> io::Result<()> {
 
         let program = parser.parse();
 
+        if program.is_ok() {
+            println!("{:?}", program);
+        }
+
         if program.is_err() {
             for diag in parser
                 .get_diagnostics()
@@ -52,7 +56,5 @@ fn main() -> io::Result<()> {
             }
             continue;
         }
-
-        println!("{:?}", program);
     }
 }

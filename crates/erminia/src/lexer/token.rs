@@ -219,6 +219,14 @@ impl Position {
     pub fn new(x: usize, y: usize) -> Position {
         Position { x, y }
     }
+
+    pub fn x(&self) -> usize {
+        self.x
+    }
+
+    pub fn y(&self) -> usize {
+        self.y
+    }
 }
 
 impl std::fmt::Display for Position {
