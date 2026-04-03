@@ -6,9 +6,9 @@ use erminia::diag;
 use erminia::diagnostics::{DiagnosticAccumulator, Span};
 use erminia::lexer::lex::Lexer;
 
-fn get_file_from_path(path: &Path, diag: &mut DiagnosticAccumulator) -> File {
+fn get_file_from_path(path: &Path, diag: &mut DiagnosticAccumulator) -> Result<File, ()> {
     if let Ok(file) = File::open(path) {
-        file
+        Ok(file)
     } else {
         diag!(
             Internal,
@@ -19,11 +19,9 @@ fn get_file_from_path(path: &Path, diag: &mut DiagnosticAccumulator) -> File {
             Span::default()
         );
 
-        println!("{}", diag);
-        std::process::exit(1);
+        Err(())
     }
 }
-
 fn get_string_from_file(path: &Path, file: &mut File, diag: &mut DiagnosticAccumulator) -> String {
     let mut content: String = String::new();
 
@@ -54,11 +52,14 @@ fn validate_path(path: &Path, diag: &mut DiagnosticAccumulator) {
     }
 }
 
-pub fn from_file(path_str: String, diag: &mut DiagnosticAccumulator) -> String {
+pub fn from_file(path_str: String, diag: &mut DiagnosticAccumulator) -> Result<String, ()> {
     let path: &Path = Path::new(&path_str);
 
     validate_path(path, diag);
-    let mut file: File = get_file_from_path(path, diag);
 
-    get_string_from_file(path, &mut file, diag)
+    if let Ok(mut file) = get_file_from_path(path, diag) {
+        Ok(get_string_from_file(path, &mut file, diag))
+    } else {
+        Err(())
+    }
 }

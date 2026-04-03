@@ -30,7 +30,13 @@ fn main() -> io::Result<()> {
 
         if let Some(filename) = input.strip_prefix("from ") {
             let filename = filename.trim_end_matches('\n');
-            input = file::io::from_file(filename.to_string(), &mut diag);
+
+            if let Ok(contents) = file::io::from_file(filename.to_string(), &mut diag) {
+                input = contents;
+            } else {
+                println!("{}", diag);
+                continue;
+            }
         }
 
         let mut parser = Parser::new(&input);
@@ -48,9 +54,5 @@ fn main() -> io::Result<()> {
         }
 
         println!("{:?}", program);
-
-        // parse to AST Tree
-        // check semantics
-        // generate json
     }
 }
