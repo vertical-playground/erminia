@@ -1,0 +1,26 @@
+def comprtest (1) {
+
+    object FilledSquare {
+        shape: [(x, y) | x <- [0..3], y <- [0..3]],
+        color: 4
+    };
+
+    object TopRow {
+        shape: [(x, 0) | x <- [0..5]],
+        color: 2
+    };
+
+    object DiagLine {
+        shape: [(x, x) | x <- [0..4]],
+        color: 7
+    };
+
+    object Border {
+        shape: [
+            (x, 0) | x <- [0..4],
+            (x, 4) | x <- [0..4]
+        ],
+        color: 3
+    };
+
+}

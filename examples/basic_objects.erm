@@ -1,0 +1,18 @@
+def basic (3) {
+
+    object Dot {
+        shape: [(0, 0)],
+        color: 1
+    };
+
+    object Line {
+        shape: [(0, 0), (1, 0), (2, 0)],
+        color: 2
+    };
+
+    object Square {
+        shape: [(0, 0), (1, 0), (0, 1), (1, 1)],
+        color: 3
+    };
+
+}

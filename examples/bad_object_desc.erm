@@ -1,0 +1,18 @@
+(* E0003 - Expected shape or color keyword inside object body *)
+def badobjdesc (2) {
+
+    object WrongOrder {
+        blah: [(0, 0)],
+        color: 1
+    };
+
+    object OnlyShape {
+        shape: [(0, 0)]
+    };
+
+    object SwapMissing {
+        color: 5,
+        shpe: [(0, 0)]
+    };
+
+}

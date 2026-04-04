@@ -1,0 +1,20 @@
+(* E0003 - Expected integer constant or id but found something else in shapes *)
+
+def badshapes (3) {
+
+    object BadTuple {
+        shape: [(0, )],
+        color: 2
+    };
+
+    object BadCompr {
+        shape: [(x, y) | x <- (0..3)],
+        color: 3
+    };
+
+    object MissingColor {
+        shape: [(0, 0), (1, 0)],
+        color:
+    };
+
+}

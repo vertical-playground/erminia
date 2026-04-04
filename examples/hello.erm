@@ -5,24 +5,10 @@ def problem (2) {
         color: 1
     };
 
-    example ex1 {
-        input i1 (4, 4) {
+    example ex (2) {
 
-        }
+        input i (, 2) {};
 
-        ouput o1 (4, 4) {
-
-        }
-    }
-
-    example ex1 {
-        input i1 (4, 4) {
-
-        }
-
-        ouput o1 (4, 4) {
-
-        }
-    }
+    };
 
 }

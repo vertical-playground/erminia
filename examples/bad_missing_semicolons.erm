@@ -1,0 +1,20 @@
+// E0001 - Expected keyword (semicolons) but something else found
+def missingsemis (2) {
+
+    object NoDot {
+        shape: [(0, 0)],
+        color: 1
+    }
+
+    object NoLine {
+        shape: [(0, 0), (1, 0)],
+        color: 2
+    };
+
+    example ex1 (1) {
+        input i1 (3, 3) { }
+
+        output o1 (3, 3) { };
+    }
+
+}
