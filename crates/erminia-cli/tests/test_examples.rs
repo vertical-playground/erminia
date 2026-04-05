@@ -46,7 +46,7 @@ mod test_cli {
         let (ok, count) = parse_example("bad_missing_semicolons.erm");
         assert!(!ok, "bad_missing_semicolons.erm should fail to parse");
         assert_eq!(count, 1);
-        assert_eq!(ok, false);
+        assert!(!ok);
     }
 
     #[test]
@@ -54,7 +54,7 @@ mod test_cli {
         let (ok, count) = parse_example("bad_malformed_shape.erm");
         assert!(!ok, "bad_malformed_shape.erm should fail to parse");
         assert_eq!(count, 2);
-        assert_eq!(ok, false);
+        assert!(!ok);
     }
 
     #[test]
@@ -62,7 +62,7 @@ mod test_cli {
         let (ok, count) = parse_example("bad_object_desc.erm");
         assert!(!ok, "bad_object_desc.erm should fail to parse");
         assert_eq!(count, 4);
-        assert_eq!(ok, false);
+        assert!(!ok);
     }
 
     #[test]
@@ -70,7 +70,7 @@ mod test_cli {
         let (ok, count) = parse_example("bad_wrong_stmt_keyword.erm");
         assert!(!ok, "bad_wrong_stmt_keyword.erm should fail to parse");
         assert_eq!(count, 2);
-        assert_eq!(ok, false);
+        assert!(!ok);
     }
 
     #[test]
@@ -78,34 +78,34 @@ mod test_cli {
         let (ok, count) = parse_example("bad_multiple_errors.erm");
         assert!(!ok, "bad_multiple_errors.erm should fail to parse");
         assert_eq!(count, 1);
-        assert_eq!(ok, false);
+        assert!(!ok);
     }
 
     #[test]
     fn hello_has_diagnostics() {
         let (ok, count) = parse_example("hello.erm");
         assert_eq!(count, 1);
-        assert_eq!(ok, false);
+        assert!(!ok);
     }
 
     #[test]
     fn var_and_calls_has_diagnostics() {
         let (ok, count) = parse_example("var_and_calls.erm");
         assert_eq!(count, 2);
-        assert_eq!(ok, false);
+        assert!(!ok);
     }
 
     #[test]
     fn comprehensions_has_diagnostics() {
         let (ok, count) = parse_example("comprehensions.erm");
         assert_eq!(count, 1);
-        assert_eq!(ok, false);
+        assert!(!ok);
     }
 
     #[test]
     fn template_script_has_diagnostics() {
         let (ok, count) = parse_example("template_script.erm");
         assert_eq!(count, 1);
-        assert_eq!(ok, false);
+        assert!(!ok);
     }
 }
