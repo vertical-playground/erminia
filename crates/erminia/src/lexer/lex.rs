@@ -244,6 +244,7 @@ impl<'input> Lexer<'input> {
         let mut start: PositionalOffset = PositionalOffset::default();
         let mut end: PositionalOffset = PositionalOffset::default();
 
+        #[allow(clippy::explicit_counter_loop)]
         for line_str in self.content.split('\n') {
             if current_line == target_line {
                 let line_str = line_str.trim_end_matches('\r');
