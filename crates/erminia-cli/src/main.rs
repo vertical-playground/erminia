@@ -1,6 +1,7 @@
+mod cli;
 mod file;
 mod repl;
 
 fn main() -> std::io::Result<()> {
-    repl::engine::ErminiaREPL::new().run()
+    crate::cli::Cli::run()
 }
