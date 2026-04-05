@@ -1,0 +1,15 @@
+(* E0002 - Expected statement keyword but found something else *)
+def badkeywords (2) {
+
+    object Dot {
+        shape: [(0, 0)],
+        color: 1
+    };
+
+    draw(x);
+
+    foobar blah blah;
+
+    let x = 5;
+
+}

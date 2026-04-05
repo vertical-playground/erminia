@@ -18,6 +18,8 @@ pub enum Note {
     ExpectedIDorInteger(String),
     ExpectedShapeOrColor(String),
     ExpectedTypeofTuple(String),
+    FileNotFound(String),
+    ExpectedFileToHaveErmPostfix(String),
 }
 
 impl fmt::Display for Note {
@@ -64,37 +66,18 @@ impl Note {
             Note::ExpectedTypeofTuple(str1) => {
                 format!("Expected a 'tuple' or 'object' type, but found '{}'.", str1)
             }
-        }
-    }
-
-    pub fn args_required(&self) -> bool {
-        match self {
-            Note::ExpectedLeftInclusive(_) => true,
-            Note::ExpectedRightInclusive(_)
-            | Note::ExpectedDataType(_)
-            | Note::ExpectedInteger(_)
-            | Note::ExpectedIdentifier(_)
-            | Note::ExpectedSomethingElse(_, _)
-            | Note::ExpectedASTNode(_, _)
-            | Note::ExpectedIDorInteger(_)
-            | Note::ExpectedStatement(_)
-            | Note::ExpectedShapeOrColor(_)
-            | Note::ExpectedTypeofTuple(_) => true,
-        }
-    }
-
-    pub fn args_count(&self) -> usize {
-        match self {
-            Note::ExpectedLeftInclusive(_)
-            | Note::ExpectedRightInclusive(_)
-            | Note::ExpectedDataType(_)
-            | Note::ExpectedInteger(_)
-            | Note::ExpectedIDorInteger(_)
-            | Note::ExpectedStatement(_)
-            | Note::ExpectedShapeOrColor(_)
-            | Note::ExpectedTypeofTuple(_)
-            | Note::ExpectedIdentifier(_) => 1,
-            Note::ExpectedSomethingElse(_, _) | Note::ExpectedASTNode(_, _) => 2,
+            Note::FileNotFound(str1) => {
+                format!(
+                    "File '{}' could not be retrieved, please try a different file.",
+                    str1
+                )
+            }
+            Note::ExpectedFileToHaveErmPostfix(str1) => {
+                format!(
+                    "Expected file to have '.erm' postfix but instead got '{}'.",
+                    str1
+                )
+            }
         }
     }
 }
@@ -106,6 +89,7 @@ pub enum Help {
     DidYouMeanStmtKeyword,
     DidYouMeanShapeOrColor,
     DidYouMeanTupleorObject,
+    DidYouMeanToUseAnErmPostfix,
 }
 
 impl fmt::Display for Help {
@@ -131,6 +115,9 @@ impl Help {
             }
             Help::DidYouMeanTupleorObject => {
                 "Did you mean to use a 'tuple' or an 'object' type? You can create tuples by using this syntax: <tuple> ::= '(' <int> ',' <int> ')' or use a declared object instead.".to_string()
+            }
+            Help::DidYouMeanToUseAnErmPostfix => {
+                "Did you mean to use an '.erm' postfix on your input file.".to_string()
             }
         }
     }

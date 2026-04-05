@@ -1,38 +1,7 @@
-use erminia::syntax::Parser;
-use std::io::{self, Write};
+mod cli;
+mod file;
+mod repl;
 
-fn main() -> io::Result<()> {
-    let stdin = io::stdin();
-
-    let mut stdout = io::stdout();
-
-    let mut input = String::new();
-
-    loop {
-        write!(stdout, "-> ")?;
-        stdout.flush()?;
-
-        input.clear();
-        stdin.read_line(&mut input)?;
-
-        let mut parser = Parser::new(&input);
-
-        let program = parser.parse();
-
-        if program.is_err() {
-            for diag in parser
-                .get_diagnostics()
-                .get(erminia::config::CompilerPass::Parser)
-            {
-                eprintln!("{}", diag);
-            }
-            continue;
-        }
-
-        println!("{:?}", program);
-
-        // parse to AST Tree
-        // check semantics
-        // generate json
-    }
+fn main() -> std::io::Result<()> {
+    crate::cli::Cli::run()
 }

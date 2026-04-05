@@ -1,0 +1,16 @@
+def varcalls (2) {
+
+    object Dot {
+        shape: [(0, 0)],
+        color: 1
+    };
+
+    let x = 5;
+    let y = 3;
+    let d = Dot(1, 2);
+
+    draw(d);
+    move(d, 2);
+    draw(x, y);
+
+}

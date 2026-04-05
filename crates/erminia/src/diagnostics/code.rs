@@ -8,6 +8,8 @@ use derive_more::Display;
 pub enum Code {
     #[default]
     I0001, // Internal Compiler Error
+    I0002, // File not found error
+    I0003, // File does not end with postfix .erm
     E0001, // Expected keyword token but found something else
     E0002, // Expected symbol token but found something else
     E0003, // Expected integer constant but found something else
@@ -49,11 +51,13 @@ impl FromCode for DiagnosticLevel {
 impl FromCode for String {
     fn from_code(code: &Code) -> Self {
         match code {
-            Code::I0001 => "Internal Compiler Error occurred".to_string(),
-            Code::E0001 => "Expected keyword but something else was found".to_string(),
-            Code::E0002 => "Expected symbol but something else was found".to_string(),
-            Code::E0003 => "Expected integer constant but something else was found".to_string(),
-            Code::E0004 => "Poisoned AST Node detected".to_string(),
+            Code::I0001 => "Internal Compiler Error occurred.".to_string(),
+            Code::I0002 => "Could not retrieve file.".to_string(),
+            Code::I0003 => "File doesn't have the proper postfix.".to_string(),
+            Code::E0001 => "Expected keyword but something else was found.".to_string(),
+            Code::E0002 => "Expected symbol but something else was found.".to_string(),
+            Code::E0003 => "Expected integer constant but something else was found.".to_string(),
+            Code::E0004 => "Poisoned AST Node detected.".to_string(),
             Code::E000X => "An error occurred.".to_string(),
             Code::W000X => "This is a warning.".to_string(),
             Code::N000X => "This is a note.".to_string(),

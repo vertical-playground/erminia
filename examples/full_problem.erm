@@ -1,0 +1,37 @@
+def puzzle (4) {
+
+    object LShape {
+        shape: [(0, 0), (0, 1), (0, 2), (1, 2)],
+        color: 2
+    };
+
+    object TShape {
+        shape: [(0, 0), (1, 0), (2, 0), (1, 1)],
+        color: 5
+    };
+
+    example ex1 (2) {
+        input i1 (4, 4) {
+            let a = LShape(0, 0);
+            draw(a);
+        };
+
+        output o1 (4, 4) {
+            let b = LShape(2, 2);
+            draw(b);
+        };
+    };
+
+    solution s1 (2) {
+        input si1 (4, 4) {
+            let a = TShape(0, 0);
+            draw(a);
+        };
+
+        output so1 (4, 4) {
+            let b = TShape(1, 1);
+            draw(b);
+        };
+    };
+
+}

@@ -1,0 +1,27 @@
+(* Multiple errors across the file - tests error recovery and accumulation *)
+def multierr (3) {
+
+    object GoodOne {
+        shape: [(0, 0)],
+        color: 1
+    };
+
+    object BadSemicolon {
+        shape: [(0, 0)],
+        color: 2
+    }
+
+    totally_wrong_keyword here;
+
+    object MissingRightParen {
+        shape: [(0, 0],
+        color: 3
+    };
+
+    example ex1 (2) {
+        input i1 (4, 4) { };
+
+        ouput o1 (4, 4) { };
+    };
+
+}

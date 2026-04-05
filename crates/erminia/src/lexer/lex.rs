@@ -44,13 +44,9 @@ impl Default for PositionalOffset {
 }
 
 impl PositionalOffset {
-    // fn new(pos: usize, cursor: usize, line: usize) -> PositionalOffset {
-    //     PositionalOffset {
-    //         pos: pos,
-    //         cursor: cursor,
-    //         line: line,
-    //     }
-    // }
+    pub fn new(pos: usize, cursor: usize, line: usize) -> PositionalOffset {
+        PositionalOffset { pos, cursor, line }
+    }
 
     fn increment_pos(&mut self, val: usize) {
         self.pos += val;
@@ -144,6 +140,12 @@ impl<'input> Lexer<'input> {
 
         let (kind, end_pos) = get_next_token_kind(self.content, start_pos);
 
+        if kind == TokenKind::CommentStart {
+            self.start = end_pos;
+            self.trim_comments();
+            return self.advance();
+        }
+
         let lexeme = &self.content[start_pos.pos..end_pos.pos];
 
         let token = Token::new(kind, lexeme, start_pos.get_line(), start_pos.get_cursor());
@@ -188,6 +190,24 @@ impl<'input> Lexer<'input> {
         (first, second, first_end_pos, second_end_pos)
     }
 
+    pub fn trim_comments(&mut self) {
+        loop {
+            let start_pos = trim_starting_whitespace(self.content, self.start);
+            let (kind, end_pos) = get_next_token_kind(self.content, start_pos);
+            self.start = end_pos;
+
+            match kind {
+                TokenKind::CommentStart => self.trim_comments(),
+                TokenKind::CommentEnd => break,
+                TokenKind::EOF => {
+                    self.poisoned = true;
+                    break;
+                }
+                _ => {}
+            }
+        }
+    }
+
     pub fn lex_with_separate_pass(&mut self) -> Vec<Token<'_>> {
         let mut tokens: Vec<Token> = Vec::new();
 
@@ -216,6 +236,27 @@ impl<'input> Lexer<'input> {
 
     pub fn get_previous_position(&self) -> PositionalOffset {
         self.previous
+    }
+
+    pub fn get_line_span(&self, target_line: usize) -> Span {
+        let mut current_line = 1;
+        let mut pos = 0;
+        let mut start: PositionalOffset = PositionalOffset::default();
+        let mut end: PositionalOffset = PositionalOffset::default();
+
+        #[allow(clippy::explicit_counter_loop)]
+        for line_str in self.content.split('\n') {
+            if current_line == target_line {
+                let line_str = line_str.trim_end_matches('\r');
+                start = PositionalOffset::new(pos, 1, target_line);
+                end = PositionalOffset::new(pos + line_str.len(), line_str.len() + 1, target_line);
+                break;
+            }
+            pos += line_str.len() + 1;
+            current_line += 1;
+        }
+
+        Span::new(start, end)
     }
 
     pub fn get_snippet(&self, span: Span) -> &str {
