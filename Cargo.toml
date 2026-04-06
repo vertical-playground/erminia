@@ -7,4 +7,3 @@ lints.rust = { warnings = "deny" }
 
 [profile.release]
 lints.rust = { warnings = "deny" }
-

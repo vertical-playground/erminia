@@ -5,6 +5,10 @@ FMT ?= fmt --all -- --check
 watch:
 	cargo watch -x ${CLIPPY}
 
+.PHONY: watch-build
+watch-build:
+	cargo watch -x 'build'
+
 .PHONY: fmt
 fmt:
 	cargo ${FMT}
