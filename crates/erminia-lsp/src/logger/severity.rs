@@ -9,8 +9,8 @@ impl ToString for Severity {
     fn to_string(&self) -> String {
         match self {
             Severity::Log => "[LOG]".to_string(),
-            Severity::Warn => "[WARN]".to_string(),
-            Severity::Error => "[ERROR]".to_string(),
+            Severity::Warn => "[WAR]".to_string(),
+            Severity::Error => "[ERR]".to_string(),
         }
     }
 }
