@@ -72,6 +72,17 @@ impl Extract for Body {
             if let Ok(_n) = opts.buffer.read_exact(&mut buf) {
                 let _ = opts.logger.log(&format!("Managed to read body: {:?}", buf));
 
+                let mut body_string = String::new();
+
+                for byte in buf.bytes() {
+                    body_string.push(byte.unwrap() as char);
+                }
+
+                let _ = opts.logger.log(&format!(
+                    "Now this should be the actual content: {}",
+                    body_string
+                ));
+
                 opts.body = Some(Body::new());
                 Ok(())
             } else {
@@ -104,6 +115,7 @@ impl<'a> ExtractOpts<'a> {
         }
     }
 
+    #[allow(unused)]
     pub fn get_header(&mut self) -> &Option<Header> {
         &mut self.header
     }
