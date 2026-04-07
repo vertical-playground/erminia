@@ -8,6 +8,7 @@ fn main() -> std::io::Result<()> {
     let file = std::fs::OpenOptions::new()
         .write(true)
         .truncate(true)
+        .create(true)
         .open(&path)
         .unwrap();
 
