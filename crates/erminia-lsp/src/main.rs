@@ -3,25 +3,6 @@ mod rpc;
 
 use rpc::Extract;
 
-struct Request {}
-
-struct InitializeResponse {}
-enum Response {
-    Initialize(InitializeResponse),
-}
-
-impl Response {
-    pub fn send(&self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-
-impl Request {
-    pub fn handle(_opts: &mut rpc::ExtractOpts) -> Result<Response, ()> {
-        Ok(Response::Initialize(InitializeResponse {}))
-    }
-}
-
 fn main() -> std::io::Result<()> {
     let path = std::env::var("HOME").unwrap() + "/Coding/Personal/erminia/debug_log.txt";
     let file = std::fs::OpenOptions::new()
@@ -41,7 +22,7 @@ fn main() -> std::io::Result<()> {
             break;
         };
 
-        if let Ok(response) = Request::handle(&mut opts) {
+        if let Ok(response) = rpc::Request::handle(&mut opts) {
             response.send()?;
         }
     }
