@@ -1,6 +1,10 @@
 CLIPPY ?= 'clippy --all-targets --all-features -- -D warnings'
 FMT ?= fmt --all -- --check
 
+.PHONY: clippy
+watch:
+	cargo run ${CLIPPY}
+
 .PHONY: watch
 watch:
 	cargo watch -x ${CLIPPY}

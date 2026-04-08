@@ -56,11 +56,13 @@ impl Extract for Header {
 }
 
 #[derive(Debug)]
-pub(crate) struct Body {}
+pub(crate) struct Body {
+    pub body_string: String,
+}
 
 impl Body {
-    pub fn new() -> Self {
-        Body {}
+    pub fn new(body_string: String) -> Self {
+        Body { body_string }
     }
 }
 
@@ -83,7 +85,7 @@ impl Extract for Body {
                     body_string
                 ));
 
-                opts.body = Some(Body::new());
+                opts.body = Some(Body::new(body_string));
                 Ok(())
             } else {
                 let _ = opts.logger.warn("Failed to read body");
@@ -115,8 +117,7 @@ impl<'a> ExtractOpts<'a> {
         }
     }
 
-    #[allow(unused)]
-    pub fn get_header(&mut self) -> &Option<Header> {
-        &mut self.header
+    pub fn get_body(&mut self) -> &Option<Body> {
+        &self.body
     }
 }
