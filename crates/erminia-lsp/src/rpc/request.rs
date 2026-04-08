@@ -3,10 +3,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::Result;
 
 #[derive(Default, Debug, Serialize, Deserialize)]
+struct Param {}
+
+#[derive(Default, Debug, Serialize, Deserialize)]
 struct RequestInfo {
     jsonrpc: String,
     id: u32,
     method: String,
+    params: Option<Vec<Param>>,
 }
 
 pub struct Request {}
