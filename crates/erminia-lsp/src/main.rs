@@ -22,7 +22,7 @@ fn main() -> std::io::Result<()> {
             break;
         };
 
-        if let Ok(response) = rpc::Request::handle(&mut opts) {
+        if let Ok(response) = rpc::Request::handle::<rpc::InitializeParams>(&mut opts) {
             response.send()?;
         }
     }
