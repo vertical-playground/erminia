@@ -4,13 +4,15 @@ use serde_json::Result;
 pub struct Request {}
 
 impl Request {
-    pub fn handle<ParamsType>(opts: &mut rpc::ExtractOpts) -> Result<rpc::Response>
+    pub fn handle<ParamsType>(opts: &mut rpc::StateOpts) -> Result<rpc::Response>
     where
         ParamsType: for<'de> Deserialize<'de> + std::fmt::Debug,
     {
         if let Some(body) = &mut opts.get_body() {
             match serde_json::from_str::<rpc::RequestInfo<ParamsType>>(&body.body_string) {
                 Ok(message) => {
+                    opts.set_initialized(true);
+
                     let _ = opts
                         .logger
                         .log(&format!("Managed to parse json: {:?}", message));

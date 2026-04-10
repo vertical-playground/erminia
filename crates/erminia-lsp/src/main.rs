@@ -12,7 +12,7 @@ fn main() -> std::io::Result<()> {
         .open(&path)
         .unwrap();
 
-    let mut opts = rpc::ExtractOpts::new(&file);
+    let mut opts = rpc::StateOpts::new(&file);
 
     loop {
         if let Err(()) = rpc::Header::extract(&mut opts) {

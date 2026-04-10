@@ -1,7 +1,7 @@
 use std::io::{BufRead, Read};
 
 pub trait Extract {
-    fn extract(opts: &mut ExtractOpts) -> Result<(), ()>;
+    fn extract(opts: &mut StateOpts) -> Result<(), ()>;
 }
 
 #[derive(Debug)]
@@ -15,7 +15,7 @@ impl Header {
         Header { bytes }
     }
 
-    pub fn strip_next_line_suffix(opts: &mut ExtractOpts) {
+    pub fn strip_next_line_suffix(opts: &mut StateOpts) {
         let mut sep = String::new();
         let _ = opts.buffer.read_line(&mut sep);
     }
@@ -29,7 +29,7 @@ impl Header {
 }
 
 impl Extract for Header {
-    fn extract(opts: &mut ExtractOpts) -> Result<(), ()> {
+    fn extract(opts: &mut StateOpts) -> Result<(), ()> {
         let mut buf = String::new();
         if opts.buffer.read_line(&mut buf).is_ok() {
             let _ = opts
@@ -67,7 +67,7 @@ impl Body {
 }
 
 impl Extract for Body {
-    fn extract(opts: &mut ExtractOpts) -> Result<(), ()> {
+    fn extract(opts: &mut StateOpts) -> Result<(), ()> {
         let _ = opts.logger.log("In extract Body");
         if let Some(header) = &opts.header {
             let mut buf = vec![0u8; header.bytes];
@@ -98,26 +98,32 @@ impl Extract for Body {
     }
 }
 
-pub(crate) struct ExtractOpts<'a> {
+pub(crate) struct StateOpts<'a> {
     buffer: std::io::BufReader<std::io::StdinLock<'static>>,
     pub logger: crate::logger::logger::Logger<'a>,
     header: Option<Header>,
     body: Option<Body>,
+    initialized: bool,
 }
 
-impl<'a> ExtractOpts<'a> {
+impl<'a> StateOpts<'a> {
     pub fn new(file: &'a std::fs::File) -> Self {
         let buffer = std::io::BufReader::new(std::io::stdin().lock());
         let logger = crate::logger::logger::Logger::new(file);
-        ExtractOpts {
+        StateOpts {
             buffer,
             logger,
             header: None,
             body: None,
+            initialized: false,
         }
     }
 
     pub fn get_body(&mut self) -> &Option<Body> {
         &self.body
+    }
+
+    pub fn set_initialized(&mut self, flag: bool) {
+        self.initialized = flag;
     }
 }
